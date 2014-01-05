@@ -46,27 +46,20 @@ class ChildrenPathFilter(
     else DirectoryFileFilter & recursiveFilter) &
       (if (followLinks) AllPassFileFilter else -LinkFileFilter)
 
-  def search(base: File) = {
-    val attr = Util.readAttributes(base.toPath, classOf[BasicFileAttributes],
-      LinkOption.NOFOLLOW_LINKS)
-
-    attr map { attr =>
-      Util.isDirectory(base) map { base =>
-        searchDescendants(base, maxDepth.getOrElse(Int.MaxValue) - 1)
-      } getOrElse {
-        if (attr.isRegularFile || attr.isSymbolicLink)
-          Set(base)
-        else Set[File]()
-      }
-    } getOrElse(Set[File]())
-  }
+  def search(base: File) =
+    if (Files.isDirectory(base.toPath)) {
+      searchDescendants(base, maxDepth.getOrElse(Int.MaxValue) - 1)
+    }
+    else if (Files.isSymbolicLink(base.toPath) || Files.isRegularFile(base.toPath))
+      Set(base)
+    else Set[File]()
 
   private def searchDescendants(base: File, levels: Int): Set[File] = {
     val files = misc.Util.wrapNull(base listFiles filter).toList
     (files ::: {
       if (levels > 0) {
         val folders = if (recursiveFilter eq filter)
-            Util.filterFiles(files, recursiveFilterActual)
+            files.filter(recursiveFilterActual.accept)
           else
             misc.Util.wrapNull(base listFiles recursiveFilterActual).toList
         for {

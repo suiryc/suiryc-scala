@@ -1,6 +1,7 @@
 package suiryc.scala.io
 
 import java.io.{File, FileFilter}
+import java.nio.file.Files
 import java.util.regex.Pattern
 import scala.language.implicitConversions
 
@@ -92,7 +93,7 @@ object DirectoryFileFilter
   extends FileFilter
 {
 
-  def accept(file: File) = Util.isDirectory(file).isDefined
+  def accept(file: File) = Files.isDirectory(file.toPath)
 
 }
 
@@ -101,7 +102,7 @@ object LinkFileFilter
   extends FileFilter
 {
 
-  def accept(file: File) = Util.isSymbolicLink(file)
+  def accept(file: File) = Files.isSymbolicLink(file.toPath)
 
 }
 
