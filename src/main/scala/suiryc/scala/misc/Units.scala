@@ -37,12 +37,12 @@ object Units {
     def toHumanReadable(value: Long, runits: List[Unit] = units.head) = {
       @scala.annotation.tailrec
       def loop(units: List[Unit]): (Long, Unit) = units match {
-        case unit :: Nil =>
-          (value, unit)
-
         case head :: tail =>
           if (value < 2 * head.factor) loop(tail)
           else (value, head)
+
+        case Nil =>
+          (value, unity)
       }
 
       val (hr, unit) = loop(runits.reverse)
