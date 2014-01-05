@@ -1,5 +1,6 @@
 package suiryc.scala.sys
 
+import grizzled.slf4j.Logging
 import java.io.{
   BufferedReader,
   BufferedWriter,
@@ -14,7 +15,9 @@ import java.io.{
 import scala.sys.process._
 
 
-object Command {
+object Command
+  extends Logging
+{
 
   /**
    * Executes system command.
@@ -25,6 +28,7 @@ object Command {
    * @param printStdout      whether to print stdout
    * @param captureStderr    whether to capture stderr
    * @param printStderr      whether to print stderr
+   * @param skipResult       whether to not check return code
    * @return a tuple with the return code, stdout and stderr contents (empty
    *   unless captured)
    */
@@ -33,8 +37,9 @@ object Command {
       workingDirectory: Option[File] = None,
       captureStdout: Boolean = true,
       printStdout: Boolean = false,
-      captureStderr: Boolean = false,
-      printStderr: Boolean = true
+      captureStderr: Boolean = true,
+      printStderr: Boolean = false,
+      skipResult: Boolean = true
     ): (Int, String, String) =
   {
     @annotation.tailrec
@@ -100,6 +105,20 @@ object Command {
       handleOutput(captureStderr, stderrBuffer, printStderr, stderr)
     )
     val result = process.run(io).exitValue
+
+    if (!skipResult && (result != 0)) {
+      trace(s"Command[$cmd] failed: code[$result]"
+        + (if (!printStdout && captureStdout) s" stdout[$stdoutBuffer]" else "")
+        + (if (!printStderr && captureStderr) s" stderr[$stderrBuffer]" else "")
+      )
+      throw new RuntimeException("Nonzero exit value: " + result)
+    }
+    else {
+      trace(s"Command[$cmd] result: code[$result]"
+        + (if (!printStdout && captureStdout) s" stdout[$stdoutBuffer]" else "")
+        + (if (!printStderr && captureStderr) s" stderr[$stderrBuffer]" else "")
+      )
+    }
 
     (result, stdoutBuffer.toString, stderrBuffer.toString)
   }
