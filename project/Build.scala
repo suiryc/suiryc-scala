@@ -9,7 +9,15 @@ object SuirycScalaBuild
 
   lazy val log = project in file("log") dependsOn(core)
 
-  lazy val root = project aggregate(core, log)
+  lazy val root = Project(
+    id = "suiryc-scala",
+    base = file("."),
+    aggregate = Seq(core, log),
+    settings = Project.defaultSettings ++ Seq(
+      publish := { },
+      publishLocal := { }
+    )
+  )
 
 }
 
