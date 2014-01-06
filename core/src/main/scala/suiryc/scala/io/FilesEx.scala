@@ -15,16 +15,18 @@ object FilesEx
    *
    * Recursively processes folders. Also processes real path for symbolic links.
    *
-   * @param sourceRoot root for source file
-   * @param source     (relative) source to copy
-   * @param targetRoot root for target file
-   * @param owner      specific owner to set when creating target directories
+   * @param sourceRoot  root for source file
+   * @param source      (relative) source to copy
+   * @param targetRoot  root for target file
+   * @param followLinks whether to follow (and process real path) links
+   * @param owner       specific owner to set when creating target directories
    *   that do not have a source equivalent
    */
   def copy(
     sourceRoot: Path,
     source: Path,
     targetRoot: Path,
+    followLinks: Boolean = true,
     owner: Option[Owner] = None
   ) {
     def copy(sourceRoot: Path, source: Option[Path], targetRoot: Path) {
@@ -33,16 +35,18 @@ object FilesEx
       source match {
         case Some(source) =>
           val sourcePath = sourceRoot.resolve(source)
-          val sourceRealPath = sourcePath.getParent.toRealPath().resolve(sourcePath.toFile.getName)
-          if (!sourceRealPath.startsWith(sourceRoot))
-            warn(s"WARNING! Real path[$sourceRealPath] is outside root path[$sourceRoot], skipping")
+          val sourceRealPath =
+            if (followLinks) sourcePath.getParent.toRealPath().resolve(sourcePath.toFile.getName)
+            else sourcePath
+          if (followLinks && !sourceRealPath.startsWith(sourceRoot))
+            warn(s"Real path[$sourceRealPath] is outside root path[$sourceRoot], skipping")
           else {
             val sourceReal = sourceRoot.relativize(sourceRealPath)
             val pathTarget = targetRoot.resolve(sourceReal)
             if (!pathTarget.exists) {
               /* first make sure parent exists (both real and possible link) */
               copy(sourceRoot, Option(source.getParent), targetRoot)
-              copy(sourceRoot, Option(sourceReal.getParent), targetRoot)
+              if (followLinks) copy(sourceRoot, Option(sourceReal.getParent), targetRoot)
               /* then copy source to target */
               trace(s"Copying source[$sourceRealPath] to[$pathTarget]")
               Files.copy(sourceRealPath, pathTarget,
