@@ -1,6 +1,8 @@
 package suiryc.scala.misc
 
 
+/* XXX - handle time system (separate for human readable form, or introduce 'cumulative' notion ?) */
+/* XXX - handle floating points in human representation ? */
 object Units {
 
   case class Unit(label: String, factor: Long)
