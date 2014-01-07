@@ -24,6 +24,7 @@ object Command
    *
    * @param cmd              command to perform
    * @param workingDirectory working directory
+   * @param envf             environment callback
    * @param captureStdout    whether to capture stdout
    * @param printStdout      whether to print stdout
    * @param captureStderr    whether to capture stderr
@@ -35,6 +36,7 @@ object Command
   def execute(
       cmd: Seq[String],
       workingDirectory: Option[File] = None,
+      envf: Option[java.util.Map[String, String] => Unit] = None,
       captureStdout: Boolean = true,
       printStdout: Boolean = false,
       captureStderr: Boolean = true,
@@ -98,7 +100,15 @@ object Command
 
     val stdoutBuffer = new StringBuffer()
     val stderrBuffer = new StringBuffer()
-    val process = Process(cmd, workingDirectory)
+    val process = envf map { f =>
+      /* scala Process only handles adding variables, so - as Process - build
+       * the java ProcessBuilder, and let callback adapt its environment.
+       */
+      val jpb = new java.lang.ProcessBuilder(cmd.toArray: _*)
+      workingDirectory foreach (jpb directory _)
+      f(jpb.environment())
+      Process(jpb)
+    } getOrElse(Process(cmd, workingDirectory))
     val io = new ProcessIO(
       BasicIO.close,
       handleOutput(captureStdout, stdoutBuffer, printStdout, stdout),
