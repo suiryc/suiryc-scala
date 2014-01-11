@@ -5,6 +5,7 @@ import java.io.File
 import java.nio.file.Paths
 import scala.io.Source
 import suiryc.scala.io.{NameFilter, PathFinder}
+import suiryc.scala.misc.EitherEx
 import suiryc.scala.sys.Command
 
 
@@ -39,7 +40,7 @@ class Device(val block: File) {
     else props
   }
 
-  def size: Either[Throwable, Long] = Device.size(dev)
+  def size = Device.size(block)
 
   def partitions =
     (block * s"""${dev.getName()}[0-9]+""".r).get map { path =>
@@ -72,22 +73,28 @@ object Device
     )
   }
 
-  def size(dev: File) =
-    try {
-      val (result, stdout, stderr) = Command.execute(Seq("blockdev", "--getsz", dev.toString))
-      if (result == 0) {
-        Right(stdout.trim.toLong * 512)
+  def size(block: File): EitherEx[Throwable, Long] = {
+    propertyContent(block, "size") map { size =>
+      EitherEx(Right(size.toLong * 512))
+    } getOrElse {
+      try {
+        val dev = new File("/dev", block.getName())
+        val (result, stdout, stderr) = Command.execute(Seq("blockdev", "--getsz", dev.toString))
+        if (result == 0) {
+          EitherEx(Right(stdout.trim.toLong * 512))
+        }
+        else {
+          val msg = s"Cannot get device size: $stderr"
+          error(msg)
+          EitherEx(Left(new Exception(msg)), -1L)
+        }
       }
-      else {
-        val msg = s"Cannot get device size: $stderr"
-        error(msg)
-        Left(new Exception(msg))
+      catch {
+        case e: Throwable =>
+          EitherEx(Left(e), -1L)
       }
     }
-    catch {
-      case e: Throwable =>
-        Left(e)
-    }
+  }
 
   def apply(block: File): Device = new Device(block)
 

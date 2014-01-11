@@ -15,7 +15,7 @@ class DevicePartition(val device: Device, val partNumber: Int)
 
   val dev = new File(device.dev.getParentFile(), device.dev.getName() + partNumber)
 
-  val size = Device.size(dev).fold(_ => 0L, size => size)
+  val size = Device.size(block)
 
   val uuid =
     try {
