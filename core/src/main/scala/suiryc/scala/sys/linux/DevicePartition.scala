@@ -30,7 +30,7 @@ class DevicePartition(val device: Device, val partNumber: Int)
         Left(new Exception(msg))
       }
       else {
-        val msg = "Cannot get partition[$dev] UUID"
+        val msg = s"Cannot get partition[$dev] UUID"
         error(msg)
         Left(new Exception(msg))
       }
