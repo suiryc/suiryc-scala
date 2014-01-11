@@ -17,19 +17,20 @@ class DevicePartition(val device: Device, val partNumber: Int)
 
   val size = Device.size(block)
 
-  val uuid =
+  /* Note: UUID may be set or changed upon formatting partition */
+  def uuid =
     try {
       val (result, stdout, stderr) = Command.execute(Seq("blkid", "-o", "value", "-s", "UUID", dev.toString))
       if ((result == 0) && (stdout.trim() != "")) {
         Right(stdout.trim)
       }
       else if (stderr != "") {
-        val msg = s"Cannot get device UUID: $stderr"
+        val msg = s"Cannot get partition[$dev] UUID: $stderr"
         error(msg)
         Left(new Exception(msg))
       }
       else {
-        val msg = "Cannot get device UUID"
+        val msg = "Cannot get partition[$dev] UUID"
         error(msg)
         Left(new Exception(msg))
       }
@@ -39,12 +40,14 @@ class DevicePartition(val device: Device, val partNumber: Int)
         Left(e)
     }
 
-  def mounted =
+  def mounted = {
+    val partitionUUID = uuid.fold(_ => "<unknown>", uuid => uuid)
     Source.fromFile(Paths.get("/", "proc", "mounts").toFile()).getLines() map { line =>
       line.trim().split("""\s""").head
     } exists { line =>
-      (line == dev.toString()) || (line == s"/dev/disk/by-uuid/${uuid}")
+      (line == dev.toString()) || (line == s"/dev/disk/by-uuid/$partitionUUID")
     }
+  }
 
   def umount = Command.execute(Seq("umount", dev.toString()))
 

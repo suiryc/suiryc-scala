@@ -40,9 +40,14 @@ class Device(val block: File) {
     else props
   }
 
-  def size = Device.size(block)
+  val size = Device.size(block)
 
-  def partitions =
+  val removable =
+    propertyContent(block, "removable") map { removable =>
+      removable.toInt != 0
+    } getOrElse false
+
+  val partitions =
     (block * s"""${dev.getName()}[0-9]+""".r).get map { path =>
       new DevicePartition(this, path.getName().substring(dev.getName().length()).toInt)
     }
