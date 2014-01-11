@@ -13,6 +13,7 @@ import java.io.{
   Writer
 }
 import scala.sys.process._
+import suiryc.scala.misc.RichOptional._
 
 
 object Command
@@ -29,6 +30,7 @@ object Command
    * @param printStdout      whether to print stdout
    * @param captureStderr    whether to capture stderr
    * @param printStderr      whether to print stderr
+   * @param trim             whether to trim captured streams
    * @param skipResult       whether to not check return code
    * @return a tuple with the return code, stdout and stderr contents (empty
    *   unless captured)
@@ -41,6 +43,7 @@ object Command
       printStdout: Boolean = false,
       captureStderr: Boolean = true,
       printStderr: Boolean = false,
+      trim: Boolean = true,
       skipResult: Boolean = true
     ): (Int, String, String) =
   {
@@ -130,7 +133,10 @@ object Command
       )
     }
 
-    (result, stdoutBuffer.toString, stderrBuffer.toString)
+    (result,
+      stdoutBuffer.toString.optional(trim, _.trim),
+      stderrBuffer.toString.optional(trim, _.trim)
+    )
   }
 
 }
