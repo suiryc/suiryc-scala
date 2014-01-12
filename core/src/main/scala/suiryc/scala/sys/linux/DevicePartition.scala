@@ -4,7 +4,7 @@ import grizzled.slf4j.Logging
 import java.io.File
 import java.nio.file.Paths
 import scala.io.Source
-import suiryc.scala.sys.Command
+import suiryc.scala.sys.{Command, CommandResult}
 
 
 class DevicePartition(val device: Device, val partNumber: Int)
@@ -20,7 +20,7 @@ class DevicePartition(val device: Device, val partNumber: Int)
   /* Note: UUID may be set or changed upon formatting partition */
   def uuid =
     try {
-      val (result, stdout, stderr) = Command.execute(Seq("blkid", "-o", "value", "-s", "UUID", dev.toString))
+      val CommandResult(result, stdout, stderr) = Command.execute(Seq("blkid", "-o", "value", "-s", "UUID", dev.toString))
       if ((result == 0) && (stdout.trim() != "")) {
         Right(stdout.trim)
       }

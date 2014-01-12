@@ -6,7 +6,7 @@ import java.nio.file.Paths
 import scala.io.Source
 import suiryc.scala.io.{NameFilter, PathFinder}
 import suiryc.scala.misc.EitherEx
-import suiryc.scala.sys.Command
+import suiryc.scala.sys.{Command, CommandResult}
 
 
 class Device(val block: File) {
@@ -84,7 +84,7 @@ object Device
     } getOrElse {
       try {
         val dev = new File("/dev", block.getName())
-        val (result, stdout, stderr) = Command.execute(Seq("blockdev", "--getsz", dev.toString))
+        val CommandResult(result, stdout, stderr) = Command.execute(Seq("blockdev", "--getsz", dev.toString))
         if (result == 0) {
           EitherEx(Right(stdout.trim.toLong * 512))
         }
