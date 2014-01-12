@@ -15,6 +15,16 @@ import java.io.{
 import scala.sys.process._
 import suiryc.scala.misc.RichOptional._
 
+/** Command execution result. */
+case class CommandResult(
+  /** Exit code */
+  exitCode: Int,
+  /** Captured stdout, or empty string */
+  stdout: String,
+  /** Captured stderr, or empty string */
+  stderr: String
+)
+
 
 object Command
   extends Logging
@@ -32,8 +42,7 @@ object Command
    * @param printStderr      whether to print stderr
    * @param trim             whether to trim captured streams
    * @param skipResult       whether to not check return code
-   * @return a tuple with the return code, stdout and stderr contents (empty
-   *   unless captured)
+   * @return command result
    */
   def execute(
       cmd: Seq[String],
@@ -45,7 +54,7 @@ object Command
       printStderr: Boolean = false,
       trim: Boolean = true,
       skipResult: Boolean = true
-    ): (Int, String, String) =
+    ): CommandResult =
   {
     @annotation.tailrec
     def _filterOutput(
@@ -133,7 +142,7 @@ object Command
       )
     }
 
-    (result,
+    CommandResult(result,
       stdoutBuffer.toString.optional(trim, _.trim),
       stderrBuffer.toString.optional(trim, _.trim)
     )
