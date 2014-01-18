@@ -9,10 +9,12 @@ object SuirycScalaBuild
 
   lazy val log = project in file("log") dependsOn(core)
 
+  lazy val javaFX = project in file("javafx")
+
   lazy val root = Project(
     id = "suiryc-scala",
     base = file("."),
-    aggregate = Seq(core, log),
+    aggregate = Seq(core, log, javaFX),
     settings = Project.defaultSettings ++ Seq(
       publish := { },
       publishLocal := { }
