@@ -109,8 +109,13 @@ object PathFinder {
   def apply(base: String): PathFinder =
     new PathFinder(List(new SimplePathFilter(AllPassFileFilter)), true, Left(base))
 
-  implicit def pathFinder(base: String): PathFinder = PathFinder(base)
+  def apply(base: File): PathFinder =
+    PathFinder(base.getPath)
 
-  implicit def pathFinder(file: File): PathFinder = PathFinder(file.getPath)
+  implicit def pathFinder(base: String): PathFinder =
+    PathFinder(base)
+
+  implicit def pathFinder(file: File): PathFinder =
+    PathFinder(file.getPath)
 
 }
