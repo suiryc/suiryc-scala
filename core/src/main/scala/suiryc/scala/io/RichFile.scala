@@ -55,6 +55,12 @@ final class RichFile(val asFile: File) extends AnyVal
     }
   }
 
+  /**
+   * Deletes file/directory.
+   *
+   * @param recursive whether to process recursively
+   * @param onlyChildren whether to only delete children (if any) or root too
+   */
   def delete(recursive: Boolean = false, onlyChildren: Boolean = false): Unit =
   {
     @annotation.tailrec
