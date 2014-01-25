@@ -79,7 +79,7 @@ class SimpleFileFilter(val acceptFunction: File => Boolean)
 
 }
 
-/** File filter which accepts existing files. */
+/** File filter which accepts existing files/directories. */
 object ExistsFileFilter
   extends FileFilter
 {
@@ -88,7 +88,22 @@ object ExistsFileFilter
 
 }
 
-/** File filter which accepts directories only. */
+/**
+ * File filter which accepts regular files only.
+ * Links are followed.
+ */
+object RegularFileFilter
+  extends FileFilter
+{
+
+  def accept(file: File) = Files.isRegularFile(file.toPath)
+
+}
+
+/**
+ * File filter which accepts directories only.
+ * Links are followed.
+ */
 object DirectoryFileFilter
   extends FileFilter
 {
