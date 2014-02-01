@@ -51,14 +51,14 @@ object Command
   /** Command input/output stream. */
   class Stream[+T](val stream: T, val close: Boolean)
 
-  /**
-   * Creates command input stream.
-   *
-   * @param connect wheter to connect stdin
-   */
-  def input(connect: Boolean) =
-    if (connect) Some(new Stream(process.stdin, false))
-    else None
+  /** stdin as input stream */
+  val fromStdin = Some(new Stream(process.stdin, false))
+
+  /** stdout as output stream */
+  val toStdout = Some(new Stream(process.stdout, false))
+
+  /** stderr as output stream */
+  val toStderr = Some(new Stream(process.stderr, false))
 
   /**
    * Creates command input stream.
@@ -76,16 +76,6 @@ object Command
    */
   def input(bytes: Array[Byte]) =
     Some(new Stream(new ByteArrayInputStream(Util.wrapNull(bytes)), true))
-
-  /**
-   * Creates command output stream.
-   *
-   * @param err     wheter it is stderr or stdout
-   * @param connect wheter to connect stream
-   */
-  def output(err: Boolean, connect: Boolean) =
-    if (connect) Some(new Stream(if (err) process.stderr else process.stdout, false))
-    else None
 
   /**
    * Creates command output stream.
@@ -115,7 +105,7 @@ object Command
       cmd: Seq[String],
       workingDirectory: Option[File] = None,
       envf: Option[java.util.Map[String, String] => Unit] = None,
-      stdinSource: Option[Stream[InputStream]] = input(true),
+      stdinSource: Option[Stream[InputStream]] = fromStdin,
       stdoutSink: Iterable[Stream[OutputStream]] = None,
       captureStdout: Boolean = true,
       stderrSink: Iterable[Stream[OutputStream]] = None,
