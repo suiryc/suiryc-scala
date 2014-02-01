@@ -24,6 +24,19 @@ case class CommandResult(
   /** Captured stderr, or empty string */
   stderr: String
 )
+{
+
+  def toEither[F, S](failure: String => F, success: String => S): Either[F, S] =
+    if (exitCode == 0) Right(success(stdout))
+    else Left(failure(stderr))
+
+  def toEither(errorMessage: String): Either[Exception, String] =
+    toEither(
+      f => new Exception(s"$errorMessage: $f"),
+      s => s
+    )
+
+}
 
 
 object Command
