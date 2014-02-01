@@ -4,16 +4,21 @@ import grizzled.slf4j.Logging
 import java.io.{
   BufferedReader,
   BufferedWriter,
+  ByteArrayInputStream,
+  ByteArrayOutputStream,
   File,
   InputStream,
   InputStreamReader,
+  IOException,
   OutputStream,
   OutputStreamWriter,
   Reader,
   Writer
 }
-import scala.sys.process._
+import scala.sys.process
+import scala.sys.process.{BasicIO, Process, ProcessIO}
 import suiryc.scala.misc.RichOptional._
+import suiryc.scala.misc.Util
 
 /** Command execution result. */
 case class CommandResult(
@@ -43,16 +48,65 @@ object Command
   extends Logging
 {
 
+  /** Command input/output stream. */
+  class Stream[+T](val stream: T, val close: Boolean)
+
+  /**
+   * Creates command input stream.
+   *
+   * @param connect wheter to connect stdin
+   */
+  def input(connect: Boolean) =
+    if (connect) Some(new Stream(process.stdin, false))
+    else None
+
+  /**
+   * Creates command input stream.
+   *
+   * @param is    stream to connect
+   * @param close whether to close stream once finished
+   */
+  def input(is: InputStream, close: Boolean = true) =
+    Some(new Stream(is, close))
+
+  /**
+   * Creates command input stream.
+   *
+   * @param bytes bytes to send
+   */
+  def input(bytes: Array[Byte]) =
+    Some(new Stream(new ByteArrayInputStream(Util.wrapNull(bytes)), true))
+
+  /**
+   * Creates command output stream.
+   *
+   * @param err     wheter it is stderr or stdout
+   * @param connect wheter to connect stream
+   */
+  def output(err: Boolean, connect: Boolean) =
+    if (connect) Some(new Stream(if (err) process.stderr else process.stdout, false))
+    else None
+
+  /**
+   * Creates command output stream.
+   *
+   * @param os    stream to connect
+   * @param close whether to close stream once finished
+   */
+  def output(os: OutputStream, close: Boolean = true) =
+    Some(new Stream(os, close))
+
   /**
    * Executes system command.
    *
-   * @param cmd              command to perform
+   * @param cmd              command to execute
    * @param workingDirectory working directory
    * @param envf             environment callback
+   * @param stdinSource      command input
+   * @param stdoutSink       command stdout(s)
    * @param captureStdout    whether to capture stdout
-   * @param printStdout      whether to print stdout
+   * @param stderrSink       command stderr(s)
    * @param captureStderr    whether to capture stderr
-   * @param printStderr      whether to print stderr
    * @param trim             whether to trim captured streams
    * @param skipResult       whether to not check return code
    * @return command result
@@ -61,70 +115,81 @@ object Command
       cmd: Seq[String],
       workingDirectory: Option[File] = None,
       envf: Option[java.util.Map[String, String] => Unit] = None,
+      stdinSource: Option[Stream[InputStream]] = input(true),
+      stdoutSink: Iterable[Stream[OutputStream]] = None,
       captureStdout: Boolean = true,
-      printStdout: Boolean = false,
+      stderrSink: Iterable[Stream[OutputStream]] = None,
       captureStderr: Boolean = true,
-      printStderr: Boolean = false,
       trim: Boolean = true,
       skipResult: Boolean = true
     ): CommandResult =
   {
-    @annotation.tailrec
     def _filterOutput(
-      reader: Reader,
-      writer: Option[Writer],
-      buffer: Option[StringBuffer]
+      input: InputStream,
+      outputs: Iterable[Stream[OutputStream]]
     ) {
-      val tmp = new Array[Char](1024)
-      val read = reader.read(tmp)
-      if (read == -1) {
-        reader.close()
-        /* Notes:
-         *   - since we are using stdout/stderr as output, DO NOT close it
-         *   - since we are wrapping the output (BufferedWriter), DO flush it
-         */
-        writer foreach { _.flush() }
+      val buffer = new Array[Byte](1024)
+
+      Stream.continually(input.read(buffer)) takeWhile { read =>
+        read != -1
+      } foreach { read =>
+        outputs foreach { _.stream.write(buffer, 0, read) }
       }
-      else {
-        /* Note: using a mutable StringBuffer should be more efficient (compared
-         * to concatenating to an accumulator string). */
-        buffer foreach { _.append(tmp, 0, read) }
-        writer foreach { _.write(tmp, 0, read) }
-        _filterOutput(reader, writer, buffer)
+
+      input.close
+      outputs foreach { output =>
+        output.stream.flush
+        if (output.close) output.stream.close
       }
     }
 
-    def filterOutput(buffer: Option[StringBuffer], output: Option[OutputStream])
+    def filterOutput(sink: Iterable[Stream[OutputStream]], buffer: Option[StringBuffer])
       (input: InputStream)
     {
-      val reader = new BufferedReader(new InputStreamReader(input))
-      val writer = output map { output =>
-        new BufferedWriter(new OutputStreamWriter(output))
+      val tee = buffer map { _ =>
+        new Stream(new ByteArrayOutputStream(256), true)
       }
 
-      _filterOutput(reader, writer, buffer)
+      _filterOutput(input, sink ++ tee)
+
+      buffer map { buffer =>
+        buffer.append(tee.get.stream.toString)
+      }
     }
 
-    def handleOutput(
-        capture: Boolean,
-        buffer: StringBuffer,
-        print: Boolean,
-        output: OutputStream
-      ): (InputStream) => Unit =
-    {
-      /* Note: some programs appear to fail if output is closed, so trash it if
-       * necessary, but don't close it. */
-      if (!capture && print)
-        BasicIO.transferFully(_, output)
-      else
-        filterOutput(
-          if (capture) Some(buffer) else None,
-          if (print) Some(output) else None
-        )
+    def filterInput(input: Stream[InputStream], output: OutputStream) {
+      val buffer = new Array[Byte](1024)
+
+      @scala.annotation.tailrec
+      def loop {
+        val read = input.stream.read(buffer)
+        if (read == -1) {
+          if (input.close) input.stream.close
+          output.close
+        }
+        else {
+          output.write(buffer, 0, read)
+          /* flush will throw an exception once the process has terminated */
+          val available = try {
+            output.flush
+            true
+          }
+          catch {
+            case _: IOException => false
+          }
+          if (available) loop
+        }
+      }
+
+      loop
     }
 
-    val stdoutBuffer = new StringBuffer()
-    val stderrBuffer = new StringBuffer()
+    val stdoutBuffer =
+      if (captureStdout) Some(new StringBuffer())
+      else None
+    val stderrBuffer =
+      if (captureStderr) Some(new StringBuffer())
+      else None
     val process = envf map { f =>
       /* scala Process only handles adding variables, so - as Process - build
        * the java ProcessBuilder, and let callback adapt its environment.
@@ -135,29 +200,34 @@ object Command
       Process(jpb)
     } getOrElse(Process(cmd, workingDirectory))
     val io = new ProcessIO(
-      BasicIO.close,
-      handleOutput(captureStdout, stdoutBuffer, printStdout, stdout),
-      handleOutput(captureStderr, stderrBuffer, printStderr, stderr)
+      stdinSource.fold[OutputStream => Unit](BasicIO.close _)(input => filterInput(input, _)),
+      filterOutput(stdoutSink, stdoutBuffer),
+      filterOutput(stderrSink, stderrBuffer)
     )
     val result = process.run(io).exitValue
 
     if (!skipResult && (result != 0)) {
       trace(s"Command[$cmd] failed: code[$result]"
-        + (if (!printStdout && captureStdout) s" stdout[$stdoutBuffer]" else "")
-        + (if (!printStderr && captureStderr) s" stderr[$stderrBuffer]" else "")
+        + stdoutBuffer.fold("")(buffer => s" stdout[$buffer]")
+        + stderrBuffer.fold("")(buffer => s" stderr[$buffer]")
       )
       throw new RuntimeException("Nonzero exit value: " + result)
     }
     else {
       trace(s"Command[$cmd] result: code[$result]"
-        + (if (!printStdout && captureStdout) s" stdout[$stdoutBuffer]" else "")
-        + (if (!printStderr && captureStderr) s" stderr[$stderrBuffer]" else "")
+        + stdoutBuffer.fold("")(buffer => s" stdout[$buffer]")
+        + stderrBuffer.fold("")(buffer => s" stderr[$buffer]")
       )
     }
 
+    /* Process may have ended before consuming the whole input */
+    stdinSource foreach { input =>
+      if (input.close) input.stream.close
+    }
+
     CommandResult(result,
-      stdoutBuffer.toString.optional(trim, _.trim),
-      stderrBuffer.toString.optional(trim, _.trim)
+      stdoutBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim)),
+      stderrBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
     )
   }
 
