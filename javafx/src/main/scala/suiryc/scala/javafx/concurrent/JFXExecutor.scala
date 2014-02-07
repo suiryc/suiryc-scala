@@ -1,7 +1,18 @@
 package suiryc.scala.javafx.concurrent
 
+import akka.dispatch.{
+  DispatcherPrerequisites,
+  ExecutorServiceConfigurator,
+  ExecutorServiceFactory
+}
+import com.typesafe.config.Config
 import java.util.Collections
-import java.util.concurrent.{AbstractExecutorService, TimeUnit}
+import java.util.concurrent.{
+  AbstractExecutorService,
+  ExecutorService,
+  ThreadFactory,
+  TimeUnit
+}
 import scala.concurrent.{ExecutionContextExecutor, ExecutionContext}
 import scalafx.application.Platform
 
@@ -32,5 +43,17 @@ object JFXExecutorService extends AbstractExecutorService {
   def isTerminated = false
 
   def awaitTermination(l: Long, timeUnit: TimeUnit) = true
+
+}
+
+class JFXEventThreadExecutorServiceConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
+  extends ExecutorServiceConfigurator(config, prerequisites)
+{
+
+  private val f = new ExecutorServiceFactory {
+    def createExecutorService: ExecutorService = JFXExecutorService
+  }
+
+  def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = f
 
 }
