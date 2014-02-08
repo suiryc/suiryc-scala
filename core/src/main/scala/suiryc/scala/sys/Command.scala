@@ -15,6 +15,7 @@ import java.io.{
   Reader,
   Writer
 }
+import scala.collection.mutable
 import scala.sys.process
 import scala.sys.process.{BasicIO, Process, ProcessIO}
 import suiryc.scala.misc.RichOptional._
@@ -48,6 +49,16 @@ object Command
   extends Logging
 {
 
+  /** Command output type. */
+  object OutputType extends Enumeration {
+    /** stdout output */
+    val stdout = Value
+    /** stderr output */
+    val stderr = Value
+    /** stdout and stderr output */
+    val both = Value
+  }
+
   /** Command input/output stream. */
   class Stream[+T](val stream: T, val close: Boolean)
 
@@ -59,6 +70,53 @@ object Command
 
   /** stderr as output stream */
   val toStderr = Some(new Stream(process.stderr, false))
+
+  /** stdout sink added for each executed command */
+  private var extraStdoutSink = mutable.ListBuffer[Stream[OutputStream]]()
+
+  /** stderr sink added for each executed command */
+  private var extraStderrSink = mutable.ListBuffer[Stream[OutputStream]]()
+
+  /**
+   * Adds a stdout/stderr sink.
+   *
+   * @param os where the sink sends the output
+   */
+  def addExtraOutputSink(os: OutputStream, kind: OutputType.Value = OutputType.both) {
+    val sinks = kind match {
+      case OutputType.stdout => List(extraStdoutSink)
+      case OutputType.stderr => List(extraStderrSink)
+      case OutputType.both => List(extraStdoutSink, extraStderrSink)
+    }
+
+    sinks foreach { sink =>
+      sink += new Stream(os, false)
+    }
+  }
+
+  /**
+   * Removes a stdout/stderr sink.
+   *
+   * @param os where the sink was sending the output
+   */
+  def removeExtraOutputSink(os: OutputStream, kind: OutputType.Value = OutputType.both) {
+    def filter(sink: mutable.ListBuffer[Stream[OutputStream]]): mutable.ListBuffer[Stream[OutputStream]] =
+      sink filterNot { stream =>
+        stream.stream eq os
+      }
+
+    val sinks = kind match {
+      case OutputType.stdout =>
+        extraStdoutSink = filter(extraStdoutSink)
+
+      case OutputType.stderr =>
+        extraStderrSink = filter(extraStderrSink)
+
+      case OutputType.both =>
+        extraStdoutSink = filter(extraStdoutSink)
+        extraStderrSink = filter(extraStderrSink)
+    }
+  }
 
   /**
    * Creates command input stream.
@@ -191,8 +249,8 @@ object Command
     } getOrElse(Process(cmd, workingDirectory))
     val io = new ProcessIO(
       stdinSource.fold[OutputStream => Unit](BasicIO.close _)(input => filterInput(input, _)),
-      filterOutput(stdoutSink, stdoutBuffer),
-      filterOutput(stderrSink, stderrBuffer)
+      filterOutput(stdoutSink ++ extraStdoutSink, stdoutBuffer),
+      filterOutput(stderrSink ++ extraStderrSink, stderrBuffer)
     )
     val result = process.run(io).exitValue
 
