@@ -9,7 +9,7 @@ object SuirycScalaBuild
 
   lazy val log = project in file("log") dependsOn(core)
 
-  lazy val javaFX = project in file("javafx")
+  lazy val javaFX = project in file("javafx") dependsOn(core)
 
   lazy val root = Project(
     id = "suiryc-scala",
