@@ -3,7 +3,10 @@ package suiryc.scala.javafx.scene.control
 import scalafx.scene.control.TextArea
 import suiryc.scala.io.LineWriter
 
-
+/**
+ * Read-only text area that can receive lines (from log or other output) to
+ * append or prepend.
+ */
 class LogArea(append: Boolean = true)
   extends TextArea
   with LineWriter
