@@ -261,14 +261,14 @@ object Command
     if (!skipResult && (result != 0)) {
       trace(s"Command[$cmd] failed: code[$result]"
         + stdoutBuffer.fold("")(buffer => s" stdout[$stdoutResult]")
-        + stderrBuffer.fold("")(buffer => s" stderr[$stderrBuffer]")
+        + stderrBuffer.fold("")(buffer => s" stderr[$stderrResult]")
       )
       throw new RuntimeException("Nonzero exit value: " + result)
     }
     else {
       trace(s"Command[$cmd] result: code[$result]"
         + stdoutBuffer.fold("")(buffer => s" stdout[$stdoutResult]")
-        + stderrBuffer.fold("")(buffer => s" stderr[$stderrBuffer]")
+        + stderrBuffer.fold("")(buffer => s" stderr[$stderrResult]")
       )
     }
 
