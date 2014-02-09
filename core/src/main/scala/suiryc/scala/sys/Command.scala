@@ -253,18 +253,22 @@ object Command
       filterOutput(stderrSink ++ extraStderrSink, stderrBuffer)
     )
     val result = process.run(io).exitValue
+    val stdoutResult =
+      stdoutBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
+    val stderrResult =
+      stderrBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
 
     if (!skipResult && (result != 0)) {
       trace(s"Command[$cmd] failed: code[$result]"
-        + stdoutBuffer.fold("")(buffer => s" stdout[$buffer]")
-        + stderrBuffer.fold("")(buffer => s" stderr[$buffer]")
+        + stdoutBuffer.fold("")(buffer => s" stdout[$stdoutResult]")
+        + stderrBuffer.fold("")(buffer => s" stderr[$stderrBuffer]")
       )
       throw new RuntimeException("Nonzero exit value: " + result)
     }
     else {
       trace(s"Command[$cmd] result: code[$result]"
-        + stdoutBuffer.fold("")(buffer => s" stdout[$buffer]")
-        + stderrBuffer.fold("")(buffer => s" stderr[$buffer]")
+        + stdoutBuffer.fold("")(buffer => s" stdout[$stdoutResult]")
+        + stderrBuffer.fold("")(buffer => s" stderr[$stderrBuffer]")
       )
     }
 
@@ -273,10 +277,7 @@ object Command
       if (input.close) input.stream.close
     }
 
-    CommandResult(result,
-      stdoutBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim)),
-      stderrBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
-    )
+    CommandResult(result, stdoutResult, stderrResult)
   }
 
 }
