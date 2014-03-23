@@ -2,8 +2,9 @@ package suiryc.scala.sys.linux
 
 import grizzled.slf4j.Logging
 import java.io.File
-import java.nio.file.Paths
+import java.nio.file.{Files, Paths}
 import scala.io.Source
+import suiryc.scala.misc
 import suiryc.scala.sys.{Command, CommandResult}
 
 
@@ -20,19 +21,35 @@ class DevicePartition(val device: Device, val partNumber: Int)
   /* Note: UUID may be set or changed upon formatting partition */
   def uuid =
     try {
-      val CommandResult(result, stdout, stderr) = Command.execute(Seq("blkid", "-o", "value", "-s", "UUID", dev.toString))
+      /* Try a direct approach using 'blkid' (requires privileges) */
+      val CommandResult(result, stdout, stderr) = Command.execute(Seq("blkid", "-o", "value", "-s", "UUID", dev.getPath()))
       if ((result == 0) && (stdout.trim() != "")) {
         Right(stdout.trim)
       }
-      else if (stderr != "") {
-        val msg = s"Cannot get partition[$dev] UUID: $stderr"
-        error(msg)
-        Left(new Exception(msg))
-      }
       else {
-        val msg = s"Cannot get partition[$dev] UUID"
-        error(msg)
-        Left(new Exception(msg))
+        /* Fallback to indirect approach through '/dev/disk/by-uuid' */
+        val byUUID = Paths.get("/", "dev", "disk", "by-uuid")
+        val files =
+          if (!Files.isDirectory(byUUID)) Nil
+          else misc.Util.wrapNull(byUUID.toFile().listFiles()).toList
+        files find { file =>
+          file.getCanonicalPath() == dev.getPath()
+        } match {
+          case Some(file) =>
+            Right(file.getName())
+
+          case None =>
+            if (stderr != "") {
+              val msg = s"Cannot get partition[$dev] UUID: $stderr"
+              error(msg)
+              Left(new Exception(msg))
+            }
+            else {
+              val msg = s"Cannot get partition[$dev] UUID"
+              error(msg)
+              Left(new Exception(msg))
+            }
+        }
       }
     }
     catch {
@@ -49,7 +66,7 @@ class DevicePartition(val device: Device, val partNumber: Int)
     }
   }
 
-  def umount = Command.execute(Seq("umount", dev.toString()))
+  def umount = Command.execute(Seq("umount", dev.getPath()))
 
   override def toString =
     s"Partition(device=$device, partNumber=$partNumber, uuid=$uuid, size=$size)"
