@@ -39,16 +39,11 @@ class DevicePartition(val device: Device, val partNumber: Int)
             Right(file.getName())
 
           case None =>
-            if (stderr != "") {
-              val msg = s"Cannot get partition[$dev] UUID: $stderr"
-              error(msg)
-              Left(new Exception(msg))
-            }
-            else {
-              val msg = s"Cannot get partition[$dev] UUID"
-              error(msg)
-              Left(new Exception(msg))
-            }
+            val msg =
+              if (stderr != "") s"Cannot get partition[$dev] UUID: $stderr"
+              else s"Cannot get partition[$dev] UUID"
+            error(msg)
+            Left(new Exception(msg))
         }
       }
     }
