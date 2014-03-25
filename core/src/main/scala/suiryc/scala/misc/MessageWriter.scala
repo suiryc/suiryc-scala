@@ -1,11 +1,12 @@
 package suiryc.scala.misc
 
+import java.io.{PrintWriter, StringWriter}
 import suiryc.scala.io.LineWriter
 
 /** Writer expecting messages. */
 trait MessageWriter {
 
-  def write(level: MessageLevel.LevelValue, msg: String): Unit
+  def write(level: MessageLevel.LevelValue, msg: String, throwable: Option[Throwable]): Unit
 
 }
 
@@ -15,8 +16,15 @@ trait MessageLineWriter
   with LineWriter
 {
 
-  override def write(level: MessageLevel.LevelValue, msg: String) {
-    write(s"[${level.shortName}] $msg")
+  override def write(level: MessageLevel.LevelValue, msg: String, throwable: Option[Throwable]) {
+    val line = s"[${level.shortName}] $msg" +
+      throwable.fold { "" } { throwable =>
+        val writer = new StringWriter()
+        throwable.printStackTrace(new PrintWriter(writer))
+        System.lineSeparator + writer.toString().trim()
+      }
+
+    write(line)
   }
 
 }
