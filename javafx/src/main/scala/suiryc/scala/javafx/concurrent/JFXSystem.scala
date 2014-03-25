@@ -2,7 +2,9 @@ package suiryc.scala.javafx.concurrent
 
 import akka.actor.{Actor, ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.util.{Failure, Success}
 
 
 object JFXSystem {
@@ -14,6 +16,24 @@ object JFXSystem {
   val jfxActor = system.actorOf(Props[JFXActor].withDispatcher("suiryc.javafx.dispatcher"), "JavaFX-dispatcher")
 
   import system.dispatcher
+
+  def await[T](action: => T): T = {
+    val f = Future {
+      action
+    } (JFXExecutor.executor)
+
+    Await.ready(f, Duration.Inf).value match {
+      case None =>
+        /* should not happen */
+        throw new Exception("Awaited Future not ready")
+
+      case Some(Failure(ex)) =>
+        throw ex
+
+      case Some(Success(v)) =>
+        v
+    }
+  }
 
   def schedule(action: => Unit) =
     jfxActor ! { () => action }
