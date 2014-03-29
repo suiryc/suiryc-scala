@@ -71,6 +71,13 @@
             <groupId>org.clapper</groupId>
             <artifactId>grizzled-slf4j_2.10</artifactId>
             <version>1.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+            <version>1.2.0</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

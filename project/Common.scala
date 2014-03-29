@@ -7,6 +7,12 @@ object Common {
   val localMavenPath = Path.userHome.absolutePath + "/.m2/repository"
 
   val versions = Map[String, String](
+    "akka" -> "2.3.0",
+    "config" -> "1.2.0",
+    "grizzled" -> "1.0.1",
+    "logback" -> "1.1.1",
+    "scalafx" -> "8.0.0-R4",
+    "suiryc-scala" -> "0.0.1-SNAPSHOT",
     "maven-compiler-plugin" -> "3.1",
     "maven-surefire-plugin" -> "2.16",
     "scala-maven-plugin" -> "3.1.6"
@@ -16,7 +22,7 @@ object Common {
     org.scalastyle.sbt.ScalastylePlugin.Settings ++
     Seq(
       organization := "suiryc",
-      version := "0.0.1-SNAPSHOT",
+      version := versions("suiryc-scala"),
       scalaVersion := "2.10.3",
       scalacOptions ++= Seq("-deprecation", "-feature", "-optimize", "-unchecked", "-Yinline-warnings"),
       scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-implicits"),
