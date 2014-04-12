@@ -9,12 +9,14 @@ class PersistentProperty[T](val setting: PersistentSetting[T])
 {
 
   /* Set initial value */
-  update(setting())
+  reset()
 
   /* And save any value change */
   onChange { (_, _, newValue) =>
     setting.update(newValue)
   }
+
+  def reset() = update(setting())
 
 }
 
