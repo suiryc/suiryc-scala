@@ -6,5 +6,11 @@ import java.util.prefs.Preferences
 
 class BaseSettings(
   val config: Config,
-  val prefs: Preferences
-)
+  _prefs: Preferences
+) {
+
+  private val recreatable = new RecreatablePreferences(_prefs)
+
+  def prefs = recreatable.prefs
+
+}
