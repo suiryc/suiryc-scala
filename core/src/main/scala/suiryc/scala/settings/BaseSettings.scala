@@ -5,6 +5,6 @@ import java.util.prefs.Preferences
 
 
 class BaseSettings(
-  protected[settings] val config: Config,
-  protected[settings] val prefs: Preferences
+  val config: Config,
+  val prefs: Preferences
 )

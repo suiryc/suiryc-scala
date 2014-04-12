@@ -28,6 +28,42 @@ abstract class PersistentSetting[T]
 
 }
 
+class PersistentBooleanSetting(
+  protected val path: String,
+  protected val default: Boolean
+)(implicit val settings: BaseSettings)
+  extends PersistentSetting[Boolean]
+{
+
+  override protected def prefsValue(default: Boolean): Boolean =
+    settings.prefs.getBoolean(path, default)
+
+  override protected def configValue: Boolean =
+    settings.config.getBoolean(path)
+
+  def update(v: Boolean) =
+    settings.prefs.putBoolean(path, v)
+
+}
+
+class PersistentLongSetting(
+  protected val path: String,
+  protected val default: Long
+)(implicit val settings: BaseSettings)
+  extends PersistentSetting[Long]
+{
+
+  override protected def prefsValue(default: Long): Long =
+    settings.prefs.getLong(path, default)
+
+  override protected def configValue: Long =
+    settings.config.getLong(path)
+
+  def update(v: Long) =
+    settings.prefs.putLong(path, v)
+
+}
+
 class PersistentStringSetting(
   protected val path: String,
   protected val default: String
@@ -69,6 +105,12 @@ object PersistentSetting {
   import scala.language.implicitConversions
 
   implicit def toValue[T](p :PersistentSetting[T]): T = p()
+
+  def forBoolean(path: String, default: Boolean)(implicit settings: BaseSettings): PersistentSetting[Boolean] =
+    new PersistentBooleanSetting(path, default)
+
+  def forLong(path: String, default: Long)(implicit settings: BaseSettings): PersistentSetting[Long] =
+    new PersistentLongSetting(path, default)
 
   def forString(path: String, default: String)(implicit settings: BaseSettings): PersistentSetting[String] =
     new PersistentStringSetting(path, default)
