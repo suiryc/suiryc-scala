@@ -1,8 +1,9 @@
 package suiryc.scala.io
 
-import java.io.File
+import java.io.{File, PrintWriter}
 import java.nio.file.{Files, FileSystems, LinkOption, Path}
 import java.nio.file.attribute.PosixFileAttributeView
+import scala.io.Codec
 import scala.language.implicitConversions
 import suiryc.scala.misc
 
@@ -89,6 +90,23 @@ final class RichFile(val asFile: File) extends AnyVal
       }
 
     if (exists) loop(List(asFile), Nil, onlyChildren)
+  }
+
+  def read(): String =
+    SourceEx.autoCloseFile(asFile)(_.mkString)
+
+  def write(s: String)(implicit codec: Codec) {
+    write(s, codec.name)
+  }
+
+  def write(s: String, enc: String) {
+    val writer = new PrintWriter(asFile, enc)
+    try {
+      writer.write(s)
+    }
+    finally {
+      writer.close()
+    }
   }
 
 }
