@@ -4,6 +4,7 @@ import grizzled.slf4j.Logging
 import java.io.File
 import java.nio.file.{Files, Paths}
 import scala.io.Source
+import suiryc.scala.io.SourceEx
 import suiryc.scala.misc
 import suiryc.scala.sys.{Command, CommandResult}
 
@@ -52,12 +53,14 @@ class DevicePartition(val device: Device, val partNumber: Int)
         Left(e)
     }
 
-  def mounted = {
+  def mounted: Boolean = {
     val partitionUUID = uuid.fold(_ => "<unknown>", uuid => uuid)
-    Source.fromFile(Paths.get("/", "proc", "mounts").toFile()).getLines() map { line =>
-      line.trim().split("""\s""").head
-    } exists { line =>
-      (line == dev.toString()) || (line == s"/dev/disk/by-uuid/$partitionUUID")
+    SourceEx.autoCloseFile(Paths.get("/", "proc", "mounts").toFile()) { source =>
+      source.getLines() map { line =>
+        line.trim().split("""\s""").head
+      } exists { line =>
+        (line == dev.toString()) || (line == s"/dev/disk/by-uuid/$partitionUUID")
+      }
     }
   }
 

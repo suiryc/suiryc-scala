@@ -4,7 +4,7 @@ import grizzled.slf4j.Logging
 import java.io.File
 import java.nio.file.Paths
 import scala.io.Source
-import suiryc.scala.io.{NameFilter, PathFinder}
+import suiryc.scala.io.{NameFilter, PathFinder, SourceEx}
 import suiryc.scala.misc.EitherEx
 import suiryc.scala.sys.{Command, CommandResult}
 
@@ -22,18 +22,20 @@ class Device(val block: File) {
   val model =
     propertyContent(block, "device", "model") getOrElse "<unknown>"
 
-  val ueventProps = {
+  val ueventProps: Map[String, String] = {
     val uevent = Paths.get(block.toString(), "device", "uevent").toFile()
     val props = Map.empty[String, String]
 
     if (uevent.exists()) {
-      Source.fromFile(uevent).getLines().toList.foldLeft(props) { (props, line) =>
-        line match {
-          case KeyValueRegexp(key, value) =>
-            props + (key.trim() -> value.trim())
+      SourceEx.autoCloseFile(uevent) { source =>
+        source.getLines().toList.foldLeft(props) { (props, line) =>
+          line match {
+            case KeyValueRegexp(key, value) =>
+              props + (key.trim() -> value.trim())
 
-          case _ =>
-            props
+            case _ =>
+              props
+          }
         }
       }
     }
@@ -64,16 +66,18 @@ object Device
 
   private val KeyValueRegexp = """^([^=]*)=(.*)$""".r
 
-  def propertyContent(block: File, path: String*) = {
+  def propertyContent(block: File, path: String*): Option[String] = {
     val file = Paths.get(block.toString(), path: _*).toFile()
 
     Option(
-      if (file.exists()) 
-        Source.fromFile(file).getLines() map { line =>
-          line.trim()
-        } filterNot { line =>
-          line == ""
-        } mkString(" / ")
+      if (file.exists())
+        SourceEx.autoCloseFile(file) { source =>
+          source.getLines() map { line =>
+            line.trim()
+          } filterNot { line =>
+            line == ""
+          } mkString(" / ")
+        }
       else null
     )
   }
