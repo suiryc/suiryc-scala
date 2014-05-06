@@ -21,13 +21,26 @@ abstract class PersistentSetting[T]
   protected def removeValue() =
     settings.prefs.remove(path)
 
+  protected def prefsOption: Option[T] =
+    Option(settings.prefs.get(path, null)) match {
+      case Some(_) =>
+        Some(prefsValue(default))
+
+      case None =>
+        None
+    }
+
   protected def configOption: Option[T] =
     if (!settings.config.hasPath(path)) None
     else Some(configValue)
 
+  def option: Option[T] =
+    prefsOption orElse(configOption)
+
   def apply(): T =
-    /* XXX - more efficient way to check whether path exists and only use 'config' if not ? */
     prefsValue(configOption getOrElse(default))
+    /* XXX - more efficient way to check whether path exists and only use 'config' if not ? */
+    /*option getOrElse(default)*/
 
   def update(v: T): Unit =
     Option(v).fold {
