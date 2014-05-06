@@ -2,19 +2,19 @@ package suiryc.scala.sys.linux
 
 import grizzled.slf4j.Logging
 import java.io.File
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import scala.io.Source
 import suiryc.scala.io.{NameFilter, PathFinder, SourceEx}
 import suiryc.scala.misc.EitherEx
 import suiryc.scala.sys.{Command, CommandResult}
 
 
-class Device(val block: File) {
+class Device(val block: Path) {
   import Device._
   import PathFinder._
   import NameFilter._
 
-  val dev = new File("/dev", block.getName())
+  val dev = Paths.get("/dev").resolve(block.getFileName())
 
   val vendor =
     propertyContent(block, "device", "vendor") getOrElse "<unknown>"
@@ -49,10 +49,12 @@ class Device(val block: File) {
       removable.toInt != 0
     } getOrElse false
 
-  val partitions =
-    (block * s"""${dev.getName()}[0-9]+""".r).get map { path =>
-      new DevicePartition(this, path.getName().substring(dev.getName().length()).toInt)
+  val partitions = {
+    val devName = dev.getFileName().toString
+    (block * s"""${devName}[0-9]+""".r).get map { path =>
+      DevicePartition(this, path.getName().substring(devName.length()).toInt)
     }
+  }
 
   override def toString =
     s"Device(block=$block, vendor=$vendor, model=$model, ueventProps=$ueventProps)"
@@ -66,7 +68,7 @@ object Device
 
   private val KeyValueRegexp = """^([^=]*)=(.*)$""".r
 
-  def propertyContent(block: File, path: String*): Option[String] = {
+  def propertyContent(block: Path, path: String*): Option[String] = {
     val file = Paths.get(block.toString(), path: _*).toFile()
 
     Option(
@@ -82,12 +84,12 @@ object Device
     )
   }
 
-  def size(block: File): EitherEx[Throwable, Long] = {
+  def size(block: Path): EitherEx[Throwable, Long] = {
     propertyContent(block, "size") map { size =>
       EitherEx(Right(size.toLong * 512))
     } getOrElse {
       try {
-        val dev = new File("/dev", block.getName())
+        val dev = Paths.get("/dev").resolve(block.getFileName())
         val CommandResult(result, stdout, stderr) = Command.execute(Seq("blockdev", "--getsz", dev.toString))
         if (result == 0) {
           EitherEx(Right(stdout.trim.toLong * 512))
@@ -105,6 +107,10 @@ object Device
     }
   }
 
-  def apply(block: File): Device = new Device(block)
+  def apply(block: Path): Device =
+    new Device(block)
+
+  def apply(block: File): Device =
+    new Device(block.toPath())
 
 }
