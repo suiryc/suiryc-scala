@@ -19,20 +19,19 @@ class DevicePartition(val device: Device, val partNumber: Int)
 
   val size = Device.size(block)
 
-  /* Note: UUID may be set or changed upon formatting partition */
-  def uuid =
+  protected def blkid(tag: String): Either[Throwable, String] =
     try {
       /* Try a direct approach using 'blkid' (requires privileges) */
-      val CommandResult(result, stdout, stderr) = Command.execute(Seq("blkid", "-o", "value", "-s", "UUID", dev.getPath()))
-      if ((result == 0) && (stdout.trim() != "")) {
+      val CommandResult(result, stdout, stderr) = Command.execute(Seq("blkid", "-o", "value", "-s", tag.toUpperCase(), dev.getPath()))
+      if (result == 0) {
         Right(stdout.trim)
       }
       else {
-        /* Fallback to indirect approach through '/dev/disk/by-uuid' */
-        val byUUID = Paths.get("/", "dev", "disk", "by-uuid")
+        /* Fallback to indirect approach through '/dev/disk/by-tag' */
+        val byTAG = Paths.get("/", "dev", "disk", s"by-${tag.toLowerCase()}")
         val files =
-          if (!Files.isDirectory(byUUID)) Nil
-          else misc.Util.wrapNull(byUUID.toFile().listFiles()).toList
+          if (!Files.isDirectory(byTAG)) Nil
+          else misc.Util.wrapNull(byTAG.toFile().listFiles()).toList
         files find { file =>
           file.getCanonicalPath() == dev.getPath()
         } match {
@@ -41,8 +40,8 @@ class DevicePartition(val device: Device, val partNumber: Int)
 
           case None =>
             val msg =
-              if (stderr != "") s"Cannot get partition[$dev] UUID: $stderr"
-              else s"Cannot get partition[$dev] UUID"
+              if (stderr != "") s"Cannot get partition[$dev] ${tag.toLowerCase()}: $stderr"
+              else s"Cannot get partition[$dev] ${tag.toLowerCase()}"
             error(msg)
             Left(new Exception(msg))
         }
@@ -53,8 +52,15 @@ class DevicePartition(val device: Device, val partNumber: Int)
         Left(e)
     }
 
+  /* Note: UUID may be set or changed upon formatting partition */
+  def uuid: Either[Throwable, String] =
+    blkid("UUID").right.map(uuid => if (uuid == "") "<unknown-uuid>" else uuid)
+
+  def label: Either[Throwable, String] =
+    blkid("LABEL")
+
   def mounted: Boolean = {
-    val partitionUUID = uuid.fold(_ => "<unknown>", uuid => uuid)
+    val partitionUUID = uuid.fold(_ => "<unknown-uuid>", uuid => uuid)
     SourceEx.autoCloseFile(Paths.get("/", "proc", "mounts").toFile()) { source =>
       source.getLines() map { line =>
         line.trim().split("""\s""").head
