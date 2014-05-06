@@ -1,6 +1,7 @@
 package suiryc.scala.io
 
 import java.io.{File, FileFilter}
+import java.nio.file.Path
 import scala.language.implicitConversions
 
 class PathFinder protected(
@@ -112,10 +113,16 @@ object PathFinder {
   def apply(base: File): PathFinder =
     PathFinder(base.getPath)
 
+  def apply(base: Path): PathFinder =
+    PathFinder(base.toFile)
+
   implicit def pathFinder(base: String): PathFinder =
     PathFinder(base)
 
   implicit def pathFinder(file: File): PathFinder =
     PathFinder(file.getPath)
+
+  implicit def pathFinder(path: Path): PathFinder =
+    PathFinder(path.toFile())
 
 }
