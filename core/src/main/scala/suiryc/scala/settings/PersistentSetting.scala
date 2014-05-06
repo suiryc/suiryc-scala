@@ -16,6 +16,11 @@ abstract class PersistentSetting[T]
 
   protected def configValue: T
 
+  protected def updateValue(v: T): Unit
+
+  protected def removeValue() =
+    settings.prefs.remove(path)
+
   protected def configOption: Option[T] =
     if (!settings.config.hasPath(path)) None
     else Some(configValue)
@@ -24,7 +29,12 @@ abstract class PersistentSetting[T]
     /* XXX - more efficient way to check whether path exists and only use 'config' if not ? */
     prefsValue(configOption getOrElse(default))
 
-  def update(v: T): Unit
+  def update(v: T): Unit =
+    Option(v).fold {
+      removeValue()
+    } { v =>
+      updateValue(v)
+    }
 
 }
 
@@ -41,7 +51,7 @@ class PersistentBooleanSetting(
   override protected def configValue: Boolean =
     settings.config.getBoolean(path)
 
-  def update(v: Boolean) =
+  override protected def updateValue(v: Boolean) =
     settings.prefs.putBoolean(path, v)
 
 }
@@ -59,7 +69,7 @@ class PersistentLongSetting(
   override protected def configValue: Long =
     settings.config.getLong(path)
 
-  def update(v: Long) =
+  override protected def updateValue(v: Long) =
     settings.prefs.putLong(path, v)
 
 }
@@ -77,7 +87,7 @@ class PersistentStringSetting(
   override protected def configValue: String =
     settings.config.getString(path)
 
-  def update(v: String) =
+  override protected def updateValue(v: String) =
     settings.prefs.put(path, v)
 
 }
@@ -95,7 +105,7 @@ class PersistentEnumerationExSetting[T <: EnumerationEx](
   override protected def configValue: T#Value =
     enum(settings.config.getString(path))
 
-  def update(v: T#Value) =
+  override protected def updateValue(v: T#Value) =
     settings.prefs.put(path, v.toString)
 
 }
