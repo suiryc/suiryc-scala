@@ -59,6 +59,9 @@ class DevicePartition(val device: Device, val partNumber: Int)
   def label: Either[Throwable, String] =
     blkid("LABEL")
 
+  def fsType: Either[Throwable, String] =
+    blkid("TYPE")
+
   def mounted: Boolean = {
     val partitionUUID = uuid.fold(_ => "<unknown-uuid>", uuid => uuid)
     SourceEx.autoCloseFile(Paths.get("/", "proc", "mounts").toFile()) { source =>
