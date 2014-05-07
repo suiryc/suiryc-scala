@@ -1,5 +1,6 @@
 package suiryc.scala.util.matching
 
+import java.io.File
 import java.nio.file.Path
 import scala.io.Codec
 import scala.util.matching.Regex
@@ -32,7 +33,7 @@ object RegexReplacer {
     RegexReplacement(newContent, newContent != content)
   }
 
-  def inplace(path: Path, rrs: RegexReplacer*)(implicit codec: Codec) = {
+  def inplace(path: Path, rrs: RegexReplacer*)(implicit codec: Codec): Boolean = {
     val file = path.toFile
     val replacement = replace(file.read(), rrs:_*)
 
@@ -41,6 +42,9 @@ object RegexReplacer {
       true
     } else false
   }
+
+  def inplace(file: File, rrs: RegexReplacer*)(implicit codec: Codec): Boolean =
+    inplace(file.toPath, rrs:_*)
 
 }
 
