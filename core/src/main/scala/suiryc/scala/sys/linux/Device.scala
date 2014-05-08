@@ -4,7 +4,8 @@ import grizzled.slf4j.Logging
 import java.io.File
 import java.nio.file.{Path, Paths}
 import scala.io.Source
-import suiryc.scala.io.{NameFilter, PathFinder, SourceEx}
+import suiryc.scala.io.{AllPassFileFilter, NameFilter, PathFinder, SourceEx}
+import suiryc.scala.io.NameFilter._
 import suiryc.scala.misc.EitherEx
 import suiryc.scala.sys.{Command, CommandResult}
 
@@ -16,14 +17,18 @@ class Device(val block: Path) {
 
   val dev = Paths.get("/dev").resolve(block.getFileName())
 
+  protected def defaultVendor = "<unknown>"
+
   val vendor =
-    propertyContent(block, "device", "vendor") getOrElse "<unknown>"
+    propertyContent(block, "device", "vendor") getOrElse defaultVendor
+
+  protected def defaultModel = "<unknown>"
 
   val model =
-    propertyContent(block, "device", "model") getOrElse "<unknown>"
+    propertyContent(block, "device", "model") getOrElse defaultModel
 
   val ueventProps: Map[String, String] = {
-    val uevent = Paths.get(block.toString(), "device", "uevent").toFile()
+    val uevent = Paths.get(block.toString, "device", "uevent").toFile()
     val props = Map.empty[String, String]
 
     if (uevent.exists()) {
@@ -44,20 +49,40 @@ class Device(val block: Path) {
 
   val size = Device.size(block)
 
-  val removable =
-    propertyContent(block, "removable") map { removable =>
-      removable.toInt != 0
+  val readOnly =
+    propertyContent(block, "ro") map { v =>
+      v.toInt != 0
     } getOrElse false
+
+  val removable =
+    propertyContent(block, "removable") map { v =>
+      v.toInt != 0
+    } getOrElse false
+
+  protected[linux] def partitionInfix = ""
 
   val partitions = {
     val devName = dev.getFileName().toString
-    (block * s"""${devName}[0-9]+""".r).get map { path =>
-      DevicePartition(this, path.getName().substring(devName.length()).toInt)
+    (block * s"""${devName}${partitionInfix}[0-9]+""".r).get map { path =>
+      DevicePartition(this, path.getName().substring(devName.length() + partitionInfix.length()).toInt)
     }
   }
 
   override def toString =
     s"Device(block=$block, vendor=$vendor, model=$model, ueventProps=$ueventProps)"
+
+}
+
+
+class NetworkBlockDevice(override val block: Path)
+  extends Device(block)
+{
+
+  override protected def defaultVendor = "Network Block Device"
+
+  override protected def defaultModel = "Network Block Device"
+
+  override protected[linux] def partitionInfix = "p"
 
 }
 
@@ -69,7 +94,7 @@ object Device
   private val KeyValueRegexp = """^([^=]*)=(.*)$""".r
 
   def propertyContent(block: Path, path: String*): Option[String] = {
-    val file = Paths.get(block.toString(), path: _*).toFile()
+    val file = Paths.get(block.toString, path: _*).toFile()
 
     Option(
       if (file.exists())
@@ -107,10 +132,24 @@ object Device
     }
   }
 
+  def fromPartition(path: Path): Option[Device] = {
+    val sysBlock = Paths.get("/sys", "block")
+
+    if (path.startsWith(sysBlock))
+      Some(Device(path.getParent))
+    else {
+      val finder = PathFinder(sysBlock) * AllPassFileFilter * path.getFileName().toString
+      finder.get().headOption map(file => Device(file.toPath.getParent()))
+    }
+  }
+
   def apply(block: Path): Device =
-    new Device(block)
+    if (block.getFileName().toString.startsWith("nbd"))
+      new NetworkBlockDevice(block)
+    else
+      new Device(block)
 
   def apply(block: File): Device =
-    new Device(block.toPath())
+    Device(block.toPath())
 
 }

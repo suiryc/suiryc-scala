@@ -13,7 +13,7 @@ class DevicePartition(val device: Device, val partNumber: Int)
   extends Logging
 {
 
-  val block = device.block.resolve(Paths.get(device.block.getFileName().toString + partNumber))
+  val block = device.block.resolve(Paths.get(s"${device.block.getFileName()}${device.partitionInfix}${partNumber}"))
 
   val dev = device.dev.getParent().resolve(block.getFileName())
 
@@ -82,39 +82,15 @@ class DevicePartition(val device: Device, val partNumber: Int)
 
 object DevicePartition {
 
-  private val PathRegexp = """^([^0-9]+)([0-9]+)$""".r
-
   def apply(device: Device, partNumber: Int): DevicePartition =
     new DevicePartition(device, partNumber)
 
-  def apply(path: Path): DevicePartition = {
-    path.getFileName().toString match {
-      case PathRegexp(name, partNumber) =>
-        val pathParent = path.getParent()
-        val deviceBlock = pathParent.compareTo(Paths.get("/dev")) match {
-          case 0 =>
-            Paths.get("/sys", "block", name)
-
-          case _ =>
-            pathParent
-        }
-
-        val device = Device(deviceBlock)
-        DevicePartition(device, partNumber.toInt)
-
-      case _ =>
-        throw new Exception(s"Invalid partition path: $path")
+  def option(path: Path): Option[DevicePartition] =
+    Device.fromPartition(path) flatMap {device =>
+      device.partitions find { partition =>
+        partition.block.getFileName().toString == path.getFileName().toString
+      }
     }
-  }
-
-  def apply(path: File): DevicePartition =
-    apply(path.toPath())
-
-  def option(path: Path): Option[DevicePartition] = {
-    val part = DevicePartition(path)
-
-    part.device.partitions find(_.partNumber == part.partNumber)
-  }
 
   def option(path: File): Option[DevicePartition] =
     option(path.toPath())
