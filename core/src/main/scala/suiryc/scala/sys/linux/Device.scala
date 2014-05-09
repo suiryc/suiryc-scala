@@ -68,6 +68,9 @@ class Device(val block: Path) {
     }
   }
 
+  def partprobe() =
+    Command.execute(Seq("partprobe", dev.toString))
+
   override def toString =
     s"Device(block=$block, vendor=$vendor, model=$model, ueventProps=$ueventProps)"
 
