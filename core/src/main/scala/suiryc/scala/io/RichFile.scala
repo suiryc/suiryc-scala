@@ -2,7 +2,7 @@ package suiryc.scala.io
 
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, FileSystems, LinkOption, Path}
-import java.nio.file.attribute.PosixFileAttributeView
+import java.nio.file.attribute.{PosixFileAttributeView, PosixFilePermission}
 import scala.io.Codec
 import scala.language.implicitConversions
 import suiryc.scala.misc
@@ -54,6 +54,12 @@ final class RichFile(val asFile: File) extends AnyVal
         posix.setGroup(lookupService.lookupPrincipalByGroupName(group))
       }
     }
+  }
+
+  def changeMode(permissions: java.util.Set[PosixFilePermission]) {
+    val posix: PosixFileAttributeView = Files.getFileAttributeView(asFile.toPath,
+      classOf[PosixFileAttributeView], LinkOption.NOFOLLOW_LINKS)
+    posix.setPermissions(permissions)
   }
 
   /**
