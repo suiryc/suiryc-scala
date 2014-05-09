@@ -259,7 +259,7 @@ object Command
       stderrBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
 
     if (!skipResult && (result != 0)) {
-      trace(s"Command[$cmd] failed: code[$result]"
+      error(s"Command[$cmd] failed: code[$result]"
         + stdoutBuffer.fold("")(buffer => s" stdout[$stdoutResult]")
         + stderrBuffer.fold("")(buffer => s" stderr[$stderrResult]")
       )
