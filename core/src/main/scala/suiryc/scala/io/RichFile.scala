@@ -68,17 +68,18 @@ final class RichFile(val asFile: File) extends AnyVal
    * @param recursive whether to process recursively
    * @param onlyChildren whether to only delete children (if any) or root too
    */
-  def delete(recursive: Boolean = false, onlyChildren: Boolean = false): Unit =
+  def delete(recursive: Boolean = false, onlyChildren: Boolean = false): Boolean =
   {
     @annotation.tailrec
-    def loop(files: List[File], rest: List[File], onlyChildren: Boolean): Unit =
+    def loop(files: List[File], rest: List[File], onlyChildren: Boolean, success: Boolean): Boolean =
       files match {
         case Nil =>
           rest match {
             case Nil =>
+              success
+
             case head :: tail =>
-              head.delete()
-              loop(Nil, tail, false)
+              loop(Nil, tail, false, head.delete() & success)
           }
 
         case head :: tail =>
@@ -87,15 +88,17 @@ final class RichFile(val asFile: File) extends AnyVal
               misc.Util.wrapNull(head.listFiles).toList
             else
               Nil
-          val newRest = if (onlyChildren) rest
+          val (newRest, newSuccess) =
+            if (onlyChildren) (rest, success)
             else if (children.isEmpty) {
-              head.delete()
-              rest
-            } else head :: rest
-          loop(tail ::: children, newRest, false)
+              (rest, head.delete() & success)
+            }
+            else (head :: rest, success)
+          loop(tail ::: children, newRest, false, newSuccess)
       }
 
-    if (exists) loop(List(asFile), Nil, onlyChildren)
+    if (exists) loop(List(asFile), Nil, onlyChildren, true)
+    else true
   }
 
   def read(): String =
