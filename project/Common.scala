@@ -27,6 +27,7 @@ object Common {
       scalacOptions ++= Seq("-deprecation", "-feature", "-optimize", "-unchecked", "-Yinline-warnings"),
       scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-implicits"),
       org.scalastyle.sbt.PluginKeys.config := file("project/scalastyle-config.xml"),
+      resolvers += "Local Maven Repository" at "file://" + localMavenPath,
       publishMavenStyle := true,
       publishTo := Some(Resolver.file("file", new File(localMavenPath)))
     )
