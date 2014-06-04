@@ -5,9 +5,10 @@ import java.util.prefs.Preferences
 
 
 class BaseSettings(
-  val config: Config,
+  override val config: Config,
   _prefs: Preferences
-) {
+) extends BaseConfig(config)
+{
 
   private val recreatable = new RecreatablePreferences(_prefs)
 
