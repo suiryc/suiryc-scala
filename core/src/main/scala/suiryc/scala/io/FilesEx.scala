@@ -2,6 +2,7 @@ package suiryc.scala.io
 
 import grizzled.slf4j.Logging
 import java.nio.file.{Files, LinkOption, Path, StandardCopyOption}
+import java.nio.file.attribute.BasicFileAttributeView
 
 
 object FilesEx
@@ -71,6 +72,22 @@ object FilesEx
     debug(s"Copying source[$source] root[$sourceRoot] to[$targetRoot]")
 
     copy(sourceRoot, Some(source), targetRoot)
+  }
+
+  def setTimes(path: Path, times: FileTimes) {
+    if ((times.lastModified != null) || (times.creation != null) || (times.lastAccess != null)) {
+      /* If there is only the 'last modified' time, set it directly on 'File'.
+       * Otherwise change the file attributes.
+       */
+      if ((times.creation == null) && (times.lastAccess == null)) {
+        path.toFile.setLastModified(times.lastModified.toMillis)
+      }
+      else {
+        val attrView = Files.getFileAttributeView(path, classOf[BasicFileAttributeView])
+        attrView.setTimes(times.lastModified, times.lastAccess, times.creation)
+      }
+    }
+    /* else: no time to set */
   }
 
 }
