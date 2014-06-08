@@ -14,4 +14,16 @@ object PathsEx {
     }
     else Paths.get(path)
 
+  def filename(name: String) =
+    name.split("/").toList.reverse.head
+
+  def atomicName(name: String) =
+    /* keep filename */
+    filename(name).
+      /* without extension */
+      split("""\.""").reverse.tail.reverse.mkString(".")
+
+  def extension(name: String) =
+    name.split("""\.""").toList.reverse.head
+
 }
