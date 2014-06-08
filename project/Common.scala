@@ -32,7 +32,7 @@ object Common {
       publishTo := Some(Resolver.file("file", new File(localMavenPath)))
     )
 
-  def pomExtra(javaVersion: String = "1.7") = (
+  def pomExtra(javaVersion: String = "1.8") = (
   <properties>
     <encoding>UTF-8</encoding>
   </properties>

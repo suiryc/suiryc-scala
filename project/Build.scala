@@ -17,19 +17,19 @@ object SuirycScalaRootBuild
   lazy val coreFile = file("core")
   lazy val core = project.in(coreFile).settings(
     copyPomTask(coreFile),
-    pomExtra := Common.pomExtra("1.7")
+    pomExtra := Common.pomExtra()
   )
 
   lazy val logFile = file("log")
   lazy val log = project.in(logFile).dependsOn(core).settings(
     copyPomTask(logFile),
-    pomExtra := Common.pomExtra("1.7")
+    pomExtra := Common.pomExtra()
   )
 
   lazy val javaFXFile = file("javafx")
   lazy val javaFX = project.in(javaFXFile).dependsOn(core).settings(
     copyPomTask(javaFXFile),
-    pomExtra := Common.pomExtra("1.8")
+    pomExtra := Common.pomExtra()
   )
 
   lazy val root = Project(
