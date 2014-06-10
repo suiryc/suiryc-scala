@@ -17,13 +17,19 @@ object PathsEx {
   def filename(name: String) =
     name.split("/").toList.reverse.head
 
-  def atomicName(name: String) =
+  def atomicName(name: String): String =
     /* keep filename */
     filename(name).
       /* without extension */
       split("""\.""").reverse.tail.reverse.mkString(".")
 
-  def extension(name: String) =
+  def atomicName(path: Path): String =
+    atomicName(path.getFileName.toString)
+
+  def extension(name: String): String =
     name.split("""\.""").toList.reverse.head
+
+  def extension(path: Path): String =
+    extension(path.getFileName.toString)
 
 }
