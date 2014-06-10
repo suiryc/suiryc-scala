@@ -1,9 +1,23 @@
 package suiryc.scala.io
 
-import java.io.{InputStream, OutputStream}
+import java.io.{EOFException, InputStream, OutputStream}
 
 
 object IOStream {
+
+  /* XXX - move to 'RichInputStream' with implicit conversion ? */
+  def readFully(input: InputStream, b: Array[Byte], off: Int, len: Int): Int = {
+    @scala.annotation.tailrec
+    def loop(off: Int, len: Int, total: Int): Int =
+      if (len <= 0) total
+      else {
+        val actual = input.read(b, off, len)
+        if (actual == -1) throw new EOFException()
+        else loop(off + actual, len - actual, total + actual)
+      }
+
+    loop(off, len, 0)
+  }
 
   def transfer[T <: OutputStream](
     input: InputStream,
