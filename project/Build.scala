@@ -17,30 +17,28 @@ object SuirycScalaRootBuild
   lazy val coreFile = file("core")
   lazy val core = project.in(coreFile).settings(
     copyPomTask(coreFile),
-    pomExtra := Common.pomExtra()
+    pomExtra := Common.pomExtra
   )
 
   lazy val logFile = file("log")
   lazy val log = project.in(logFile).dependsOn(core).settings(
     copyPomTask(logFile),
-    pomExtra := Common.pomExtra()
+    pomExtra := Common.pomExtra
   )
 
   lazy val javaFXFile = file("javafx")
   lazy val javaFX = project.in(javaFXFile).dependsOn(core).settings(
     copyPomTask(javaFXFile),
-    pomExtra := Common.pomExtra()
+    pomExtra := Common.pomExtra
   )
 
   lazy val root = Project(
     id = "suiryc-scala",
     base = base,
     aggregate = Seq(core, log, javaFX),
-    settings = Project.defaultSettings ++ Seq(
+    settings = Project.defaultSettings ++ Common.settings ++ Seq(
       libraryDependencies := Seq.empty,
-      publishMavenStyle := true,
       publishArtifact in Compile := false,
-      publishTo := Some(Resolver.file("file", new File(Common.localMavenPath))),
       pomExtra := (
   <modules>
     <module>core</module>

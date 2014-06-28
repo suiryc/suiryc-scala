@@ -7,14 +7,15 @@ object Common {
   val localMavenPath = Path.userHome.absolutePath + "/.m2/repository"
 
   val versions = Map[String, String](
-    "akka" -> "2.3.0",
-    "config" -> "1.2.0",
-    "grizzled" -> "1.0.1",
-    "logback" -> "1.1.1",
-    "scalafx" -> "8.0.0-R4",
-    "suiryc-scala" -> "0.0.1-SNAPSHOT",
+    "java" -> "1.8",
+    "akka" -> "2.3.3",
+    "config" -> "1.2.1",
+    "grizzled" -> "1.0.2",
+    "logback" -> "1.1.2",
+    "scalafx" -> "8.0.5-R5",
+    "suiryc-scala" -> "0.0.2-SNAPSHOT",
     "maven-compiler-plugin" -> "3.1",
-    "maven-surefire-plugin" -> "2.16",
+    "maven-surefire-plugin" -> "2.17",
     "scala-maven-plugin" -> "3.1.6"
   )
 
@@ -23,7 +24,7 @@ object Common {
     Seq(
       organization := "suiryc",
       version := versions("suiryc-scala"),
-      scalaVersion := "2.10.3",
+      scalaVersion := "2.11.1",
       scalacOptions ++= Seq("-deprecation", "-feature", "-optimize", "-unchecked", "-Yinline-warnings"),
       scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-implicits"),
       org.scalastyle.sbt.PluginKeys.config := file("project/scalastyle-config.xml"),
@@ -32,7 +33,7 @@ object Common {
       publishTo := Some(Resolver.file("file", new File(localMavenPath)))
     )
 
-  def pomExtra(javaVersion: String = "1.8") = (
+  val pomExtra = (
   <properties>
     <encoding>UTF-8</encoding>
   </properties>
@@ -52,7 +53,6 @@ object Common {
             <arg>-optimize</arg>
             <arg>-unchecked</arg>
           </args>
-          <recompileMode>incremental</recompileMode>
         </configuration>
         <executions>
           <execution>
@@ -68,8 +68,8 @@ object Common {
         <artifactId>maven-compiler-plugin</artifactId>
         <version>{ versions("maven-compiler-plugin") }</version>
         <configuration>
-          <source>{ javaVersion }</source>
-          <target>{ javaVersion }</target>
+          <source>{ versions("java") }</source>
+          <target>{ versions("java") }</target>
         </configuration>
       </plugin>
       <plugin>

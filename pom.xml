@@ -1,14 +1,14 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>suiryc-scala</groupId>
-    <artifactId>suiryc-scala_2.10</artifactId>
+    <groupId>suiryc</groupId>
+    <artifactId>suiryc-scala_2.11</artifactId>
     <packaging>pom</packaging>
     <description>suiryc-scala</description>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
     <name>suiryc-scala</name>
     <organization>
-        <name>suiryc-scala</name>
+        <name>suiryc</name>
     </organization>
     <modules>
         <module>core</module>
