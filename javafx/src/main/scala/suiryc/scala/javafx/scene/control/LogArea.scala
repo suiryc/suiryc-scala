@@ -1,18 +1,22 @@
 package suiryc.scala.javafx.scene.control
 
-import scalafx.scene.control.TextArea
+import javafx.scene.control.TextArea
+import scala.beans.BeanProperty
 import suiryc.scala.io.LineWriter
 
 /**
  * Read-only text area that can receive lines (from log or other output) to
  * append or prepend.
  */
-class LogArea(append: Boolean = true)
+class LogArea
   extends TextArea
   with LineWriter
 {
 
-  editable = false
+  @BeanProperty
+  var append = true
+
+  setEditable(false)
 
   def appendLine(s: String) {
     val current = this.getText()

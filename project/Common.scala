@@ -12,7 +12,6 @@ object Common {
     "config" -> "1.2.1",
     "grizzled" -> "1.0.2",
     "logback" -> "1.1.2",
-    "scalafx" -> "8.0.5-R5",
     "suiryc-scala" -> "0.0.2-SNAPSHOT",
     "maven-compiler-plugin" -> "3.1",
     "maven-surefire-plugin" -> "2.17",

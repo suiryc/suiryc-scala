@@ -13,8 +13,8 @@ import java.util.concurrent.{
   ThreadFactory,
   TimeUnit
 }
+import javafx.application.Platform
 import scala.concurrent.{ExecutionContextExecutor, ExecutionContext}
-import scalafx.application.Platform
 
 
 /* See:

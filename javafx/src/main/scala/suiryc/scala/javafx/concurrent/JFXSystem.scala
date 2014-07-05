@@ -3,16 +3,19 @@ package suiryc.scala.javafx.concurrent
 import akka.actor.{Actor, ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
 import grizzled.slf4j.Logging
+import javafx.application.Platform
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success}
-import scalafx.application.Platform
 
 
 object JFXSystem
   extends Logging
 {
 
+  /* Note: Akka intercepts thrown exception inside JavaFX actor, thus no need to
+   * try/catch when doing 'action'.
+   */
   /* XXX - try/catch when doing 'action' inside JavaFX thread ? */
 
   protected case class Action(action: () => Unit)
