@@ -15,7 +15,7 @@ object JFXSystem
 
   /* XXX - try/catch when doing 'action' inside JavaFX thread ? */
 
-  type Action = () => Unit
+  protected case class Action(action: () => Unit)
 
   protected val specificConfig = ConfigFactory.load().getConfig("suiryc.javafx")
   protected val warnReentrant = specificConfig.getBoolean("system.warn-reentrant")
@@ -67,20 +67,20 @@ object JFXSystem
       if (logReentrant) reentrant()
       action
     }
-    else jfxActor ! { () => action }
+    else jfxActor ! Action { () => action }
   }
 
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(action: => Unit) =
-    system.scheduler.schedule(initialDelay, interval, jfxActor, { () => action })
+    system.scheduler.schedule(initialDelay, interval, jfxActor, Action { () => action })
 
   def scheduleOnce(delay: FiniteDuration)(action: => Unit) =
-    system.scheduler.scheduleOnce(delay, jfxActor, { () => action })
+    system.scheduler.scheduleOnce(delay, jfxActor, Action { () => action })
 
   private class JFXActor extends Actor {
 
     override def receive = {
-      case action: Action =>
-        action()
+      case msg: Action =>
+        msg.action()
     }
 
   }
