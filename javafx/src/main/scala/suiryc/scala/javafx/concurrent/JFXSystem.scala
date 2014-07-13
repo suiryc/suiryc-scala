@@ -23,7 +23,7 @@ object JFXSystem
   protected val specificConfig = ConfigFactory.load().getConfig("suiryc.javafx")
   protected val warnReentrant = specificConfig.getBoolean("system.warn-reentrant")
 
-  protected val config = specificConfig.withFallback(ConfigFactory.load())
+  val config = specificConfig.withFallback(ConfigFactory.load())
   protected val system = ActorSystem("javafx", config)
   protected val jfxActor = system.actorOf(Props[JFXActor].withDispatcher("suiryc.javafx.dispatcher"), "JavaFX-dispatcher")
 
