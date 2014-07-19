@@ -81,6 +81,6 @@ class LogArea
 
 object LogArea {
 
-  protected val system = ActorSystem("javafx-logarea", JFXSystem.config)
+  protected val system = ActorSystem("suiryc-javafx-logarea", JFXSystem.config)
 
 }
