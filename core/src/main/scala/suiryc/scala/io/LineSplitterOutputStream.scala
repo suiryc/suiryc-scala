@@ -16,17 +16,26 @@ class LineSplitterOutputStream(
 ) extends OutputStream
 {
 
+  /* Note: once flushed, the charset decoder *must not* be used again.
+   * Thus:
+   *  - only flush it upon closing the stream
+   *  - stream 'flush' does nothing, and needs not be overridden
+   *  - drop anything written after closing the stream
+   */
+
   protected var closed = false
   protected val decoder = charset.newDecoder
   protected val charBuffer = CharBuffer.allocate(1024)
   protected var line = new StringBuilder()
 
   override def write(b: Int) {
-    write(List[Byte](b.asInstanceOf[Byte]).toArray)
+    if (!closed)
+      write(List[Byte](b.asInstanceOf[Byte]).toArray)
   }
 
   override def write(b: Array[Byte], off: Int, len: Int) {
-    process(ByteBuffer.wrap(b, off, len), false)
+    if (!closed)
+      process(ByteBuffer.wrap(b, off, len), false)
   }
 
   override def close {
@@ -41,16 +50,14 @@ class LineSplitterOutputStream(
     def loop(f: => CoderResult) {
       val result = f
 
-      if (charBuffer.position > 0) {
+      if (charBuffer.position > 0)
         process(flush)
-      }
       if (result.isOverflow) loop(f)
     }
 
     loop(decoder.decode(bb, charBuffer, flush))
-    if (flush) {
+    if (flush)
       loop(decoder.flush(charBuffer))
-    }
   }
 
   protected def process(flush: Boolean) {
@@ -59,9 +66,8 @@ class LineSplitterOutputStream(
     val array = charBuffer.array
 
     def output {
-      if (line.endsWith("\r")) {
+      if (line.endsWith("\r"))
         line.setLength(line.length - 1)
-      }
       writer.write(line.toString)
       line.clear
     }
@@ -69,14 +75,19 @@ class LineSplitterOutputStream(
     @scala.annotation.tailrec
     def loop(offset: Int) {
       if (offset < charBuffer.position) {
-        val nextOffset = 
-          if (flush) array.length
-          else array.indexOf('\n', offset)
+        val nextOffset = {
+          val v = array.indexOf('\n', offset)
+          if ((v >= 0) || !flush) v
+          else charBuffer.position
+        }
 
         if (nextOffset >= 0) {
           line.appendAll(array, offset, nextOffset - offset)
           output
           loop(nextOffset + 1)
+        }
+        else {
+          line.appendAll(array, offset, charBuffer.position - offset)
         }
       }
     }
