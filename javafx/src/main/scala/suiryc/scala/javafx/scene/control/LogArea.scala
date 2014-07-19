@@ -32,7 +32,7 @@ class LogArea
    */
   protected val actor = system.actorOf(Props(new LogAreaActor))
 
-  lazy val msgWriter: MessageWriter with LineWriter =
+  lazy val msgWriter: MessageLineWriter =
     new LogAreaWriter
 
   override def write(line: String) {
