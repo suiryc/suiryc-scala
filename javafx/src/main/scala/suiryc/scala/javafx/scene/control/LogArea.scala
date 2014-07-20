@@ -5,7 +5,7 @@ import javafx.scene.control.TextArea
 import scala.beans.BeanProperty
 import suiryc.scala.io.LineWriter
 import suiryc.scala.javafx.concurrent.JFXSystem
-import suiryc.scala.misc.{MessageLineWriter, MessageWriter}
+import suiryc.scala.misc.ThresholdMessageLineWriter
 
 /**
  * Read-only text area that can receive lines (from log or other output) to
@@ -32,14 +32,16 @@ class LogArea
    */
   protected val actor = system.actorOf(Props(new LogAreaActor))
 
-  lazy val msgWriter: MessageLineWriter =
+  lazy val msgWriter: ThresholdMessageLineWriter =
     new LogAreaWriter
 
   override def write(line: String) {
     actor ! line
   }
 
-  private class LogAreaWriter extends MessageLineWriter {
+  private class LogAreaWriter
+    extends ThresholdMessageLineWriter
+  {
 
     override def write(line: String) =
       logArea.write(line)

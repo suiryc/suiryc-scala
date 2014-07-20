@@ -10,6 +10,23 @@ trait MessageWriter {
 
 }
 
+trait ThresholdMessageWriter
+  extends MessageWriter
+{
+
+  protected var threshold: MessageLevel.Value = MessageLevel.TRACE
+
+  def setThreshold(level: MessageLevel.Value) {
+    threshold = level
+  }
+
+  abstract override def write(level: MessageLevel.Value, msg: String, throwable: Option[Throwable]) {
+    if (level.id >= threshold.id)
+      super.write(level, msg, throwable)
+  }
+
+}
+
 /** Default implementation formatting message to a line. */
 trait MessageLineWriter
   extends MessageWriter
@@ -28,3 +45,7 @@ trait MessageLineWriter
   }
 
 }
+
+trait ThresholdMessageLineWriter
+  extends MessageLineWriter
+  with ThresholdMessageWriter
