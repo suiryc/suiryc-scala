@@ -1,5 +1,6 @@
 package suiryc.scala.settings
 
+import suiryc.scala.misc.{Enumeration => sEnumeration}
 import suiryc.scala.misc.EnumerationEx
 
 
@@ -123,6 +124,24 @@ class PersistentEnumerationExSetting[T <: EnumerationEx](
 
 }
 
+class PersistentSEnumerationSetting[T <: sEnumeration](
+  protected val path: String,
+  protected val default: T#Value
+)(implicit val settings: BaseSettings, enum: T)
+  extends PersistentSetting[T#Value]
+{
+
+  override protected def prefsValue(default: T#Value): T#Value =
+    enum.withName(settings.prefs.get(path, default.toString))
+
+  override protected def configValue: T#Value =
+    enum.withName(settings.config.getString(path))
+
+  override protected def updateValue(v: T#Value) =
+    settings.prefs.put(path, v.toString)
+
+}
+
 object PersistentSetting {
 
   import scala.language.implicitConversions
@@ -140,5 +159,8 @@ object PersistentSetting {
 
   def forEnumerationEx[T <: EnumerationEx](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T): PersistentSetting[T#Value] =
     new PersistentEnumerationExSetting[T](path, default)
+
+  def forSEnumeration[T <: sEnumeration](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T): PersistentSetting[T#Value] =
+    new PersistentSEnumerationSetting[T](path, default)
 
 }

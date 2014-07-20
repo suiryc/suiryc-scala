@@ -3,19 +3,21 @@ package suiryc.scala.misc
 
 object MessageLevel extends Enumeration {
 
-  sealed trait LevelValue extends Value {
-    val shortName: String
+  import Enumeration._
+
+  override protected val caseSensitive = false
+
+  case class Value(name: String, shortName: String)
+    extends BaseValue
+    with Aliased
+  {
+    override val aliases = List(shortName)
   }
 
-  private def levelValue(short: String) =
-    new Val with LevelValue {
-      val shortName = short
-    }
-
-  val TRACE = levelValue("TRC")
-  val DEBUG = levelValue("DBG")
-  val INFO = levelValue("INF")
-  val WARNING = levelValue("WRN")
-  val ERROR = levelValue("ERR")
+  val TRACE = Value("TRACE", "TRC")
+  val DEBUG = Value("DEBUG", "DBG")
+  val INFO = Value("INFO", "INF")
+  val WARNING = Value("WARNING", "WRN")
+  val ERROR = Value("ERROR", "ERR")
 
 }
