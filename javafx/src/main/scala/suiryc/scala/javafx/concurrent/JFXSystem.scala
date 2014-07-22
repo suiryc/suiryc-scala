@@ -1,12 +1,13 @@
 package suiryc.scala.javafx.concurrent
 
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, Props}
 import com.typesafe.config.ConfigFactory
 import grizzled.slf4j.Logging
 import javafx.application.Platform
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success}
+import suiryc.scala.akka.CoreSystem
 
 
 object JFXSystem
@@ -20,12 +21,10 @@ object JFXSystem
 
   protected case class Action(action: () => Unit)
 
-  protected val specificConfig = ConfigFactory.load().getConfig("suiryc.javafx")
-  protected val warnReentrant = specificConfig.getBoolean("system.warn-reentrant")
-
-  val config = specificConfig.withFallback(ConfigFactory.load())
-  protected val system = ActorSystem("suiryc-javafx", config)
-  protected val jfxActor = system.actorOf(Props[JFXActor].withDispatcher("suiryc.javafx.dispatcher"), "JavaFX-dispatcher")
+  val config = CoreSystem.config.getConfig("javafx")
+  protected val warnReentrant = config.getBoolean("system.warn-reentrant")
+  protected val system = CoreSystem.system
+  protected val jfxActor = system.actorOf(Props[JFXActor].withDispatcher("javafx.dispatcher"), "JavaFX-dispatcher")
 
   import system.dispatcher
 

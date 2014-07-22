@@ -1,8 +1,9 @@
 package suiryc.scala.javafx.scene.control
 
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, Props}
 import javafx.scene.control.TextArea
 import scala.beans.BeanProperty
+import suiryc.scala.akka.CoreSystem
 import suiryc.scala.io.LineWriter
 import suiryc.scala.javafx.concurrent.JFXSystem
 import suiryc.scala.misc.ThresholdMessageLineWriter
@@ -19,14 +20,13 @@ class LogArea
   @BeanProperty
   var append = true
 
-  import LogArea._
-
   setEditable(false)
 
   /* Note: JavaFX thread CPU usage may reach limit when updating on each change.
    * So limit the refresh rate to 10 times per second. 
    */
 
+  protected val system = CoreSystem.system
   /* Note: we need to give the creator function because the actor is tied to
    * this class instance (hence no default ctor available for Props).
    */
@@ -78,11 +78,5 @@ class LogArea
     }
 
   }
-
-}
-
-object LogArea {
-
-  protected val system = ActorSystem("suiryc-javafx-logarea", JFXSystem.config)
 
 }

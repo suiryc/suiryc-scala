@@ -1,10 +1,11 @@
 package suiryc.scala.log
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.spi.{ILoggingEvent, ThrowableProxy}
 import ch.qos.logback.core.AppenderBase
 import com.typesafe.config.ConfigFactory
+import suiryc.scala.akka.CoreSystem
 import suiryc.scala.misc.{MessageLevel, MessageWriter}
 
 
@@ -14,8 +15,9 @@ class ProxyAppender(_writers: Seq[MessageWriter] = Seq.empty, async: Boolean = f
 
   protected var writers = _writers.toSet
 
+  protected val system = CoreSystem.system
   protected val actor: ActorRef =
-    if (async) ProxyAppender.system.actorOf(Props(new ProxyActor))
+    if (async) system.actorOf(Props(new ProxyActor).withDispatcher("log.dispatcher"))
     else null
 
 
@@ -81,15 +83,5 @@ class ProxyAppender(_writers: Seq[MessageWriter] = Seq.empty, async: Boolean = f
     }
 
   }
-
-}
-
-object ProxyAppender {
-
-  protected val specificConfig = ConfigFactory.load().getConfig("suiryc.log")
-
-  val config = specificConfig.withFallback(ConfigFactory.load())
-
-  protected val system = ActorSystem("suiryc-log-proxyappender", config)
 
 }
