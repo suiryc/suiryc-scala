@@ -11,7 +11,7 @@ object Stages
   extends Logging
 {
 
-  def trackMinimumDimensions(stage: Stage) {
+  def trackMinimumDimensions(stage: Stage, size: Option[(Double, Double)] = None) {
     val title = stage.getTitle
 
     /* After show(), the stage dimension returned by JavaFX does not seem to
@@ -26,8 +26,9 @@ object Stages
      *  - when stage is not yet showing, initial stage value is NaN and
      *    scene is 0; actual initial value is set upon first observed change
      */
-    def trackMinimumDimension(label: String, stageMinProp: DoubleProperty,
-      stageProp: ReadOnlyDoubleProperty, sceneProp: ReadOnlyDoubleProperty)
+    def trackMinimumDimension(label: String, setStageMin: Double => Unit,
+      stageProp: ReadOnlyDoubleProperty, sceneProp: ReadOnlyDoubleProperty,
+      setStageValue: Double => Unit, endValue: Option[Double])
     {
       import scala.concurrent.duration._
 
@@ -36,7 +37,7 @@ object Stages
 
       logger trace(s"Initial '$title' minimum $label stage[$stageValue] scene[$sceneValue]")
       if (!stageValue.isNaN())
-        stageMinProp.set(stageValue)
+        setStageMin(stageValue)
       if ((stageProp.get() <= sceneValue) || stageValue.isNaN()) {
         val changeListener = new ChangeListener[Number] {
           override def changed(arg0: ObservableValue[_ <: Number], arg1: Number, arg2: Number) {
@@ -48,7 +49,11 @@ object Stages
             if ((sceneProp.get() == sceneValue) && (stageProp.get() > sceneValue)) {
               logger trace(s"Retained '$title' minimum $label stage[${stageProp.get()}] scene[${sceneProp.get()}]")
               stageProp.removeListener(this)
-              stageMinProp.set(stageProp.get())
+              setStageMin(stageProp.get())
+              endValue foreach { v =>
+                if (v >= stageProp.get())
+                  setStageValue(v)
+              }
             }
           }
         }
@@ -60,8 +65,8 @@ object Stages
       }
     }
 
-    trackMinimumDimension("width", stage.minWidthProperty, stage.widthProperty, stage.getScene().widthProperty)
-    trackMinimumDimension("height", stage.minHeightProperty, stage.heightProperty, stage.getScene().heightProperty)
+    trackMinimumDimension("width", stage.setMinWidth, stage.widthProperty, stage.getScene().widthProperty, stage.setWidth, size.map(_._1))
+    trackMinimumDimension("height", stage.setMinHeight, stage.heightProperty, stage.getScene().heightProperty, stage.setHeight, size.map(_._2))
   }
 
 }
