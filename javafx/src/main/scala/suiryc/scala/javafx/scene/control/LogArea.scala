@@ -20,7 +20,7 @@ class LogArea
   @BeanProperty
   protected var append = true
 
-  protected var pattern = "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{48} - %msg"
+  protected var pattern = "%d{HH:mm:ss.SSS} %-5level %logger{24} - %msg"
 
   def setPattern(pattern: String) {
     this.pattern = pattern
