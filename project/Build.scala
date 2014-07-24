@@ -27,7 +27,7 @@ object SuirycScalaRootBuild
   )
 
   lazy val javaFXFile = file("javafx")
-  lazy val javaFX = project.in(javaFXFile).dependsOn(core).settings(
+  lazy val javaFX = project.in(javaFXFile).dependsOn(core, log).settings(
     copyPomTask(javaFXFile),
     pomExtra := Common.pomExtra
   )

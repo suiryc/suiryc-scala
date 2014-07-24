@@ -3,8 +3,8 @@ Common.settings
 name := "suiryc-scala-log"
 
 libraryDependencies ++= Seq(
-  "ch.qos.logback" % "logback-core" % Common.versions("logback") % "provided",
+  "com.typesafe.akka" %% "akka-actor" % Common.versions("akka") % "provided",
   "ch.qos.logback" % "logback-classic" % Common.versions("logback") % "provided",
-  "com.typesafe.akka" %% "akka-actor" % Common.versions("akka") % "provided"
+  "ch.qos.logback" % "logback-core" % Common.versions("logback") % "provided"
 )
 

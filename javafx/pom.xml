@@ -72,15 +72,32 @@
             <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
+            <groupId>suiryc</groupId>
+            <artifactId>suiryc-scala-log_2.11</artifactId>
+            <version>0.0.2-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-actor_2.11</artifactId>
+            <version>2.3.3</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>org.clapper</groupId>
             <artifactId>grizzled-slf4j_2.11</artifactId>
             <version>1.0.2</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.11</artifactId>
-            <version>2.3.3</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.1.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.1.2</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -1,10 +1,12 @@
 package suiryc.scala.log
 
-import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.{Level, LoggerContext}
 import org.slf4j.LoggerFactory
 
 
-object Logger {
+object Loggers {
+
+  val loggerContext  = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
 
   /** Sets root logger level. */
   def setLevel(level: Level) {

@@ -67,12 +67,6 @@
             <version>2.11.1</version>
         </dependency>
         <dependency>
-            <groupId>org.clapper</groupId>
-            <artifactId>grizzled-slf4j_2.11</artifactId>
-            <version>1.0.2</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-actor_2.11</artifactId>
             <version>2.3.3</version>
@@ -82,6 +76,12 @@
             <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
             <version>1.2.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.clapper</groupId>
+            <artifactId>grizzled-slf4j_2.11</artifactId>
+            <version>1.0.2</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

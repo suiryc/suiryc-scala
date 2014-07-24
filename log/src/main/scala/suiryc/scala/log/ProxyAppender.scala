@@ -1,15 +1,12 @@
 package suiryc.scala.log
 
 import akka.actor.{Actor, ActorRef, Props}
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.spi.{ILoggingEvent, ThrowableProxy}
+import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.AppenderBase
-import com.typesafe.config.ConfigFactory
 import suiryc.scala.akka.CoreSystem
-import suiryc.scala.misc.{MessageLevel, MessageWriter}
 
 
-class ProxyAppender(_writers: Seq[MessageWriter] = Seq.empty, async: Boolean = false)
+class ProxyAppender(_writers: Seq[LogWriter] = Seq.empty, async: Boolean = false)
   extends AppenderBase[ILoggingEvent]
 {
 
@@ -30,48 +27,30 @@ class ProxyAppender(_writers: Seq[MessageWriter] = Seq.empty, async: Boolean = f
     else write(writers, event)
   }
 
-  def addWriter(writer: MessageWriter) {
+  def addWriter(writer: LogWriter) {
     if (async) actor ! AddWriter(writer)
     else writers += writer
   }
 
-  def removeWriter(writer: MessageWriter) {
+  def removeWriter(writer: LogWriter) {
     if (async) actor ! RemoveWriter(writer)
     else writers -= writer
   }
 
-  @inline private def write(writers: Set[MessageWriter], event: ILoggingEvent) {
-    if (!writers.isEmpty) {
-      val msg = event.getMessage
-      val level = event.getLevel.levelInt match {
-        case Level.TRACE_INT => MessageLevel.TRACE
-        case Level.DEBUG_INT => MessageLevel.DEBUG
-        case Level.INFO_INT => MessageLevel.INFO
-        case Level.WARN_INT => MessageLevel.WARNING
-        case Level.ERROR_INT => MessageLevel.ERROR
-      }
-      val throwable = event.getThrowableProxy() match {
-        case p: ThrowableProxy =>
-          Some(p.getThrowable())
-
-        case _ =>
-          None
-      }
-
-      writers foreach { writer =>
-        writer.write(level, msg, throwable)
-      }
+  @inline private def write(writers: Set[LogWriter], event: ILoggingEvent) {
+    writers foreach { writer =>
+      writer.write(event)
     }
   }
 
-  private case class AddWriter(writer: MessageWriter)
-  private case class RemoveWriter(writer: MessageWriter)
+  private case class AddWriter(writer: LogWriter)
+  private case class RemoveWriter(writer: LogWriter)
 
   private class ProxyActor extends Actor {
 
     override def receive = proxy(writers.toSet)
 
-    def proxy(writers: Set[MessageWriter]): Receive = {
+    def proxy(writers: Set[LogWriter]): Receive = {
       case event: ILoggingEvent =>
         write(writers, event)
 

@@ -6,7 +6,7 @@ import scala.beans.BeanProperty
 import suiryc.scala.akka.CoreSystem
 import suiryc.scala.io.LineWriter
 import suiryc.scala.javafx.concurrent.JFXSystem
-import suiryc.scala.misc.ThresholdMessageLineWriter
+import suiryc.scala.log.ThresholdLogLinePatternWriter
 
 /**
  * Read-only text area that can receive lines (from log or other output) to
@@ -18,7 +18,16 @@ class LogArea
 { logArea =>
 
   @BeanProperty
-  var append = true
+  protected var append = true
+
+  protected var pattern = "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{48} - %msg"
+
+  def setPattern(pattern: String) {
+    this.pattern = pattern
+    msgWriter.setPattern(pattern)
+  }
+
+  def getPattern() = pattern
 
   setEditable(false)
 
@@ -32,7 +41,7 @@ class LogArea
    */
   protected val actor = system.actorOf(Props(new LogAreaActor))
 
-  lazy val msgWriter: ThresholdMessageLineWriter =
+  lazy val msgWriter: ThresholdLogLinePatternWriter =
     new LogAreaWriter
 
   override def write(line: String) {
@@ -40,8 +49,10 @@ class LogArea
   }
 
   private class LogAreaWriter
-    extends ThresholdMessageLineWriter
+    extends ThresholdLogLinePatternWriter
   {
+
+    setPattern(pattern)
 
     override def write(line: String) =
       logArea.write(line)
