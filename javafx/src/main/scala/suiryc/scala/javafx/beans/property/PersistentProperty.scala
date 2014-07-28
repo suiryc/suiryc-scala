@@ -26,6 +26,9 @@ class PersistentProperty[T](val setting: PersistentSetting[T])
   def reset() =
     setValue(setting())
 
+  def resetDefault() =
+    setValue(setting.default)
+
 }
 
 object PersistentProperty {
