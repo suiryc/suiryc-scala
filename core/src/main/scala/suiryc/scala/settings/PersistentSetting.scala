@@ -11,7 +11,7 @@ abstract class PersistentSetting[T]
 
   protected val path: String
 
-  protected val default: T
+  val default: T
 
   protected def prefsValue(default: T): T
 
@@ -54,7 +54,7 @@ abstract class PersistentSetting[T]
 
 class PersistentBooleanSetting(
   protected val path: String,
-  protected val default: Boolean
+  val default: Boolean
 )(implicit val settings: BaseSettings)
   extends PersistentSetting[Boolean]
 {
@@ -72,7 +72,7 @@ class PersistentBooleanSetting(
 
 class PersistentLongSetting(
   protected val path: String,
-  protected val default: Long
+  val default: Long
 )(implicit val settings: BaseSettings)
   extends PersistentSetting[Long]
 {
@@ -90,7 +90,7 @@ class PersistentLongSetting(
 
 class PersistentStringSetting(
   protected val path: String,
-  protected val default: String
+  val default: String
 )(implicit val settings: BaseSettings)
   extends PersistentSetting[String]
 {
@@ -108,7 +108,7 @@ class PersistentStringSetting(
 
 class PersistentEnumerationExSetting[T <: EnumerationEx](
   protected val path: String,
-  protected val default: T#Value
+  val default: T#Value
 )(implicit val settings: BaseSettings, enum: T)
   extends PersistentSetting[T#Value]
 {
@@ -126,7 +126,7 @@ class PersistentEnumerationExSetting[T <: EnumerationEx](
 
 class PersistentSEnumerationSetting[T <: sEnumeration](
   protected val path: String,
-  protected val default: T#Value
+  val default: T#Value
 )(implicit val settings: BaseSettings, enum: T)
   extends PersistentSetting[T#Value]
 {
