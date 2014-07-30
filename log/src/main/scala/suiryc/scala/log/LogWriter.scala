@@ -46,7 +46,7 @@ trait LogLinePatternWriter
   }
 
   override def write(event: ILoggingEvent) {
-    write(patternLayout.doLayout(event))
+    write(patternLayout.doLayout(event).stripLineEnd)
   }
 
 }

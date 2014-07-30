@@ -20,7 +20,10 @@ class LogArea
   @BeanProperty
   protected var append = true
 
-  protected var pattern = "%d{HH:mm:ss.SSS} %-5level %logger{24} - %msg"
+  /* Note: final newline is important in case an exception is to be included
+   * (directly follows the formatted message line, without leading newline).
+   */
+  protected var pattern = "%d{HH:mm:ss.SSS} %-5level %logger{24} - %msg%n"
 
   def setPattern(pattern: String) {
     this.pattern = pattern
