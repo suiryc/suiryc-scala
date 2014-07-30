@@ -1,9 +1,9 @@
 package suiryc.scala.javafx.stage
 
 import grizzled.slf4j.Logging
-import javafx.beans.property.{DoubleProperty, ReadOnlyDoubleProperty}
-import javafx.beans.value.{ChangeListener, ObservableValue}
+import javafx.beans.property.ReadOnlyDoubleProperty
 import javafx.stage.Stage
+import suiryc.scala.javafx.beans.property.RichReadOnlyProperty._
 import suiryc.scala.javafx.concurrent.JFXSystem
 
 
@@ -39,28 +39,25 @@ object Stages
       if (!stageValue.isNaN())
         setStageMin(stageValue)
       if ((stageProp.get() <= sceneValue) || stageValue.isNaN()) {
-        val changeListener = new ChangeListener[Number] {
-          override def changed(arg0: ObservableValue[_ <: Number], arg1: Number, arg2: Number) {
-            if (stageValue.isNaN()) {
-              stageValue = stageProp.get()
-              sceneValue = sceneProp.get()
-              logger trace(s"Actualized '$title' minimum $label stage[$stageValue] scene[$sceneValue]")
-            }
-            if ((sceneProp.get() == sceneValue) && (stageProp.get() > sceneValue)) {
-              logger trace(s"Retained '$title' minimum $label stage[${stageProp.get()}] scene[${sceneProp.get()}]")
-              stageProp.removeListener(this)
-              setStageMin(stageProp.get())
-              endValue foreach { v =>
-                if (v >= stageProp.get())
-                  setStageValue(v)
-              }
+        val subscription = stageProp.listen2 { subscription =>
+          if (stageValue.isNaN()) {
+            stageValue = stageProp.get()
+            sceneValue = sceneProp.get()
+            logger trace(s"Actualized '$title' minimum $label stage[$stageValue] scene[$sceneValue]")
+          }
+          if ((sceneProp.get() == sceneValue) && (stageProp.get() > sceneValue)) {
+            logger trace(s"Retained '$title' minimum $label stage[${stageProp.get()}] scene[${sceneProp.get()}]")
+            subscription.unsubscribe()
+            setStageMin(stageProp.get())
+            endValue foreach { v =>
+              if (v >= stageProp.get())
+                setStageValue(v)
             }
           }
         }
-        stageProp.addListener(changeListener)
         /* Make sure to unregister ourself in any case */
         JFXSystem.scheduleOnce(1.seconds) {
-          stageProp.removeListener(changeListener)
+          subscription.unsubscribe()
         }
       }
     }
