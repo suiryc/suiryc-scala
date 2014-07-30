@@ -1,7 +1,7 @@
 package suiryc.scala.concurrent
 
 
-case object Cancelled extends RuntimeException("Cancelled")
+case class Cancelled() extends RuntimeException("Cancelled")
 
 class Cancellable {
 
@@ -16,7 +16,7 @@ class Cancellable {
   def check(cleanup: => Unit = {}) {
     if (_cancelled) {
       cleanup
-      throw Cancelled
+      throw Cancelled()
     }
   }
 
