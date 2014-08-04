@@ -6,29 +6,33 @@ object SuirycScalaRootBuild
   extends Build
 {
 
+  lazy val base = file(".").getCanonicalFile
+
   lazy val copyPom = TaskKey[Unit]("copy-pom")
 
-  def copyPomTask(base: File) = copyPom <<= makePom map { pom =>
-    IO.copyFile(pom, base / "pom.xml")
+  def copyPomTask(base: File) = copyPom <<= (makePom, streams) map { (pom, s) =>
+    val dest = base / "pom.xml"
+    s.log.info(s"Copy pom: $dest")
+    IO.copyFile(pom, dest)
   }
 
-  lazy val base = file(".").getCanonicalFile
+  val extCompile = compile <<= (compile in Compile) dependsOn(copyPom)
 
   lazy val coreFile = file("core")
   lazy val core = project.in(coreFile).settings(
-    copyPomTask(coreFile),
+    copyPomTask(coreFile), extCompile,
     pomExtra := Common.pomExtra
   )
 
   lazy val logFile = file("log")
   lazy val log = project.in(logFile).dependsOn(core).settings(
-    copyPomTask(logFile),
+    copyPomTask(logFile), extCompile,
     pomExtra := Common.pomExtra
   )
 
   lazy val javaFXFile = file("javafx")
   lazy val javaFX = project.in(javaFXFile).dependsOn(core, log).settings(
-    copyPomTask(javaFXFile),
+    copyPomTask(javaFXFile), extCompile,
     pomExtra := Common.pomExtra
   )
 
@@ -46,7 +50,7 @@ object SuirycScalaRootBuild
     <module>javafx</module>
   </modules>
       )
-    ) ++ Seq(copyPomTask(base))
+    ) ++ Seq(copyPomTask(base), extCompile)
   )
 
 }
