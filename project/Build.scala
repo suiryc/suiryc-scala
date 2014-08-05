@@ -40,7 +40,7 @@ object SuirycScalaRootBuild
     id = "suiryc-scala",
     base = base,
     aggregate = Seq(core, log, javaFX),
-    settings = Project.defaultSettings ++ Common.settings ++ Seq(
+    settings = Common.settings ++ Seq(
       libraryDependencies := Seq.empty,
       publishArtifact in Compile := false,
       pomExtra := (
