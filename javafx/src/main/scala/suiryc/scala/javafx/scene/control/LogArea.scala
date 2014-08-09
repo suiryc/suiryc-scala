@@ -2,7 +2,6 @@ package suiryc.scala.javafx.scene.control
 
 import akka.actor.{Actor, Props}
 import javafx.scene.control.TextArea
-import scala.beans.BeanProperty
 import suiryc.scala.akka.CoreSystem
 import suiryc.scala.io.LineWriter
 import suiryc.scala.javafx.concurrent.JFXSystem
@@ -12,13 +11,11 @@ import suiryc.scala.log.ThresholdLogLinePatternWriter
  * Read-only text area that can receive lines (from log or other output) to
  * append or prepend.
  */
-class LogArea
-  extends TextArea
-  with LineWriter
+class LogArea(
+  val textArea: TextArea,
+  val append: Boolean = true
+) extends LineWriter
 { logArea =>
-
-  @BeanProperty
-  protected var append = true
 
   /* Note: final newline is important in case an exception is to be included
    * (directly follows the formatted message line, without leading newline).
@@ -32,7 +29,7 @@ class LogArea
 
   def getPattern() = pattern
 
-  setEditable(false)
+  textArea.setEditable(false)
 
   /* Note: JavaFX thread CPU usage may reach limit when updating on each change.
    * So limit the refresh rate to 10 times per second. 
@@ -83,14 +80,21 @@ class LogArea
 
       case Flush =>
         JFXSystem.schedule {
-          val current = getText()
-          if (current == "") setText(text)
-          else if (append) appendText(s"\n$text")
-          else setText(s"$text\n$current")
+          val current = textArea.getText()
+          if (current == "") textArea.setText(text)
+          else if (append) textArea.appendText(s"\n$text")
+          else textArea.setText(s"$text\n$current")
         }
         context.become(nominal)
     }
 
   }
+
+}
+
+object LogArea {
+
+  def apply(textArea: TextArea) =
+    new LogArea(textArea)
 
 }
