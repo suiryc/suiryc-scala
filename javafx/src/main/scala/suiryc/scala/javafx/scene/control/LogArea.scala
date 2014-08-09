@@ -17,6 +17,8 @@ class LogArea(
 ) extends LineWriter
 { logArea =>
 
+  import LogArea._
+
   /* Note: final newline is important in case an exception is to be included
    * (directly follows the formatted message line, without leading newline).
    */
@@ -45,7 +47,15 @@ class LogArea(
     new LogAreaWriter
 
   override def write(line: String) {
-    actor ! line
+    actor ! Write(line)
+  }
+
+  def setText(text: String) {
+    actor ! Set(text)
+  }
+
+  def clear() {
+    setText("")
   }
 
   private class LogAreaWriter
@@ -65,16 +75,25 @@ class LogArea(
 
     override def receive = nominal
 
+    protected def setText(s: String) {
+      JFXSystem.schedule {
+        textArea.setText(s)
+      }
+    }
+
     def nominal: Receive = {
-      case s: String =>
+      case Write(s) =>
         import scala.concurrent.duration._
         import system.dispatcher
         context.become(bufferize(s))
         system.scheduler.scheduleOnce(100.millis, self, Flush)
+
+      case Set(s) =>
+        setText(s)
     }
 
     def bufferize(text: String): Receive = {
-      case s: String =>
+      case Write(s) =>
         if (append) context.become(bufferize(s"$text\n$s"))
         else context.become(bufferize(s"$s\n$text"))
 
@@ -86,6 +105,10 @@ class LogArea(
           else textArea.setText(s"$text\n$current")
         }
         context.become(nominal)
+
+      case Set(s) =>
+        setText(s)
+        context.become(nominal)
     }
 
   }
@@ -93,6 +116,10 @@ class LogArea(
 }
 
 object LogArea {
+
+  protected case class Write(line: String)
+
+  protected case class Set(text: String)
 
   def apply(textArea: TextArea) =
     new LogArea(textArea)
