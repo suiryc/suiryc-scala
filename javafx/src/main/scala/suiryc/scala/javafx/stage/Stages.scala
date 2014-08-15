@@ -35,9 +35,14 @@ object Stages
       var sceneValue = sceneProp.get()
       var stageValue = stageProp.get()
 
+      def atEnd() {
+        endValue foreach { v =>
+          if (v >= stageProp.get()) setStageValue(v)
+        }
+      }
+
       logger.trace(s"Initial '$title' minimum $label stage[$stageValue] scene[$sceneValue]")
-      if (!stageValue.isNaN)
-        setStageMin(stageValue)
+      if (!stageValue.isNaN) setStageMin(stageValue)
       if ((stageProp.get() <= sceneValue) || stageValue.isNaN) {
         val subscription = stageProp.listen2 { subscription =>
           if (stageValue.isNaN) {
@@ -47,17 +52,18 @@ object Stages
           }
           if ((sceneProp.get() == sceneValue) && (stageProp.get() > sceneValue)) {
             logger.trace(s"Retained '$title' minimum $label stage[${stageProp.get()}] scene[${sceneProp.get()}]")
-            subscription.unsubscribe()
+            subscription.cancel()
             setStageMin(stageProp.get())
-            endValue foreach { v =>
-              if (v >= stageProp.get())
-                setStageValue(v)
-            }
+            atEnd()
           }
         }
-        /* Make sure to unregister ourself in any case */
+
+        /* Make sure to unregister in any case */
         JFXSystem.scheduleOnce(1.seconds) {
-          subscription.unsubscribe()
+          if (!subscription.cancelled()) {
+            subscription.cancel()
+            atEnd()
+          }
         }
       }
     }
