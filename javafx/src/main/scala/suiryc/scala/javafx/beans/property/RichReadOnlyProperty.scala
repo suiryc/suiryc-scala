@@ -2,8 +2,8 @@ package suiryc.scala.javafx.beans.property
 
 import javafx.beans.property.ReadOnlyProperty
 import javafx.beans.value.ObservableValue
+import suiryc.scala.concurrent.Cancellable
 import suiryc.scala.javafx.beans.value.ChangeListener
-import suiryc.scala.javafx.event.Subscription
 
 
 /* Note: 'Property' is derived from 'ReadOnlyProperty', so we only need to
@@ -12,16 +12,17 @@ import suiryc.scala.javafx.event.Subscription
 
 class RichReadOnlyProperty[T](val underlying: ReadOnlyProperty[T]) extends AnyVal {
 
-  def listen2(fn: (Subscription, ObservableValue[_ <: T], T, T) => Unit): Subscription = {
-    val subscription = new RichReadOnlyProperty.ProxySubscription()
+  def listen2(fn: (Cancellable, ObservableValue[_ <: T], T, T) => Unit): Cancellable = {
+    val subscription = new RichReadOnlyProperty.ProxyCancellable()
     val listener = ChangeListener[T](fn(subscription, _, _, _))
 
     /* Note: is is important to set the actual subscription before listening
      * to value changes.
      */
-    subscription.setSubscription(new Subscription {
-      override def unsubscribe() {
+    subscription.setCancellable(new Cancellable {
+      override def cancel() {
         underlying.removeListener(listener)
+        super.cancel()
       }
     })
     underlying.addListener(listener)
@@ -29,27 +30,28 @@ class RichReadOnlyProperty[T](val underlying: ReadOnlyProperty[T]) extends AnyVa
     subscription
   }
 
-  def listen(fn: (ObservableValue[_ <: T], T, T) => Unit): Subscription = {
+  def listen(fn: (ObservableValue[_ <: T], T, T) => Unit): Cancellable = {
     val listener = ChangeListener[T](fn)
     underlying.addListener(listener)
 
-    new Subscription {
-      override def unsubscribe() {
+    new Cancellable {
+      override def cancel() {
         underlying.removeListener(listener)
+        super.cancel()
       }
     }
   }
 
-  def listen2(fn: (Subscription, T) => Unit): Subscription =
+  def listen2(fn: (Cancellable, T) => Unit): Cancellable =
     listen2((s, _, _, v) => fn(s, v))
 
-  def listen(fn: T => Unit): Subscription =
+  def listen(fn: T => Unit): Cancellable =
     listen((_, _, v) => fn(v))
 
-  def listen2(fn: Subscription => Unit): Subscription =
+  def listen2(fn: Cancellable => Unit): Cancellable =
     listen2((s, _, _, _) => fn(s))
 
-  def listen(fn: => Unit): Subscription =
+  def listen(fn: => Unit): Cancellable =
     listen((_, _, _) => fn)
 
 }
@@ -61,16 +63,17 @@ object RichReadOnlyProperty {
   implicit def toRichReadOnlyProperty[T](v: ReadOnlyProperty[T]) =
     new RichReadOnlyProperty(v)
 
-  private class ProxySubscription extends Subscription {
+  private class ProxyCancellable extends Cancellable {
 
-    private var subscription: Subscription = _
+    private var cancellable: Cancellable = _
 
-    def setSubscription(subscription: Subscription) {
-      this.subscription = subscription
+    def setCancellable(cancellable: Cancellable) {
+      this.cancellable = cancellable
     }
 
-    override def unsubscribe() {
-      Option(subscription).foreach(_.unsubscribe())
+    override def cancel() {
+      Option(cancellable).foreach(_.cancel())
+      super.cancel()
     }
 
   }
