@@ -67,15 +67,13 @@ abstract class Enumeration {
     values.find { value =>
       if (caseSensitive) value.name == name
       else value.name.toLowerCase == name.toLowerCase
-    }.orElse { values.find { value =>
-        value match {
-          case aliased: Aliased =>
-            if (caseSensitive) aliased.aliases.contains(name)
-            else aliased.aliases.map(_.toLowerCase).contains(name.toLowerCase)
+    }.orElse { values.find {
+        case aliased: Aliased =>
+          if (caseSensitive) aliased.aliases.contains(name)
+          else aliased.aliases.map(_.toLowerCase).contains(name.toLowerCase)
 
-          case _ =>
-            false
-        }
+        case _ =>
+          false
       }
     }.get
 

@@ -15,7 +15,7 @@ object FileTimes {
 
   def apply(creation: FileTime, lastModified: FileTime, lastAccess: FileTime, time: Long): FileTimes = {
     def orNull(time: FileTime) =
-      if ((time != null) && (time.toMillis() <= 0)) null
+      if ((time != null) && (time.toMillis <= 0)) null
       else time
 
     def orTime(time1: FileTime, time2: FileTime) =
@@ -31,10 +31,10 @@ object FileTimes {
 
   def apply(entry: ZipEntry): FileTimes =
     FileTimes(
-      entry.getCreationTime(),
-      entry.getLastModifiedTime(),
-      entry.getLastAccessTime(),
-      entry.getTime()
+      entry.getCreationTime,
+      entry.getLastModifiedTime,
+      entry.getLastAccessTime,
+      entry.getTime
     )
 
   def apply(path: Path): FileTimes = {
@@ -43,7 +43,7 @@ object FileTimes {
       attr.creationTime(),
       attr.lastModifiedTime(),
       attr.lastAccessTime(),
-      path.toFile().lastModified()
+      path.toFile.lastModified()
     )
   }
 

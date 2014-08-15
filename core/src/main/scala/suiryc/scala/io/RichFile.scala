@@ -43,8 +43,8 @@ final class RichFile(val asFile: File) extends AnyVal
   def mkdir = asFile.mkdir
 
   def changeOwner(user: Option[String], group: Option[String]) {
-    if (!user.isEmpty || !group.isEmpty) {
-      val lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
+    if (user.isDefined || group.isDefined) {
+      val lookupService = FileSystems.getDefault.getUserPrincipalLookupService
       val posix: PosixFileAttributeView = Files.getFileAttributeView(asFile.toPath,
         classOf[PosixFileAttributeView], LinkOption.NOFOLLOW_LINKS)
       user foreach { user =>
@@ -68,7 +68,7 @@ final class RichFile(val asFile: File) extends AnyVal
    * @param recursive whether to process recursively
    * @param onlyChildren whether to only delete children (if any) or root too
    */
-  def delete(recursive: Boolean = false, onlyChildren: Boolean = false): Boolean =
+  def delete(recursive: Boolean, onlyChildren: Boolean = false): Boolean =
   {
     @annotation.tailrec
     def loop(files: List[File], rest: List[File], onlyChildren: Boolean, success: Boolean): Boolean =
@@ -79,7 +79,7 @@ final class RichFile(val asFile: File) extends AnyVal
               success
 
             case head :: tail =>
-              loop(Nil, tail, false, head.delete() & success)
+              loop(Nil, tail, onlyChildren = false, success = head.delete() & success)
           }
 
         case head :: tail =>
@@ -94,10 +94,10 @@ final class RichFile(val asFile: File) extends AnyVal
               (rest, head.delete() & success)
             }
             else (head :: rest, success)
-          loop(tail ::: children, newRest, false, newSuccess)
+          loop(tail ::: children, newRest, onlyChildren = false, success = newSuccess)
       }
 
-    if (exists) loop(List(asFile), Nil, onlyChildren, true)
+    if (exists) loop(List(asFile), Nil, onlyChildren, success = true)
     else true
   }
 
@@ -150,6 +150,6 @@ object RichFile {
    * @return temporary directory 
    */
   def createTempDirectory(prefix: String): File =
-    Files.createTempDirectory(prefix).toFile()
+    Files.createTempDirectory(prefix).toFile
 
 }

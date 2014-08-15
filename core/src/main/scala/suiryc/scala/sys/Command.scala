@@ -2,18 +2,12 @@ package suiryc.scala.sys
 
 import grizzled.slf4j.Logging
 import java.io.{
-  BufferedReader,
-  BufferedWriter,
   ByteArrayInputStream,
   ByteArrayOutputStream,
   File,
   InputStream,
-  InputStreamReader,
   IOException,
-  OutputStream,
-  OutputStreamWriter,
-  Reader,
-  Writer
+  OutputStream
 }
 import scala.collection.mutable
 import scala.sys.process
@@ -184,10 +178,10 @@ object Command
         outputs foreach { _.stream.write(buffer, 0, read) }
       }
 
-      input.close
+      input.close()
       outputs foreach { output =>
-        output.stream.flush
-        if (output.close) output.stream.close
+        output.stream.flush()
+        if (output.close) output.stream.close()
       }
     }
 
@@ -209,27 +203,27 @@ object Command
       val buffer = new Array[Byte](1024)
 
       @scala.annotation.tailrec
-      def loop {
+      def loop() {
         val read = input.stream.read(buffer)
         if (read == -1) {
-          if (input.close) input.stream.close
-          output.close
+          if (input.close) input.stream.close()
+          output.close()
         }
         else {
           output.write(buffer, 0, read)
           /* flush will throw an exception once the process has terminated */
           val available = try {
-            output.flush
+            output.flush()
             true
           }
           catch {
             case _: IOException => false
           }
-          if (available) loop
+          if (available) loop()
         }
       }
 
-      loop
+      loop()
     }
 
     val stdoutBuffer =
@@ -238,7 +232,7 @@ object Command
     val stderrBuffer =
       if (captureStderr) Some(new StringBuffer())
       else None
-    val process = envf map { f =>
+    val process = envf.map { f =>
       /* scala Process only handles adding variables, so - as Process - build
        * the java ProcessBuilder, and let callback adapt its environment.
        */
@@ -246,13 +240,13 @@ object Command
       workingDirectory foreach (jpb directory _)
       f(jpb.environment())
       Process(jpb)
-    } getOrElse(Process(cmd, workingDirectory))
+    }.getOrElse(Process(cmd, workingDirectory))
     val io = new ProcessIO(
-      stdinSource.fold[OutputStream => Unit](BasicIO.close _)(input => filterInput(input, _)),
+      stdinSource.fold[OutputStream => Unit](BasicIO.close)(input => filterInput(input, _)),
       filterOutput(stdoutSink ++ extraStdoutSink, stdoutBuffer),
       filterOutput(stderrSink ++ extraStderrSink, stderrBuffer)
     )
-    val result = process.run(io).exitValue
+    val result = process.run(io).exitValue()
     val stdoutResult =
       stdoutBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
     val stderrResult =
@@ -274,7 +268,7 @@ object Command
 
     /* Process may have ended before consuming the whole input */
     stdinSource foreach { input =>
-      if (input.close) input.stream.close
+      if (input.close) input.stream.close()
     }
 
     CommandResult(result, stdoutResult, stderrResult)

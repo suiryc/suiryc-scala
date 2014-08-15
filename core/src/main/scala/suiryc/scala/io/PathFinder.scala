@@ -29,9 +29,9 @@ class PathFinder protected(
     new PathFinder(other.filters, include, other.parent,
       Some(other.previous map { finder => queue(finder, finder.include) } getOrElse this))
 
-  def ++(other: PathFinder): PathFinder = queue(other, true)
+  def ++(other: PathFinder): PathFinder = queue(other, include = true)
 
-  def --(other: PathFinder): PathFinder = queue(other, false)
+  def --(other: PathFinder): PathFinder = queue(other, include = false)
 
   def /(other: PathFinder): PathFinder = other.updateParent(this)
 
@@ -68,7 +68,7 @@ class PathFinder protected(
       new ChildrenPathFilter(AllPassFileFilter, AllPassFileFilter, followLinks, maxDepth))
   }
 
-  def *** : PathFinder = ***(false, None)
+  def *** : PathFinder = ***(followLinks = false, None)
 
   def get(): Set[File] = {
     val parentFiles = parent match {
@@ -83,7 +83,7 @@ class PathFinder protected(
         case head :: tail => loop(tail, result ++ get(head))
       }
 
-    val files1 = previous map { _.get() } getOrElse(Set.empty)
+    val files1 = previous.map { _.get() }.getOrElse(Set.empty)
     val files2 = loop(parentFiles.toList, Set())
     if (include) files1 ++ files2
     else files1 -- files2
@@ -123,6 +123,6 @@ object PathFinder {
     PathFinder(file.getPath)
 
   implicit def pathFinder(path: Path): PathFinder =
-    PathFinder(path.toFile())
+    PathFinder(path.toFile)
 
 }

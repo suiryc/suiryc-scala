@@ -3,7 +3,7 @@ package suiryc.scala.javafx.beans.value
 import javafx.beans.{value => jfxbv}
 
 
-case class ChangeListener[T](fn: Function3[jfxbv.ObservableValue[_ <: T], T, T, Unit])
+case class ChangeListener[T](fn: (jfxbv.ObservableValue[_ <: T], T, T) => Unit)
   extends jfxbv.ChangeListener[T]
 {
 

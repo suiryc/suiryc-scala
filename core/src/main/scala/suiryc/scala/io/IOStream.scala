@@ -57,7 +57,7 @@ object IOStream {
      */
 
     def stream(remaining: Option[Int]): Stream[Int] = {
-      val request = remaining map(scala.math.min(_, buffer.length)) getOrElse(buffer.length)
+      val request = remaining.map(scala.math.min(_, buffer.length)).getOrElse(buffer.length)
       if (request <= 0) Stream.Empty
       else {
         val actual = input.read(buffer, 0, request)
@@ -83,7 +83,7 @@ object IOStream {
     val buffer = new Array[Byte](16 * 1024)
 
     def stream(remaining: Option[Int]): Stream[Int] = {
-      val request = remaining map(scala.math.min(_, buffer.length)) getOrElse(buffer.length)
+      val request = remaining.map(scala.math.min(_, buffer.length)).getOrElse(buffer.length)
       if (request <= 0) Stream.Empty
       else {
         val actual = input.read(buffer, 0, request)

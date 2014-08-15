@@ -1,7 +1,6 @@
 package suiryc.scala.javafx.concurrent
 
 import akka.actor.{Actor, Props}
-import com.typesafe.config.ConfigFactory
 import grizzled.slf4j.Logging
 import javafx.application.Platform
 import scala.concurrent.{Await, Future}

@@ -35,18 +35,18 @@ object Stages
       var sceneValue = sceneProp.get()
       var stageValue = stageProp.get()
 
-      logger trace(s"Initial '$title' minimum $label stage[$stageValue] scene[$sceneValue]")
-      if (!stageValue.isNaN())
+      logger.trace(s"Initial '$title' minimum $label stage[$stageValue] scene[$sceneValue]")
+      if (!stageValue.isNaN)
         setStageMin(stageValue)
-      if ((stageProp.get() <= sceneValue) || stageValue.isNaN()) {
+      if ((stageProp.get() <= sceneValue) || stageValue.isNaN) {
         val subscription = stageProp.listen2 { subscription =>
-          if (stageValue.isNaN()) {
+          if (stageValue.isNaN) {
             stageValue = stageProp.get()
             sceneValue = sceneProp.get()
-            logger trace(s"Actualized '$title' minimum $label stage[$stageValue] scene[$sceneValue]")
+            logger.trace(s"Actualized '$title' minimum $label stage[$stageValue] scene[$sceneValue]")
           }
           if ((sceneProp.get() == sceneValue) && (stageProp.get() > sceneValue)) {
-            logger trace(s"Retained '$title' minimum $label stage[${stageProp.get()}] scene[${sceneProp.get()}]")
+            logger.trace(s"Retained '$title' minimum $label stage[${stageProp.get()}] scene[${sceneProp.get()}]")
             subscription.unsubscribe()
             setStageMin(stageProp.get())
             endValue foreach { v =>
@@ -62,8 +62,8 @@ object Stages
       }
     }
 
-    trackMinimumDimension("width", stage.setMinWidth, stage.widthProperty, stage.getScene().widthProperty, stage.setWidth, size.map(_._1))
-    trackMinimumDimension("height", stage.setMinHeight, stage.heightProperty, stage.getScene().heightProperty, stage.setHeight, size.map(_._2))
+    trackMinimumDimension("width", stage.setMinWidth, stage.widthProperty, stage.getScene.widthProperty, stage.setWidth, size.map(_._1))
+    trackMinimumDimension("height", stage.setMinHeight, stage.heightProperty, stage.getScene.heightProperty, stage.setHeight, size.map(_._2))
   }
 
 }

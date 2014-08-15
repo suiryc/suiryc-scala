@@ -1,8 +1,5 @@
 package suiryc.scala.misc
 
-import java.io.{File, FileFilter}
-import java.nio.file.{Files, LinkOption, Path}
-import java.nio.file.attribute.BasicFileAttributes
 import scala.reflect.ClassTag
 
 /** Misc utilities. */

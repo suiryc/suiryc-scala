@@ -13,7 +13,7 @@ object SystemStreams {
   def replace(in: Option[InputStream] = None, out: Option[PrintStream] = None, err: Option[PrintStream] = None): SystemStreams = {
     val previous = SystemStreams(System.in, System.out, System.err)
 
-    in foreach(System.setIn)
+    in.foreach(System.setIn)
     out foreach { out =>
       System.out.flush()
       System.setOut(out)

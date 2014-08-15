@@ -18,7 +18,7 @@ class PersistentProperty[T](val setting: PersistentSetting[T])
   }
 
   def apply() =
-    getValue()
+    getValue
 
   def update(value: T) =
     setValue(value)

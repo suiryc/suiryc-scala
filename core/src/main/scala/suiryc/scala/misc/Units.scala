@@ -17,7 +17,7 @@ object Units {
 
     def fromHumanReadable(value: String): Long = value match {
       case ValueRegexp(value, valueUnit) =>
-        val lcunit = valueUnit.toLowerCase()
+        val lcunit = valueUnit.toLowerCase
         def get(units: List[Unit]): Option[Long] =
           units find { unit =>
             unit.label.toLowerCase == lcunit

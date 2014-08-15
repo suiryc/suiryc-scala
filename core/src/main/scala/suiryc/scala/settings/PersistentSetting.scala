@@ -36,10 +36,10 @@ abstract class PersistentSetting[T]
     else Some(configValue)
 
   def option: Option[T] =
-    prefsOption orElse(configOption)
+    prefsOption.orElse(configOption)
 
   def apply(): T =
-    prefsValue(configOption getOrElse(default))
+    prefsValue(configOption.getOrElse(default))
     /* XXX - more efficient way to check whether path exists and only use 'config' if not ? */
     /*option getOrElse(default)*/
 

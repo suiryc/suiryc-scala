@@ -1,8 +1,7 @@
 package suiryc.scala.io
 
 import java.io.{File, FileFilter}
-import java.nio.file.{Files, LinkOption}
-import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.Files
 import suiryc.scala.misc
 
 

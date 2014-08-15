@@ -12,7 +12,7 @@ import suiryc.scala.javafx.event.Subscription
 
 class RichReadOnlyProperty[T](val underlying: ReadOnlyProperty[T]) extends AnyVal {
 
-  def listen2(fn: Function4[Subscription, ObservableValue[_ <: T], T, T, Unit]): Subscription = {
+  def listen2(fn: (Subscription, ObservableValue[_ <: T], T, T) => Unit): Subscription = {
     val subscription = new RichReadOnlyProperty.ProxySubscription()
     val listener = ChangeListener[T](fn(subscription, _, _, _))
 
@@ -29,7 +29,7 @@ class RichReadOnlyProperty[T](val underlying: ReadOnlyProperty[T]) extends AnyVa
     subscription
   }
 
-  def listen(fn: Function3[ObservableValue[_ <: T], T, T, Unit]): Subscription = {
+  def listen(fn: (ObservableValue[_ <: T], T, T) => Unit): Subscription = {
     val listener = ChangeListener[T](fn)
     underlying.addListener(listener)
 
@@ -40,13 +40,13 @@ class RichReadOnlyProperty[T](val underlying: ReadOnlyProperty[T]) extends AnyVa
     }
   }
 
-  def listen2(fn: Function2[Subscription, T, Unit]): Subscription =
+  def listen2(fn: (Subscription, T) => Unit): Subscription =
     listen2((s, _, _, v) => fn(s, v))
 
-  def listen(fn: Function1[T, Unit]): Subscription =
+  def listen(fn: T => Unit): Subscription =
     listen((_, _, v) => fn(v))
 
-  def listen2(fn: Function1[Subscription, Unit]): Subscription =
+  def listen2(fn: Subscription => Unit): Subscription =
     listen2((s, _, _, _) => fn(s))
 
   def listen(fn: => Unit): Subscription =

@@ -6,7 +6,7 @@ object Callback {
 
   import scala.language.implicitConversions
 
-  implicit def fn1ToCallback[P, R](fn: Function1[P, R]): jfxu.Callback[P, R] = {
+  implicit def fn1ToCallback[P, R](fn: P => R): jfxu.Callback[P, R] = {
     new jfxu.Callback[P, R] {
       override def call(p: P): R =
         fn(p)

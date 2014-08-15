@@ -1,4 +1,4 @@
-package suiryc.scala.misc
+package suiryc.scala.util
 
 
 abstract class EitherEx[+A, +B](val either: Either[A, B]) {

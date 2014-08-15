@@ -35,12 +35,12 @@ class LineSplitterOutputStream(
 
   override def write(b: Array[Byte], off: Int, len: Int) {
     if (!closed)
-      process(ByteBuffer.wrap(b, off, len), false)
+      process(ByteBuffer.wrap(b, off, len), flush = false)
   }
 
-  override def close {
+  override def close() {
     if (!closed) {
-      process(ByteBuffer.wrap(new Array[Byte](0)), true)
+      process(ByteBuffer.wrap(new Array[Byte](0)), flush = true)
       closed = true
     }
   }
@@ -61,15 +61,14 @@ class LineSplitterOutputStream(
   }
 
   protected def process(flush: Boolean) {
-    import scala.collection.JavaConversions._
 
     val array = charBuffer.array
 
-    def output {
+    def output() {
       if (line.endsWith("\r"))
         line.setLength(line.length - 1)
-      writer.write(line.toString)
-      line.clear
+      writer.write(line.toString())
+      line.clear()
     }
 
     @scala.annotation.tailrec
@@ -83,7 +82,7 @@ class LineSplitterOutputStream(
 
         if (nextOffset >= 0) {
           line.appendAll(array, offset, nextOffset - offset)
-          output
+          output()
           loop(nextOffset + 1)
         }
         else {

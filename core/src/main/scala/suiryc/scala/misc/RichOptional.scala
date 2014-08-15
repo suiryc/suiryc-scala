@@ -5,7 +5,7 @@ import scala.language.implicitConversions
 
 class RichOptional[T](val underlying: T) extends AnyVal {
 
-  def optional[U](option: Option[U], f: Function2[T, U, T]): T =
+  def optional[U](option: Option[U], f: (T, U) => T): T =
     option.fold(underlying)(f(underlying, _))
 
   def optional(option: Boolean, f: T => T): T =

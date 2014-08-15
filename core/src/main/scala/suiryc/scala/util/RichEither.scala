@@ -1,4 +1,4 @@
-package suiryc.scala.misc
+package suiryc.scala.util
 
 import scala.language.implicitConversions
 

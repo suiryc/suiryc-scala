@@ -14,14 +14,14 @@ trait SettingSnapshot {
 trait SettingValueSnapshot[T] extends SettingSnapshot {
 
   protected val originalValue =
-    getValue()
+    getValue
 
-  protected def getValue(): T
+  protected def getValue: T
 
   protected def setValue(v: T): Unit
 
   override def changed() =
-    originalValue != getValue()
+    originalValue != getValue
 
   override def reset() {
     if (changed()) setValue(originalValue)
@@ -34,7 +34,7 @@ object SettingSnapshot {
   def apply[T](setting: PersistentSetting[T]): SettingSnapshot =
     new SettingValueSnapshot[T] {
 
-      override protected def getValue() =
+      override protected def getValue =
         setting()
 
       override protected def setValue(v: T) {
@@ -46,8 +46,8 @@ object SettingSnapshot {
   def apply[T](property: Property[T]): SettingSnapshot =
     new SettingValueSnapshot[T] {
 
-      override protected def getValue() =
-        property.getValue()
+      override protected def getValue =
+        property.getValue
 
       override protected def setValue(v: T) {
         property.setValue(v)

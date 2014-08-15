@@ -1,7 +1,6 @@
 package suiryc.scala.io
 
 import akka.actor.{Actor, ActorRef, Props}
-import com.typesafe.config.ConfigFactory
 import suiryc.scala.akka.CoreSystem
 
 /** Writer expecting full lines. */

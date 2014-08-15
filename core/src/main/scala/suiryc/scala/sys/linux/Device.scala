@@ -3,11 +3,10 @@ package suiryc.scala.sys.linux
 import grizzled.slf4j.Logging
 import java.io.File
 import java.nio.file.{Path, Paths}
-import scala.io.Source
 import suiryc.scala.io.{AllPassFileFilter, NameFilter, PathFinder, SourceEx}
 import suiryc.scala.io.NameFilter._
-import suiryc.scala.misc.EitherEx
 import suiryc.scala.sys.{Command, CommandResult}
+import suiryc.scala.util.EitherEx
 
 
 class Device(val block: Path) {
@@ -15,7 +14,7 @@ class Device(val block: Path) {
   import PathFinder._
   import NameFilter._
 
-  val dev = Paths.get("/dev").resolve(block.getFileName())
+  val dev = Paths.get("/dev").resolve(block.getFileName)
 
   protected def defaultVendor = "<unknown>"
 
@@ -28,7 +27,7 @@ class Device(val block: Path) {
     propertyContent(block, "device", "model") getOrElse defaultModel
 
   val ueventProps: Map[String, String] = {
-    val uevent = Paths.get(block.toString, "device", "uevent").toFile()
+    val uevent = Paths.get(block.toString, "device", "uevent").toFile
     val props = Map.empty[String, String]
 
     if (uevent.exists()) {
@@ -50,21 +49,21 @@ class Device(val block: Path) {
   val size = Device.size(block)
 
   val readOnly =
-    propertyContent(block, "ro") map { v =>
+    propertyContent(block, "ro").exists { v =>
       v.toInt != 0
-    } getOrElse false
+    }
 
   val removable =
-    propertyContent(block, "removable") map { v =>
+    propertyContent(block, "removable").exists { v =>
       v.toInt != 0
-    } getOrElse false
+    }
 
   protected[linux] def partitionInfix = ""
 
   val partitions = {
-    val devName = dev.getFileName().toString
-    (block * s"""${devName}${partitionInfix}[0-9]+""".r).get map { path =>
-      DevicePartition(this, path.getName().substring(devName.length() + partitionInfix.length()).toInt)
+    val devName = dev.getFileName.toString
+    (block * s"""${devName}$partitionInfix[0-9]+""".r).get map { path =>
+      DevicePartition(this, path.getName.substring(devName.length() + partitionInfix.length()).toInt)
     }
   }
 
@@ -97,16 +96,16 @@ object Device
   private val KeyValueRegexp = """^([^=]*)=(.*)$""".r
 
   def propertyContent(block: Path, path: String*): Option[String] = {
-    val file = Paths.get(block.toString, path: _*).toFile()
+    val file = Paths.get(block.toString, path: _*).toFile
 
     Option(
       if (file.exists())
         SourceEx.autoCloseFile(file) { source =>
-          source.getLines() map { line =>
+          source.getLines().map { line =>
             line.trim()
-          } filterNot { line =>
+          }.filterNot { line =>
             line == ""
-          } mkString(" / ")
+          }.mkString(" / ")
         }
       else null
     )
@@ -117,7 +116,7 @@ object Device
       EitherEx(Right(size.toLong * 512))
     } getOrElse {
       try {
-        val dev = Paths.get("/dev").resolve(block.getFileName())
+        val dev = Paths.get("/dev").resolve(block.getFileName)
         val CommandResult(result, stdout, stderr) = Command.execute(Seq("blockdev", "--getsz", dev.toString))
         if (result == 0) {
           EitherEx(Right(stdout.trim.toLong * 512))
@@ -141,18 +140,18 @@ object Device
     if (path.startsWith(sysBlock))
       Some(Device(path.getParent))
     else {
-      val finder = PathFinder(sysBlock) * AllPassFileFilter * path.getFileName().toString
-      finder.get().headOption map(file => Device(file.toPath.getParent()))
+      val finder = PathFinder(sysBlock) * AllPassFileFilter * path.getFileName.toString
+      finder.get().headOption map(file => Device(file.toPath.getParent))
     }
   }
 
   def apply(block: Path): Device =
-    if (block.getFileName().toString.startsWith("nbd"))
+    if (block.getFileName.toString.startsWith("nbd"))
       new NetworkBlockDevice(block)
     else
       new Device(block)
 
   def apply(block: File): Device =
-    Device(block.toPath())
+    Device(block.toPath)
 
 }

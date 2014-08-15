@@ -1,7 +1,6 @@
 package suiryc.scala.io
 
 import java.io.{File, FileFilter}
-import java.util.regex.Pattern
 import scala.language.implicitConversions
 import scala.util.matching.Regex
 

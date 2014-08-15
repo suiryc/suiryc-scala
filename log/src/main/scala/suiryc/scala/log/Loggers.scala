@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory
 
 object Loggers {
 
-  val loggerContext  = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
+  val loggerContext  = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
 
   /** Sets root logger level. */
   def setLevel(level: Level) {

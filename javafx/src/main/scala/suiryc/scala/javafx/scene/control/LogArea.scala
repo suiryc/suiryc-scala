@@ -29,7 +29,7 @@ class LogArea(
     msgWriter.setPattern(pattern)
   }
 
-  def getPattern() = pattern
+  def getPattern = pattern
 
   textArea.setEditable(false)
 
@@ -99,7 +99,7 @@ class LogArea(
 
       case Flush =>
         JFXSystem.schedule {
-          val current = textArea.getText()
+          val current = textArea.getText
           if (current == "") textArea.setText(text)
           else if (append) textArea.appendText(s"\n$text")
           else textArea.setText(s"$text\n$current")
