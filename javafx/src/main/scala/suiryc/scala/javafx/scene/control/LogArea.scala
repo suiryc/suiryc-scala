@@ -39,7 +39,7 @@ class LogArea(
 
   protected val system = CoreSystem.system
   /* Note: we need to give the creator function because the actor is tied to
-   * this class instance (hence no default ctor available for Props).
+   * this class instance (hence no default actor available for Props).
    */
   protected val actor = system.actorOf(Props(new LogAreaActor))
 
