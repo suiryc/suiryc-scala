@@ -39,7 +39,9 @@ class LogArea(
 
   protected val system = CoreSystem.system
   /* Note: we need to give the creator function because the actor is tied to
-   * this class instance (hence no default ctor available for Props).
+   * this class instance. So the compiler automagically adds a (first) parameter
+   * - which is the reference to the outer class - to any constructor, hence no
+   * default constructor available for the type parameter variant of Props.
    */
   protected val actor = system.actorOf(Props(new LogAreaActor))
 
