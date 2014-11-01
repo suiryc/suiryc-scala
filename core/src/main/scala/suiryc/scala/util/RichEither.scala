@@ -28,7 +28,7 @@ class RichEither[A, B](val underlying: Either[A, B]) extends AnyVal {
 }
 
 
-class RichEitherException[B](val underlying: Either[Exception, B]) extends AnyVal {
+class RichEitherThrowable[B](val underlying: Either[Throwable, B]) extends AnyVal {
 
   def orThrow: B = underlying match {
     case Left(e) => throw e
@@ -40,8 +40,8 @@ class RichEitherException[B](val underlying: Either[Exception, B]) extends AnyVa
 
 object RichEither {
 
-  implicit def toRichException[B](either: Either[Exception, B]) =
-    new RichEitherException(either)
+  implicit def toRichThrowable[B](either: Either[Throwable, B]) =
+    new RichEitherThrowable(either)
 
   implicit def toRich[A, B](either: Either[A, B]) =
     new RichEither(either)
