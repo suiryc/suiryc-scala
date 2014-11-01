@@ -1,7 +1,7 @@
 package suiryc.scala.io
 
 import grizzled.slf4j.Logging
-import java.nio.file.{Files, LinkOption, Path, StandardCopyOption}
+import java.nio.file.{CopyOption, Files, LinkOption, Path, StandardCopyOption}
 import java.nio.file.attribute.BasicFileAttributeView
 
 
@@ -28,7 +28,8 @@ object FilesEx
     source: Path,
     targetRoot: Path,
     followLinks: Boolean = true,
-    owner: Option[Owner] = None
+    owner: Option[Owner] = None,
+    options: List[CopyOption] = List(StandardCopyOption.COPY_ATTRIBUTES, LinkOption.NOFOLLOW_LINKS)
   ) {
     def copy(sourceRoot: Path, source: Option[Path], targetRoot: Path) {
       import RichFile._
@@ -51,7 +52,7 @@ object FilesEx
               /* then copy source to target */
               trace(s"Copying source[$sourceRealPath] to[$pathTarget]")
               Files.copy(sourceRealPath, pathTarget,
-                StandardCopyOption.COPY_ATTRIBUTES, LinkOption.NOFOLLOW_LINKS)
+                options:_*)
             }
           }
 
@@ -62,7 +63,7 @@ object FilesEx
             /* then create target (directory) with user/group if necessary */
             trace(s"Creating target[$targetRoot]")
             targetRoot.mkdir
-            owner foreach { owner =>
+            owner.foreach { owner =>
               targetRoot.changeOwner(owner.user, owner.group)
             }
           }
