@@ -16,15 +16,16 @@ class Device(val block: Path) {
 
   val dev = Paths.get("/dev").resolve(block.getFileName)
 
-  protected def defaultVendor = "<unknown>"
+  protected def defaultName = "<unknown>"
 
-  val vendor =
-    propertyContent(block, "device", "vendor") getOrElse defaultVendor
+  val nameOption = propertyContent(block, "device", "name")
+  val name = nameOption.getOrElse(defaultName)
 
-  protected def defaultModel = "<unknown>"
+  val vendorOption = propertyContent(block, "device", "vendor")
+  val vendor = vendorOption.getOrElse(defaultName)
 
-  val model =
-    propertyContent(block, "device", "model") getOrElse defaultModel
+  val modelOption = propertyContent(block, "device", "model")
+  val model = modelOption.getOrElse(defaultName)
 
   val ueventProps: Map[String, String] = {
     val uevent = Paths.get(block.toString, "device", "uevent").toFile
@@ -58,7 +59,11 @@ class Device(val block: Path) {
       v.toInt != 0
     }
 
-  protected[linux] def partitionInfix = ""
+  protected[linux] def partitionInfix = {
+    val sysName = block.getFileName.toString
+    if (sysName(sysName.length - 1).isDigit) "p"
+    else ""
+  }
 
   val partitions = {
     val devName = dev.getFileName.toString
@@ -80,11 +85,7 @@ class NetworkBlockDevice(override val block: Path)
   extends Device(block)
 {
 
-  override protected def defaultVendor = "Network Block Device"
-
-  override protected def defaultModel = "Network Block Device"
-
-  override protected[linux] def partitionInfix = "p"
+  override protected def defaultName = "Network Block Device"
 
 }
 
