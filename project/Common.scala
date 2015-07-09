@@ -4,8 +4,6 @@ import Keys._
 
 object Common {
 
-  val localMavenPath = Path.userHome.absolutePath + "/.m2/repository"
-
   val versions = Map[String, String](
     "java" -> "1.8",
     "akka" -> "2.3.3",
@@ -27,9 +25,9 @@ object Common {
       scalacOptions ++= Seq("-deprecation", "-feature", "-optimize", "-unchecked", "-Yinline-warnings"),
       scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-implicits"),
       org.scalastyle.sbt.PluginKeys.config := file("project/scalastyle-config.xml"),
-      resolvers += "Local Maven Repository" at "file://" + localMavenPath,
+      resolvers += Resolver.mavenLocal,
       publishMavenStyle := true,
-      publishTo := Some(Resolver.file("file", new File(localMavenPath)))
+      publishTo := Some(Resolver.mavenLocal)
     )
 
   val pomExtra = (
