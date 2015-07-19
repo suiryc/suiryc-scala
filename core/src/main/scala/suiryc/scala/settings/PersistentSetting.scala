@@ -1,144 +1,130 @@
 package suiryc.scala.settings
 
+import com.typesafe.config.ConfigException
 import suiryc.scala.misc.{Enumeration => sEnumeration}
 import suiryc.scala.misc.EnumerationEx
 
-
-abstract class PersistentSetting[T]
+/**
+ * Persistent setting value.
+ *
+ * Relies on both config and preference value.
+ * If a preference is known, it is used, otherwise the config is used.
+ *
+ * Persistence is done through Preferences node.
+ */
+trait PersistentSetting[T] extends Preference[T]
 {
 
+  /** Base settings. */
   protected val settings: BaseSettings
 
-  protected val path: String
-
-  val default: T
-
-  protected def prefsValue(default: T): T
-
+  /**
+   * Gets the config value.
+   *
+   * @throws ConfigException.Missing if the value is not configured
+   * @throws ConfigException.WrongType if the value is not convertible to the requested type
+   */
   protected def configValue: T
 
-  protected def updateValue(v: T): Unit
-
-  protected def removeValue() =
-    settings.prefs.remove(path)
-
-  protected def prefsOption: Option[T] =
-    Option(settings.prefs.get(path, null)) match {
-      case Some(_) =>
-        Some(prefsValue(default))
-
-      case None =>
-        None
-    }
-
+  /**
+   * Gets the optional config value.
+   *
+   * @return value or None if not present
+   */
   protected def configOption: Option[T] =
     if (!settings.config.hasPath(path)) None
     else Some(configValue)
 
-  def option: Option[T] =
-    prefsOption.orElse(configOption)
+  /**
+   * Gets the optional value.
+   *
+   * First search in preference, then config.
+   * @return value or None if not present
+   */
+  override def option: Option[T] =
+    super.option.orElse(configOption)
 
-  def apply(): T =
+  /**
+   * Gets the value.
+   *
+   * First search in preference, then config.
+   *
+   * @return value or default if not present
+   */
+  override def apply(): T =
     prefsValue(configOption.getOrElse(default))
-    /* XXX - more efficient way to check whether path exists and only use 'config' if not ? */
-    /*option getOrElse(default)*/
-
-  def update(v: T): Unit =
-    Option(v).fold {
-      removeValue()
-    } { v =>
-      updateValue(v)
-    }
+    // XXX - more efficient way to check whether path exists and only use 'config' if not ?
+    //option getOrElse(default)
 
 }
 
+/** Boolean persistent setting. */
 class PersistentBooleanSetting(
-  protected val path: String,
-  val default: Boolean
+  override protected val path: String,
+  override val default: Boolean
 )(implicit val settings: BaseSettings)
-  extends PersistentSetting[Boolean]
+  extends BooleanPreference(path, default)(settings.prefs)
+  with PersistentSetting[Boolean]
 {
-
-  override protected def prefsValue(default: Boolean): Boolean =
-    settings.prefs.getBoolean(path, default)
 
   override protected def configValue: Boolean =
     settings.config.getBoolean(path)
 
-  override protected def updateValue(v: Boolean) =
-    settings.prefs.putBoolean(path, v)
-
 }
 
+/** Long persistent setting. */
 class PersistentLongSetting(
-  protected val path: String,
-  val default: Long
+  override protected val path: String,
+  override val default: Long
 )(implicit val settings: BaseSettings)
-  extends PersistentSetting[Long]
+  extends LongPreference(path, default)(settings.prefs)
+  with PersistentSetting[Long]
 {
-
-  override protected def prefsValue(default: Long): Long =
-    settings.prefs.getLong(path, default)
 
   override protected def configValue: Long =
     settings.config.getLong(path)
 
-  override protected def updateValue(v: Long) =
-    settings.prefs.putLong(path, v)
-
 }
 
+/** String persistent setting. */
 class PersistentStringSetting(
-  protected val path: String,
-  val default: String
+  override protected val path: String,
+  override val default: String
 )(implicit val settings: BaseSettings)
-  extends PersistentSetting[String]
+  extends StringPreference(path, default)(settings.prefs)
+  with PersistentSetting[String]
 {
-
-  override protected def prefsValue(default: String): String =
-    settings.prefs.get(path, default)
 
   override protected def configValue: String =
     settings.config.getString(path)
 
-  override protected def updateValue(v: String) =
-    settings.prefs.put(path, v)
-
 }
 
+/** EnumerationEx persistent setting. */
 class PersistentEnumerationExSetting[T <: EnumerationEx](
-  protected val path: String,
-  val default: T#Value
+  override protected val path: String,
+  override val default: T#Value
 )(implicit val settings: BaseSettings, enum: T)
-  extends PersistentSetting[T#Value]
+  extends EnumerationExPreference[T](path, default)(settings.prefs, enum)
+  with PersistentSetting[T#Value]
 {
-
-  override protected def prefsValue(default: T#Value): T#Value =
-    enum(settings.prefs.get(path, default.toString))
 
   override protected def configValue: T#Value =
     enum(settings.config.getString(path))
 
-  override protected def updateValue(v: T#Value) =
-    settings.prefs.put(path, v.toString)
-
 }
 
+/** Scala Enumeration persistent setting. */
 class PersistentSEnumerationSetting[T <: sEnumeration](
-  protected val path: String,
-  val default: T#Value
+  override protected val path: String,
+  override val default: T#Value
 )(implicit val settings: BaseSettings, enum: T)
-  extends PersistentSetting[T#Value]
+  extends SEnumerationPreference[T](path, default)(settings.prefs, enum)
+  with PersistentSetting[T#Value]
 {
-
-  override protected def prefsValue(default: T#Value): T#Value =
-    enum.withName(settings.prefs.get(path, default.toString))
 
   override protected def configValue: T#Value =
     enum.withName(settings.config.getString(path))
-
-  override protected def updateValue(v: T#Value) =
-    settings.prefs.put(path, v.toString)
 
 }
 
@@ -146,20 +132,26 @@ object PersistentSetting {
 
   import scala.language.implicitConversions
 
-  implicit def toValue[T](p :PersistentSetting[T]): T = p()
+  /** Implicit function to get actual value from a persistent setting. */
+  implicit def toValue[T](p: PersistentSetting[T]): T = p()
 
+  /** Builds a Boolean persistent setting. */
   def forBoolean(path: String, default: Boolean)(implicit settings: BaseSettings): PersistentSetting[Boolean] =
     new PersistentBooleanSetting(path, default)
 
+  /** Builds a Long persistent setting. */
   def forLong(path: String, default: Long)(implicit settings: BaseSettings): PersistentSetting[Long] =
     new PersistentLongSetting(path, default)
 
+  /** Builds a String persistent setting. */
   def forString(path: String, default: String)(implicit settings: BaseSettings): PersistentSetting[String] =
     new PersistentStringSetting(path, default)
 
+  /** Builds an EnumerationEx persistent setting. */
   def forEnumerationEx[T <: EnumerationEx](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T): PersistentSetting[T#Value] =
     new PersistentEnumerationExSetting[T](path, default)
 
+  /** Builds a scala Enumeration persistent setting. */
   def forSEnumeration[T <: sEnumeration](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T): PersistentSetting[T#Value] =
     new PersistentSEnumerationSetting[T](path, default)
 
