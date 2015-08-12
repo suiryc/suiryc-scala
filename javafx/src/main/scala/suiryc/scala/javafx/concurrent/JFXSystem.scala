@@ -1,6 +1,6 @@
 package suiryc.scala.javafx.concurrent
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import grizzled.slf4j.Logging
 import javafx.application.Platform
 import scala.concurrent.{Await, Future}
@@ -23,9 +23,17 @@ object JFXSystem
   val config = CoreSystem.config.getConfig("javafx")
   protected val warnReentrant = config.getBoolean("system.warn-reentrant")
   protected val system = CoreSystem.system
-  protected val jfxActor = system.actorOf(Props[JFXActor].withDispatcher("javafx.dispatcher"), "JavaFX-dispatcher")
+  protected val jfxActor = newJFXActor(Props[JFXActor], "JavaFX-dispatcher")
 
   import system.dispatcher
+
+  /** Create an actor using the JavaFX thread backed dispatcher. */
+  def newJFXActor(props: Props): ActorRef =
+    system.actorOf(props.withDispatcher("javafx.dispatcher"))
+
+  /** Create an actor using the JavaFX thread backed dispatcher. */
+  def newJFXActor(props: Props, name: String): ActorRef =
+    system.actorOf(props.withDispatcher("javafx.dispatcher"), name)
 
   @inline protected def reentrant() {
     if (warnReentrant) {
