@@ -148,7 +148,7 @@ object RichObservableValue {
   import scala.language.implicitConversions
 
   /** Implicit conversion. */
-  implicit def toRich[A](v: ObservableValue[A]): RichObservableValue[A] =
+  implicit def toRichObservableValue[A](v: ObservableValue[A]): RichObservableValue[A] =
     new RichObservableValue(v)
 
   /**

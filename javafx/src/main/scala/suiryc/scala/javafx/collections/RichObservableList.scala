@@ -124,7 +124,7 @@ object RichObservableList {
   import scala.language.implicitConversions
 
   /** Implicit conversion. */
-  implicit def toRich[A](v: ObservableList[A]): RichObservableList[A] =
+  implicit def toRichObservableList[A](v: ObservableList[A]): RichObservableList[A] =
     new RichObservableList(v)
 
   /**
