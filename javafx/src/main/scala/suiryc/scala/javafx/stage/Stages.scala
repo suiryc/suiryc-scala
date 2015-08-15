@@ -3,7 +3,7 @@ package suiryc.scala.javafx.stage
 import grizzled.slf4j.Logging
 import javafx.beans.property.ReadOnlyDoubleProperty
 import javafx.stage.Stage
-import suiryc.scala.javafx.beans.property.RichReadOnlyProperty._
+import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.javafx.concurrent.JFXSystem
 
 

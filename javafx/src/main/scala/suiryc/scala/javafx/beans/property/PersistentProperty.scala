@@ -1,7 +1,7 @@
 package suiryc.scala.javafx.beans.property
 
 import javafx.beans.property.SimpleObjectProperty
-import suiryc.scala.javafx.beans.property.RichReadOnlyProperty._
+import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.settings.PersistentSetting
 
 /**

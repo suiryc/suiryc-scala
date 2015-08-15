@@ -1,12 +1,10 @@
-package suiryc.scala.javafx.beans.property
+package suiryc.scala.javafx.beans.value
 
-import javafx.beans.property.ReadOnlyProperty
 import javafx.beans.value.ObservableValue
 import suiryc.scala.concurrent.Cancellable
-import suiryc.scala.javafx.beans.value.ChangeListener
 
 /**
- * ReadOnlyProperty enhancements.
+ * ObservableValue enhancements.
  *
  * Allows to attach listening code (adds a new listener) and returns a
  * subscription that can be cancelled (removes the listener).
@@ -19,10 +17,10 @@ import suiryc.scala.javafx.beans.value.ChangeListener
  * Notes:
  *   - subscription does not have its own class name and is simply a
  *     'Cancellable'
- *   - 'Property' is derived from 'ReadOnlyProperty', so we only need to handle
- *     the latter
+ *   - implementations such as 'Property' and 'ReadOnlyProperty' also benefits
+ *     from those enhancements
  */
-class RichReadOnlyProperty[A](val underlying: ReadOnlyProperty[A]) extends AnyVal {
+class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal {
 
   /**
    * Listens value change with auto subscription and chained subscriptions.
@@ -42,7 +40,7 @@ class RichReadOnlyProperty[A](val underlying: ReadOnlyProperty[A]) extends AnyVa
     // So we have to first create a dummy subscription to give to the listening
     // code, which allows us to create the actual listener. Then we can provide
     // the listener to the dummy subscription.
-    val subscription = new RichReadOnlyProperty.CancellableListener[A] {
+    val subscription = new RichObservableValue.CancellableListener[A] {
       override def cancel() {
         chain.foreach(_.cancel())
         underlying.removeListener(listener)
@@ -148,16 +146,16 @@ class RichReadOnlyProperty[A](val underlying: ReadOnlyProperty[A]) extends AnyVa
 
 }
 
-object RichReadOnlyProperty {
+object RichObservableValue {
 
   import scala.language.implicitConversions
 
   /** Implicit conversion. */
-  implicit def toRichReadOnlyProperty[A](v: ReadOnlyProperty[A]): RichReadOnlyProperty[A] =
-    new RichReadOnlyProperty(v)
+  implicit def toRich[A](v: ObservableValue[A]): RichObservableValue[A] =
+    new RichObservableValue(v)
 
   /**
-   * Attaches listening code with auto subscription to multiple properties.
+   * Attaches listening code with auto subscription to multiple observables.
    *
    * The created subscription removes all listeners upon cancellation.
    *
@@ -165,7 +163,7 @@ object RichReadOnlyProperty {
    * @param fn listening code
    * @return subscription
    */
-  def listen2[A](props: Seq[ReadOnlyProperty[_ <: A]], fn: (Cancellable, ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
+  def listen2[A](props: Seq[ObservableValue[_ <: A]], fn: (Cancellable, ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
     val dummyCancellable = new Cancellable {
       override def cancel() {
         super.cancel()
@@ -177,16 +175,16 @@ object RichReadOnlyProperty {
     }
   }
 
-  /** Attaches listening code with auto subscription to multiple properties. */
-  def listen2[A](props: Seq[ReadOnlyProperty[_ <: A]], fn: (Cancellable, A) => Unit): Cancellable =
+  /** Attaches listening code with auto subscription to multiple observables. */
+  def listen2[A](props: Seq[ObservableValue[_ <: A]], fn: (Cancellable, A) => Unit): Cancellable =
     listen2[A](props, (s: Cancellable, _: ObservableValue[_ <: A], _: A, v: A) => fn(s, v))
 
-  /** Attaches listening code with auto subscription to multiple properties. */
-  def listen2(props: Seq[ReadOnlyProperty[_ <: Object]], fn: Cancellable => Unit): Cancellable =
+  /** Attaches listening code with auto subscription to multiple observables. */
+  def listen2(props: Seq[ObservableValue[_ <: Object]], fn: Cancellable => Unit): Cancellable =
     listen2[Any](props, (s: Cancellable, _: ObservableValue[_ <: Any], _: Any, _: Any) => fn(s))
 
   /**
-   * Attaches listening code to multiple properties.
+   * Attaches listening code to multiple observables.
    *
    * The created subscription removes all listeners upon cancellation.
    *
@@ -194,7 +192,7 @@ object RichReadOnlyProperty {
    * @param fn listening code
    * @return subscription
    */
-  def listen[A](props: Seq[ReadOnlyProperty[_ <: A]], fn: (ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
+  def listen[A](props: Seq[ObservableValue[_ <: A]], fn: (ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
     val dummyCancellable = new Cancellable {
       override def cancel() {
         super.cancel()
@@ -206,12 +204,12 @@ object RichReadOnlyProperty {
     }
   }
 
-  /** Attaches listening code to multiple properties. */
-  def listen[A](props: Seq[ReadOnlyProperty[_ <: A]], fn: A => Unit): Cancellable =
+  /** Attaches listening code to multiple observables. */
+  def listen[A](props: Seq[ObservableValue[_ <: A]], fn: A => Unit): Cancellable =
     listen[A](props, (_: ObservableValue[_ <: A], _: A, v: A) => fn(v))
 
-  /** Attaches listening code to multiple properties. */
-  def listen(props: Seq[ReadOnlyProperty[_ <: Object]], fn: => Unit): Cancellable =
+  /** Attaches listening code to multiple observables. */
+  def listen(props: Seq[ObservableValue[_ <: Object]], fn: => Unit): Cancellable =
     listen[Any](props, (_: ObservableValue[_ <: Any], _: Any, _: Any) => fn)
 
   /** Dummy subscription used for auto subscription. */
