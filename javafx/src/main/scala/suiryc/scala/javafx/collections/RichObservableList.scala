@@ -1,23 +1,23 @@
-package suiryc.scala.javafx.beans.value
+package suiryc.scala.javafx.collections
 
-import javafx.beans.value.ObservableValue
+import javafx.{collections => jfxc}
+import javafx.collections.ObservableList
 import suiryc.scala.concurrent.Cancellable
 
 /**
- * ObservableValue enhancements.
+ * ObservableList enhancements.
  *
  * Allows to attach listening code (adds a new listener) and returns a
  * subscription that can be cancelled (removes the listener).
  * Handles multiple variants:
  *   - listening code can receive its own subscription and cancel itself
- *   - listening code can receive the whole observed change, only the new value
- *     or nothing
+ *   - listening code can receive the whole observed change or nothing
  *   - other subscriptions can be attached to chain cancellations
  *
  * Note: subscription does not have its own class name and is simply a
  * 'Cancellable'.
  */
-class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal {
+class RichObservableList[A](val underlying: ObservableList[A]) extends AnyVal {
 
   /**
    * Listens change with auto subscription and chained subscriptions.
@@ -30,21 +30,21 @@ class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal 
    * @param fn listening function
    * @return new subscription chained with given ones
    */
-  def listen2(chain: Seq[Cancellable], fn: (Cancellable, ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
+  def listen2(chain: Seq[Cancellable], fn: (Cancellable, jfxc.ListChangeListener.Change[_ <: A]) => Unit): Cancellable = {
     // We need to create a subscription to give to the listening code. To do so
     // we need to create a listener, which is based on the listening code and
     // thus needs the subscription.
     // So we have to first create a dummy subscription to give to the listening
     // code, which allows us to create the actual listener. Then we can provide
     // the listener to the dummy subscription.
-    val subscription = new RichObservableValue.CancellableListener[A] {
+    val subscription = new RichObservableList.CancellableListener[A] {
       override def cancel() {
         chain.foreach(_.cancel())
         underlying.removeListener(listener)
         super.cancel()
       }
     }
-    val listener = ChangeListener[A](fn(subscription, _, _, _))
+    val listener = ListChangeListener[A](fn(subscription, _))
 
     // Note: it is important to set the listener before listening to value
     // changes.
@@ -55,36 +55,24 @@ class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal 
   }
 
   /** Listens change with auto subscription and chained subscription. */
-  def listen2(chain: Cancellable, fn: (Cancellable, ObservableValue[_ <: A], A, A) => Unit): Cancellable =
+  def listen2(chain: Cancellable, fn: (Cancellable, jfxc.ListChangeListener.Change[_ <: A]) => Unit): Cancellable =
     listen2(Seq(chain), fn)
 
   /** Listens change with auto subscription. */
-  def listen2(fn: (Cancellable, ObservableValue[_ <: A], A, A) => Unit): Cancellable =
+  def listen2(fn: (Cancellable, jfxc.ListChangeListener.Change[_ <: A]) => Unit): Cancellable =
     listen2(Seq.empty, fn)
 
   /** Listens change with auto subscription and chained subscriptions. */
-  def listen2(chain: Seq[Cancellable], fn: (Cancellable, A) => Unit): Cancellable =
-    listen2(chain, (s: Cancellable, _: ObservableValue[_ <: A], _: A, v: A) => fn(s, v))
-
-  /** Listens change with auto subscription and chained subscription. */
-  def listen2(chain: Cancellable, fn: (Cancellable, A) => Unit): Cancellable =
-    listen2(chain, (s: Cancellable, _: ObservableValue[_ <: A], _: A, v: A) => fn(s, v))
-
-  /** Listens change with auto subscription. */
-  def listen2(fn: (Cancellable, A) => Unit): Cancellable =
-    listen2((s, _, _, v) => fn(s, v))
-
-  /** Listens change with auto subscription and chained subscriptions. */
   def listen2(chain: Seq[Cancellable], fn: Cancellable => Unit): Cancellable =
-    listen2(chain, (s: Cancellable, _: ObservableValue[_ <: A], _: A, _: A) => fn(s))
+    listen2(chain, (s: Cancellable, _: jfxc.ListChangeListener.Change[_ <: A]) => fn(s))
 
   /** Listens change with auto subscription and chained subscription. */
   def listen2(chain: Cancellable, fn: Cancellable => Unit): Cancellable =
-    listen2(chain, (s: Cancellable, _: ObservableValue[_ <: A], _: A, _: A) => fn(s))
+    listen2(chain, (s: Cancellable, _: jfxc.ListChangeListener.Change[_ <: A]) => fn(s))
 
   /** Listens change with auto subscription. */
   def listen2(fn: Cancellable => Unit): Cancellable =
-    listen2((s, _, _, _) => fn(s))
+    listen2((s, _) => fn(s))
 
   /**
    * Listens change with chained subscriptions.
@@ -96,8 +84,8 @@ class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal 
    * @param fn listening function
    * @return new subscription chained with given ones
    */
-  def listen(chain: Seq[Cancellable], fn: (ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
-    val listener = ChangeListener[A](fn)
+  def listen(chain: Seq[Cancellable], fn: jfxc.ListChangeListener.Change[_ <: A] => Unit): Cancellable = {
+    val listener = ListChangeListener[A](fn)
     underlying.addListener(listener)
 
     new Cancellable {
@@ -110,46 +98,34 @@ class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal 
   }
 
   /** Listens change with chained subscription. */
-  def listen(chain: Cancellable, fn: (ObservableValue[_ <: A], A, A) => Unit): Cancellable =
+  def listen(chain: Cancellable, fn: (jfxc.ListChangeListener.Change[_ <: A]) => Unit): Cancellable =
     listen(Seq(chain), fn)
 
   /** Listens change. */
-  def listen(fn: (ObservableValue[_ <: A], A, A) => Unit): Cancellable =
+  def listen(fn: jfxc.ListChangeListener.Change[_ <: A] => Unit): Cancellable =
     listen(Seq.empty, fn)
 
   /** Listens change with chained subscriptions. */
-  def listen(chain: Seq[Cancellable], fn: A => Unit): Cancellable =
-    listen(chain, (_: ObservableValue[_ <: A], _: A, v: A) => fn(v))
-
-  /** Listens change with chained subscription. */
-  def listen(chain: Cancellable, fn: A => Unit): Cancellable =
-    listen(chain, (_: ObservableValue[_ <: A], _: A, v: A) => fn(v))
-
-  /** Listens change. */
-  def listen(fn: A => Unit): Cancellable =
-    listen((_, _, v) => fn(v))
-
-  /** Listens change with chained subscriptions. */
   def listen(chain: Seq[Cancellable], fn: => Unit): Cancellable =
-    listen(chain, (_: ObservableValue[_ <: A], _: A, _: A) => fn)
+    listen(chain, (_: jfxc.ListChangeListener.Change[_ <: A]) => fn)
 
   /** Listens change with chained subscription. */
   def listen(chain: Cancellable, fn: => Unit): Cancellable =
-    listen(chain, (_: ObservableValue[_ <: A], _: A, _: A) => fn)
+    listen(chain, (_: jfxc.ListChangeListener.Change[_ <: A]) => fn)
 
   /** Listens change. */
   def listen(fn: => Unit): Cancellable =
-    listen((_, _, _) => fn)
+    listen(_ => fn)
 
 }
 
-object RichObservableValue {
+object RichObservableList {
 
   import scala.language.implicitConversions
 
   /** Implicit conversion. */
-  implicit def toRich[A](v: ObservableValue[A]): RichObservableValue[A] =
-    new RichObservableValue(v)
+  implicit def toRich[A](v: ObservableList[A]): RichObservableList[A] =
+    new RichObservableList(v)
 
   /**
    * Attaches listening code with auto subscription to multiple observables.
@@ -160,7 +136,7 @@ object RichObservableValue {
    * @param fn listening code
    * @return subscription
    */
-  def listen2[A](observables: Seq[ObservableValue[_ <: A]], fn: (Cancellable, ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
+  def listen2[A](observables: Seq[ObservableList[_ <: A]], fn: (Cancellable, jfxc.ListChangeListener.Change[_ <: A]) => Unit): Cancellable = {
     val dummyCancellable = new Cancellable {
       override def cancel() {
         super.cancel()
@@ -173,12 +149,8 @@ object RichObservableValue {
   }
 
   /** Attaches listening code with auto subscription to multiple observables. */
-  def listen2[A](observables: Seq[ObservableValue[_ <: A]], fn: (Cancellable, A) => Unit): Cancellable =
-    listen2[A](observables, (s: Cancellable, _: ObservableValue[_ <: A], _: A, v: A) => fn(s, v))
-
-  /** Attaches listening code with auto subscription to multiple observables. */
-  def listen2(observables: Seq[ObservableValue[_ <: Object]], fn: Cancellable => Unit): Cancellable =
-    listen2[Any](observables, (s: Cancellable, _: ObservableValue[_ <: Any], _: Any, _: Any) => fn(s))
+  def listen2(observables: Seq[ObservableList[_ <: Object]], fn: Cancellable => Unit): Cancellable =
+    listen2[Any](observables, (s: Cancellable, _: jfxc.ListChangeListener.Change[_ <: Any]) => fn(s))
 
   /**
    * Attaches listening code to multiple observables.
@@ -189,7 +161,7 @@ object RichObservableValue {
    * @param fn listening code
    * @return subscription
    */
-  def listen[A](observables: Seq[ObservableValue[_ <: A]], fn: (ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
+  def listen[A](observables: Seq[ObservableList[_ <: A]], fn: jfxc.ListChangeListener.Change[_ <: A] => Unit): Cancellable = {
     val dummyCancellable = new Cancellable {
       override def cancel() {
         super.cancel()
@@ -202,16 +174,12 @@ object RichObservableValue {
   }
 
   /** Attaches listening code to multiple observables. */
-  def listen[A](observables: Seq[ObservableValue[_ <: A]], fn: A => Unit): Cancellable =
-    listen[A](observables, (_: ObservableValue[_ <: A], _: A, v: A) => fn(v))
-
-  /** Attaches listening code to multiple observables. */
-  def listen(observables: Seq[ObservableValue[_ <: Object]], fn: => Unit): Cancellable =
-    listen[Any](observables, (_: ObservableValue[_ <: Any], _: Any, _: Any) => fn)
+  def listen(observables: Seq[ObservableList[_ <: Object]], fn: => Unit): Cancellable =
+    listen[Any](observables, (_: jfxc.ListChangeListener.Change[_ <: Any]) => fn)
 
   /** Dummy subscription used for auto subscription. */
   trait CancellableListener[A] extends Cancellable {
-    var listener: ChangeListener[A] = _
+    var listener: ListChangeListener[A] = _
   }
 
 }
