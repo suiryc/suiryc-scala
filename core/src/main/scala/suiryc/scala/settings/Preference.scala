@@ -71,83 +71,38 @@ trait Preference[T] {
 }
 
 /** Boolean preference. */
-class BooleanPreference(
-  protected val path: String,
-  val default: Boolean
-)(implicit val prefs: Preferences)
-  extends Preference[Boolean]
-{
-
-  override protected def prefsValue(default: Boolean): Boolean =
-    prefs.getBoolean(path, default)
-
-  override protected def updateValue(v: Boolean) =
-    prefs.putBoolean(path, v)
-
+class BooleanPreference(protected val path: String, val default: Boolean)(implicit val prefs: Preferences) extends Preference[Boolean] {
+  override protected def prefsValue(default: Boolean): Boolean = prefs.getBoolean(path, default)
+  override protected def updateValue(v: Boolean) = prefs.putBoolean(path, v)
 }
 
 /** Long preference. */
-class LongPreference(
- protected val path: String,
- val default: Long
-)(implicit val prefs: Preferences)
-  extends Preference[Long]
-{
-
-  override protected def prefsValue(default: Long): Long =
-    prefs.getLong(path, default)
-
-  override protected def updateValue(v: Long) =
-    prefs.putLong(path, v)
-
+class LongPreference(protected val path: String, val default: Long)(implicit val prefs: Preferences) extends Preference[Long] {
+  override protected def prefsValue(default: Long): Long = prefs.getLong(path, default)
+  override protected def updateValue(v: Long) = prefs.putLong(path, v)
 }
 
 /** String preference. */
-class StringPreference(
- protected val path: String,
- val default: String
-)(implicit val prefs: Preferences)
-  extends Preference[String]
-{
-
-  override protected def prefsValue(default: String): String =
-    prefs.get(path, default)
-
-  override protected def updateValue(v: String) =
-    prefs.put(path, v)
-
+class StringPreference(protected val path: String, val default: String)(implicit val prefs: Preferences) extends Preference[String] {
+  override protected def prefsValue(default: String): String = prefs.get(path, default)
+  override protected def updateValue(v: String) = prefs.put(path, v)
 }
 
 /** EnumerationEx preference. */
-class EnumerationExPreference[T <: EnumerationEx](
-  protected val path: String,
-  val default: T#Value
-)(implicit val prefs: Preferences, enum: T)
-  extends Preference[T#Value]
-{
-
-  override protected def prefsValue(default: T#Value): T#Value =
-    enum(prefs.get(path, default.toString))
-
-  override protected def updateValue(v: T#Value) =
-    prefs.put(path, v.toString)
-
+class EnumerationExPreference[T <: EnumerationEx](protected val path: String, val default: T#Value)(implicit val prefs: Preferences, enum: T) extends Preference[T#Value] {
+  override protected def prefsValue(default: T#Value): T#Value = enum(prefs.get(path, default.toString))
+  override protected def updateValue(v: T#Value) = prefs.put(path, v.toString)
 }
 
-/** Scala Enumeration preference. */
-class SEnumerationPreference[T <: sEnumeration](
-  protected val path: String,
-  val default: T#Value
-)(implicit val prefs: Preferences, enum: T)
-  extends Preference[T#Value]
-{
+/** Special Enumeration preference. */
+class SEnumerationPreference[T <: sEnumeration](protected val path: String, val default: T#Value)(implicit val prefs: Preferences, enum: T) extends Preference[T#Value] {
+  override protected def prefsValue(default: T#Value): T#Value = enum.withName(prefs.get(path, default.toString))
+  override protected def updateValue(v: T#Value) = prefs.put(path, v.toString)
+}
 
-  override protected def prefsValue(default: T#Value): T#Value =
-    enum.withName(prefs.get(path, default.toString))
-
-  override protected def updateValue(v: T#Value) =
-    prefs.put(path, v.toString)
-
+/** Preference builder. */
+trait PreferenceBuilder[T] {
+  def build(path: String, default: T)(implicit prefs: Preferences): Preference[T]
 }
 
 object Preference {
@@ -157,24 +112,31 @@ object Preference {
   /** Implicit function to get actual value from a preference. */
   implicit def toValue[T](p: Preference[T]): T = p()
 
-  /** Builds a Boolean preference. */
-  def forBoolean(path: String, default: Boolean)(implicit prefs: Preferences): Preference[Boolean] =
-    new BooleanPreference(path, default)
-
-  /** Builds a Long preference. */
-  def forLong(path: String, default: Long)(implicit prefs: Preferences): Preference[Long] =
-    new LongPreference(path, default)
-
-  /** Builds a String preference. */
-  def forString(path: String, default: String)(implicit prefs: Preferences): Preference[String] =
-    new StringPreference(path, default)
+  /** Builds a preference for a type with implicit builder. */
+  def from[T](path: String, default: T)(implicit prefs: Preferences, builder: PreferenceBuilder[T]): Preference[T] =
+    builder.build(path, default)
 
   /** Builds an EnumerationEx preference. */
-  def forEnumerationEx[T <: EnumerationEx](path: String, default: T#Value)(implicit prefs: Preferences, enum: T): Preference[T#Value] =
-    new EnumerationExPreference[T](path, default)
+  def from[T <: EnumerationEx](path: String, default: T#Value)(implicit prefs: Preferences, enum: T): Preference[T#Value] =
+    new EnumerationExPreference(path, default)
 
-  /** Builds a scala Enumeration preference. */
-  def forSEnumeration[T <: sEnumeration](path: String, default: T#Value)(implicit prefs: Preferences, enum: T): Preference[T#Value] =
-    new SEnumerationPreference[T](path, default)
+  /** Builds a special Enumeration preference. */
+  def from[T <: sEnumeration](path: String, default: T#Value)(implicit prefs: Preferences, enum: T): Preference[T#Value] =
+    new SEnumerationPreference(path, default)
+
+  /** Boolean preference builder. */
+  implicit val booleanBuilder = new PreferenceBuilder[Boolean] {
+    def build(path: String, default: Boolean)(implicit prefs: Preferences): Preference[Boolean] = new BooleanPreference(path, default)
+  }
+
+  /** Long preference builder. */
+  implicit val longBuilder = new PreferenceBuilder[Long] {
+    def build(path: String, default: Long)(implicit prefs: Preferences): Preference[Long] = new LongPreference(path, default)
+  }
+
+  /** String preference builder. */
+  implicit val stringBuilder = new PreferenceBuilder[String] {
+    def build(path: String, default: String)(implicit prefs: Preferences): Preference[String] = new StringPreference(path, default)
+  }
 
 }
