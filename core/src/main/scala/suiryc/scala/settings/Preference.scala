@@ -1,5 +1,7 @@
 package suiryc.scala.settings
 
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.prefs.Preferences
 import suiryc.scala.misc.{Enumeration => sEnumeration}
 import suiryc.scala.misc.EnumerationEx
@@ -138,5 +140,31 @@ object Preference {
   implicit val stringBuilder = new PreferenceBuilder[String] {
     def build(path: String, default: String)(implicit prefs: Preferences): Preference[String] = new StringPreference(path, default)
   }
+
+  /**
+   * Gets a preference builder mapping between Outer and Inner types.
+   *
+   * Uses given conversion functions.
+   * Note that given functions must handle possibly 'null' values.
+   *
+   * @param toInner function to convert value from Inner to Outer type
+   * @param toOuter function to convert value from Outer to Inner type
+   */
+  def typeBuilder[Outer, Inner](toInner: Outer => Inner, toOuter: Inner => Outer)(implicit innerBuilder: PreferenceBuilder[Inner]) = new PreferenceBuilder[Outer] {
+    def build(bpath: String, bdefault: Outer)(implicit bprefs: Preferences): Preference[Outer] = new Preference[Outer] {
+      private val prefInner = innerBuilder.build(bpath, toInner(bdefault))
+      override protected val path: String = bpath
+      override val default: Outer = bdefault
+      override val prefs: Preferences = bprefs
+      override protected def prefsValue(default: Outer): Outer = prefInner.option.map(toOuter).getOrElse(default)
+      override protected def updateValue(v: Outer) = prefInner.updateValue(toInner(v))
+    }
+  }
+
+  /** Path preference builder. */
+  implicit val pathBuilder = typeBuilder[Path, String](
+    { p => Option(p).map(_.toString).orNull },
+    { s => Option(s).map(Paths.get(_)).orNull }
+  )
 
 }
