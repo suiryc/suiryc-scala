@@ -32,15 +32,15 @@ trait SettingSnapshot[T] {
 
 object SettingSnapshot {
 
-  /** Builds a snapshot from a persistent setting. */
-  def apply[T](setting: PersistentSetting[T]): SettingSnapshot[T] =
+  /** Builds a snapshot from a Preference. */
+  def apply[T](preference: Preference[T]): SettingSnapshot[T] =
     new SettingSnapshot[T] {
 
       override protected def getValue =
-        setting()
+        preference()
 
       override protected def setValue(v: T) {
-        setting() = v
+        preference() = v
       }
 
     }
@@ -54,6 +54,19 @@ object SettingSnapshot {
 
       override protected def setValue(v: T) {
         property.setValue(v)
+      }
+
+    }
+
+  /** Builds a snapshot from a persistent setting. */
+  def apply[T](setting: PersistentSetting[T]): SettingSnapshot[T] =
+    new SettingSnapshot[T] {
+
+      override protected def getValue =
+        setting()
+
+      override protected def setValue(v: T) {
+        setting() = v
       }
 
     }
