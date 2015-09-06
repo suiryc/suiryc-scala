@@ -6,8 +6,10 @@ import com.typesafe.config.ConfigFactory
 
 object CoreSystem {
 
+  /** Configuration ('suiryc-scala' path). */
   val config = ConfigFactory.load().getConfig("suiryc-scala")
 
+  /** Core akka system. */
   val system = ActorSystem("suiryc-core", config)
 
 }
