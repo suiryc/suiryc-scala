@@ -1,75 +1,44 @@
 package suiryc.scala.javafx.stage
 
-import grizzled.slf4j.Logging
-import javafx.beans.property.ReadOnlyDoubleProperty
 import javafx.stage.Stage
-import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.javafx.concurrent.JFXSystem
 
+/** JavaFX Stage helpers. */
+object Stages {
 
-object Stages
-  extends Logging
-{
-
+  /**
+   * Tracks minimum stage dimensions.
+   *
+   * Sets stage minimum width and height according to its content.
+   * If given, also sets stage size once done.
+   *
+   * @param stage stage to set minimum dimensions on
+   * @param size initial stage size to set, or None
+   */
   def trackMinimumDimensions(stage: Stage, size: Option[(Double, Double)] = None) {
-    val title = stage.getTitle
+    // To get the stage minimum dimensions we need to:
+    // 1. Let JavaFX handle the changes: do our stuff with Platform.runLater
+    JFXSystem.runLater {
+      val scene = stage.getScene
+      // 2. Get the decoration size: difference between the stage and the scene
+      val decorationWidth = stage.getWidth - scene.getWidth
+      val decorationHeight = stage.getHeight - scene.getHeight
+      // 3. Ask JavaFX for the scene content minimum width and height
+      // Note: '-1' is a special value to retrieve the current value
+      val minWidth = scene.getRoot.minWidth(-1) + decorationWidth
+      val minHeight = scene.getRoot.minHeight(-1) + decorationHeight
 
-    /* After show(), the stage dimension returned by JavaFX does not seem to
-     * include the platform decorations (at least under Linux). Somehow those
-     * appear to be included later, once we return.
-     * However changes in those dimensions can be tracked, so as a hack we can
-     * still wait a bit to get them.
-     *
-     * Notes to take into account:
-     *  - it appears JavaFX do not go directly to the actual size, but
-     *    shrinks down before
-     *  - when stage is not yet showing, initial stage value is NaN and
-     *    scene is 0; actual initial value is set upon first observed change
-     */
-    def trackMinimumDimension(label: String, setStageMin: Double => Unit,
-      stageProp: ReadOnlyDoubleProperty, sceneProp: ReadOnlyDoubleProperty,
-      setStageValue: Double => Unit, endValue: Option[Double])
-    {
-      import scala.concurrent.duration._
+      // Now we can set the stage minimum dimensions.
+      stage.setMinWidth(minWidth)
+      stage.setMinHeight(minHeight)
+      size match {
+        case Some((width, height)) =>
+          if ((stage.getWidth < width) && (width > minWidth)) stage.setWidth(width)
+          if ((stage.getHeight < height) && (height > minHeight)) stage.setHeight(height)
 
-      var sceneValue = sceneProp.get()
-      var stageValue = stageProp.get()
-
-      def atEnd() {
-        endValue foreach { v =>
-          if (v >= stageProp.get()) setStageValue(v)
-        }
-      }
-
-      logger.trace(s"Initial '$title' minimum $label stage[$stageValue] scene[$sceneValue]")
-      if (!stageValue.isNaN) setStageMin(stageValue)
-      if ((stageProp.get() <= sceneValue) || stageValue.isNaN) {
-        val subscription = stageProp.listen2 { subscription =>
-          if (stageValue.isNaN) {
-            stageValue = stageProp.get()
-            sceneValue = sceneProp.get()
-            logger.trace(s"Actualized '$title' minimum $label stage[$stageValue] scene[$sceneValue]")
-          }
-          if ((sceneProp.get() == sceneValue) && (stageProp.get() > sceneValue)) {
-            logger.trace(s"Retained '$title' minimum $label stage[${stageProp.get()}] scene[${sceneProp.get()}]")
-            subscription.cancel()
-            setStageMin(stageProp.get())
-            atEnd()
-          }
-        }
-
-        /* Make sure to unregister in any case */
-        JFXSystem.scheduleOnce(1.seconds) {
-          if (!subscription.cancelled()) {
-            subscription.cancel()
-            atEnd()
-          }
-        }
+        case None =>
       }
     }
-
-    trackMinimumDimension("width", stage.setMinWidth, stage.widthProperty, stage.getScene.widthProperty, stage.setWidth, size.map(_._1))
-    trackMinimumDimension("height", stage.setMinHeight, stage.heightProperty, stage.getScene.heightProperty, stage.setHeight, size.map(_._2))
   }
 
 }
