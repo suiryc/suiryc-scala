@@ -1,5 +1,6 @@
 package suiryc.scala.javafx.stage
 
+import javafx.geometry.BoundingBox
 import javafx.scene.control.Dialog
 import javafx.stage.Stage
 import suiryc.scala.javafx.beans.value.RichObservableValue._
@@ -54,6 +55,26 @@ object Stages {
         cancellable.cancel()
         track()
       }
+    }
+  }
+
+  /** Keeps stage bounds (x, y, width, height) upon hiding/showing. */
+  def keepBounds(stage: Stage): Unit = {
+    var box: Option[BoundingBox] = None
+
+    // Notes:
+    //  - when showing again stage after hiding, position and size are resetted
+    //  - to prevent artifacts (black areas on top or side of scene), it is
+    //    better to set position and size after showing stage; which is the case
+    //    when listening to 'showing' changes
+    stage.showingProperty.listen { showing =>
+      if (showing) box.foreach { box =>
+        stage.setX(box.getMinX)
+        stage.setY(box.getMinY)
+        stage.setWidth(box.getWidth)
+        stage.setHeight(box.getHeight)
+      }
+      else box = Some(new BoundingBox(stage.getX, stage.getY, stage.getWidth, stage.getHeight))
     }
   }
 
