@@ -12,7 +12,6 @@ import suiryc.scala.concurrent.Cancellable
  * Handles multiple variants:
  *   - listening code can receive its own subscription and cancel itself
  *   - listening code can receive the whole observed change or nothing
- *   - other subscriptions can be attached to chain cancellations
  *
  * Note: subscription does not have its own class name and is simply a
  * 'Cancellable'.
@@ -20,17 +19,14 @@ import suiryc.scala.concurrent.Cancellable
 class RichObservableList[A](val underlying: ObservableList[A]) extends AnyVal {
 
   /**
-   * Listens change with auto subscription and chained subscriptions.
+   * Listens change with auto subscription.
    *
    * Listening code is given its subscription and can auto-cancel itself.
-   * Subscription attached to created listener will first process chained
-   * subscriptions before itself upon cancellation.
    *
-   * @param chain subscriptions to chain
    * @param fn listening function
    * @return new subscription chained with given ones
    */
-  def listen2(chain: Seq[Cancellable], fn: (Cancellable, jfxc.ListChangeListener.Change[_ <: A]) => Unit): Cancellable = {
+  def listen2(fn: (Cancellable, jfxc.ListChangeListener.Change[_ <: A]) => Unit): Cancellable = {
     // We need to create a subscription to give to the listening code. To do so
     // we need to create a listener, which is based on the listening code and
     // thus needs the subscription.
@@ -39,7 +35,6 @@ class RichObservableList[A](val underlying: ObservableList[A]) extends AnyVal {
     // the listener to the dummy subscription.
     val subscription = new RichObservableList.CancellableListener[A] {
       override def cancel() {
-        chain.foreach(_.cancel())
         underlying.removeListener(listener)
         super.cancel()
       }
@@ -54,68 +49,31 @@ class RichObservableList[A](val underlying: ObservableList[A]) extends AnyVal {
     subscription
   }
 
-  /** Listens change with auto subscription and chained subscription. */
-  def listen2(chain: Cancellable, fn: (Cancellable, jfxc.ListChangeListener.Change[_ <: A]) => Unit): Cancellable =
-    listen2(Seq(chain), fn)
-
-  /** Listens change with auto subscription. */
-  def listen2(fn: (Cancellable, jfxc.ListChangeListener.Change[_ <: A]) => Unit): Cancellable =
-    listen2(Seq.empty, fn)
-
-  /** Listens change with auto subscription and chained subscriptions. */
-  def listen2(chain: Seq[Cancellable], fn: Cancellable => Unit): Cancellable =
-    listen2(chain, (s: Cancellable, _: jfxc.ListChangeListener.Change[_ <: A]) => fn(s))
-
-  /** Listens change with auto subscription and chained subscription. */
-  def listen2(chain: Cancellable, fn: Cancellable => Unit): Cancellable =
-    listen2(chain, (s: Cancellable, _: jfxc.ListChangeListener.Change[_ <: A]) => fn(s))
-
   /** Listens change with auto subscription. */
   def listen2(fn: Cancellable => Unit): Cancellable =
     listen2((s, _) => fn(s))
 
   /**
-   * Listens change with chained subscriptions.
+   * Listens change.
    *
-   * Subscription attached to created listener will first process chained
-   * subscriptions before itself upon cancellation.
-   *
-   * @param chain subscriptions to chain
    * @param fn listening function
    * @return new subscription chained with given ones
    */
-  def listen(chain: Seq[Cancellable], fn: jfxc.ListChangeListener.Change[_ <: A] => Unit): Cancellable = {
+  def listen(fn: jfxc.ListChangeListener.Change[_ <: A] => Unit): Cancellable = {
     val listener = ListChangeListener[A](fn)
     underlying.addListener(listener)
 
     new Cancellable {
       override def cancel() {
-        chain.foreach(_.cancel())
         underlying.removeListener(listener)
         super.cancel()
       }
     }
   }
 
-  /** Listens change with chained subscription. */
-  def listen(chain: Cancellable, fn: (jfxc.ListChangeListener.Change[_ <: A]) => Unit): Cancellable =
-    listen(Seq(chain), fn)
-
-  /** Listens change. */
-  def listen(fn: jfxc.ListChangeListener.Change[_ <: A] => Unit): Cancellable =
-    listen(Seq.empty, fn)
-
-  /** Listens change with chained subscriptions. */
-  def listen(chain: Seq[Cancellable], fn: => Unit): Cancellable =
-    listen(chain, (_: jfxc.ListChangeListener.Change[_ <: A]) => fn)
-
-  /** Listens change with chained subscription. */
-  def listen(chain: Cancellable, fn: => Unit): Cancellable =
-    listen(chain, (_: jfxc.ListChangeListener.Change[_ <: A]) => fn)
-
   /** Listens change. */
   def listen(fn: => Unit): Cancellable =
-    listen(_ => fn)
+    listen((_: jfxc.ListChangeListener.Change[_]) => fn)
 
 }
 
@@ -136,8 +94,8 @@ object RichObservableList {
    * @param fn listening code
    * @return subscription
    */
-  def listen2(observables: Seq[ObservableList[_ <: Object]], fn: Cancellable => Unit): Cancellable = {
-    val subscription = new CancellableListeners {
+  def listen2[A](observables: Seq[ObservableList[_ <: A]], fn: Cancellable => Unit): Cancellable = {
+    val subscription = new CancellableListeners[A] {
       override def cancel() {
         listeners.foreach { case (observable, listener) =>
           observable.removeListener(listener)
@@ -146,7 +104,7 @@ object RichObservableList {
       }
     }
     val listeners = observables.map { observable =>
-      observable -> ListChangeListener[Object]((_) => fn(subscription))
+      observable -> ListChangeListener[A]((_) => fn(subscription))
     }
 
     subscription.listeners = listeners
@@ -190,8 +148,8 @@ object RichObservableList {
   }
 
   /** Dummy subscription used for auto subscription. */
-  trait CancellableListeners extends Cancellable {
-    var listeners: Seq[(ObservableList[_ <: Object], ListChangeListener[_ <: Object])] = Nil
+  trait CancellableListeners[A] extends Cancellable {
+    var listeners: Seq[(ObservableList[_ <: A], ListChangeListener[A])] = Nil
   }
 
 }
