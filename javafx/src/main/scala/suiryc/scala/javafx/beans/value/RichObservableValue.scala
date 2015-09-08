@@ -160,7 +160,7 @@ object RichObservableValue {
    * @param fn listening code
    * @return subscription
    */
-  def listen2[A](observables: Seq[ObservableValue[_ <: A]], fn: (Cancellable, ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
+  def listen2[A](observables: Seq[ObservableValue[_ <: Object]], fn: Cancellable => Unit): Cancellable = {
     val dummyCancellable = new Cancellable {
       override def cancel() {
         super.cancel()
@@ -172,14 +172,6 @@ object RichObservableValue {
     }
   }
 
-  /** Attaches listening code with auto subscription to multiple observables. */
-  def listen2[A](observables: Seq[ObservableValue[_ <: A]], fn: (Cancellable, A) => Unit): Cancellable =
-    listen2[A](observables, (s: Cancellable, _: ObservableValue[_ <: A], _: A, v: A) => fn(s, v))
-
-  /** Attaches listening code with auto subscription to multiple observables. */
-  def listen2(observables: Seq[ObservableValue[_ <: Object]], fn: Cancellable => Unit): Cancellable =
-    listen2[Any](observables, (s: Cancellable, _: ObservableValue[_ <: Any], _: Any, _: Any) => fn(s))
-
   /**
    * Attaches listening code to multiple observables.
    *
@@ -189,7 +181,7 @@ object RichObservableValue {
    * @param fn listening code
    * @return subscription
    */
-  def listen[A](observables: Seq[ObservableValue[_ <: A]], fn: (ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
+  def listen(observables: Seq[ObservableValue[_ <: Object]], fn: => Unit): Cancellable = {
     val dummyCancellable = new Cancellable {
       override def cancel() {
         super.cancel()
@@ -200,14 +192,6 @@ object RichObservableValue {
       observable.listen(cancellable, fn)
     }
   }
-
-  /** Attaches listening code to multiple observables. */
-  def listen[A](observables: Seq[ObservableValue[_ <: A]], fn: A => Unit): Cancellable =
-    listen[A](observables, (_: ObservableValue[_ <: A], _: A, v: A) => fn(v))
-
-  /** Attaches listening code to multiple observables. */
-  def listen(observables: Seq[ObservableValue[_ <: Object]], fn: => Unit): Cancellable =
-    listen[Any](observables, (_: ObservableValue[_ <: Any], _: Any, _: Any) => fn)
 
   /** Dummy subscription used for auto subscription. */
   trait CancellableListener[A] extends Cancellable {
