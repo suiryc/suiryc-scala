@@ -137,15 +137,24 @@ object RichObservableList {
    * @return subscription
    */
   def listen2(observables: Seq[ObservableList[_ <: Object]], fn: Cancellable => Unit): Cancellable = {
-    val dummyCancellable = new Cancellable {
+    val subscription = new CancellableListeners {
       override def cancel() {
+        listeners.foreach { case (observable, listener) =>
+          observable.removeListener(listener)
+        }
         super.cancel()
       }
     }
-
-    observables.foldLeft(dummyCancellable) { (cancellable, observable) =>
-      observable.listen2(cancellable, fn)
+    val listeners = observables.map { observable =>
+      observable -> ListChangeListener[Object]((_) => fn(subscription))
     }
+
+    subscription.listeners = listeners
+    listeners.foreach { case (observable, listener) =>
+      observable.addListener(listener)
+    }
+
+    subscription
   }
 
   /**
@@ -158,20 +167,31 @@ object RichObservableList {
    * @return subscription
    */
   def listen(observables: Seq[ObservableList[_ <: Object]], fn: => Unit): Cancellable = {
-    val dummyCancellable = new Cancellable {
-      override def cancel() {
-        super.cancel()
-      }
+    val listeners = observables.map { observable =>
+      observable -> ListChangeListener[Object]((_) => fn)
+    }
+    listeners.foreach { case (observable, listener) =>
+      observable.addListener(listener)
     }
 
-    observables.foldLeft(dummyCancellable) { (cancellable, observable) =>
-      observable.listen(cancellable, fn)
+    new Cancellable {
+      override def cancel() {
+        listeners.foreach { case (observable, listener) =>
+          observable.removeListener(listener)
+        }
+        super.cancel()
+      }
     }
   }
 
   /** Dummy subscription used for auto subscription. */
   trait CancellableListener[A] extends Cancellable {
     var listener: ListChangeListener[A] = _
+  }
+
+  /** Dummy subscription used for auto subscription. */
+  trait CancellableListeners extends Cancellable {
+    var listeners: Seq[(ObservableList[_ <: Object], ListChangeListener[_ <: Object])] = Nil
   }
 
 }

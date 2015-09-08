@@ -160,16 +160,25 @@ object RichObservableValue {
    * @param fn listening code
    * @return subscription
    */
-  def listen2[A](observables: Seq[ObservableValue[_ <: Object]], fn: Cancellable => Unit): Cancellable = {
-    val dummyCancellable = new Cancellable {
+  def listen2(observables: Seq[ObservableValue[_ <: Object]], fn: Cancellable => Unit): Cancellable = {
+    val subscription = new CancellableListeners {
       override def cancel() {
+        listeners.foreach { case (observable, listener) =>
+          observable.removeListener(listener)
+        }
         super.cancel()
       }
     }
-
-    observables.foldLeft(dummyCancellable) { (cancellable, observable) =>
-      observable.listen2(cancellable, fn)
+    val listeners = observables.map { observable =>
+      observable -> ChangeListener[Object]((_, _, _) => fn(subscription))
     }
+
+    subscription.listeners = listeners
+    listeners.foreach { case (observable, listener) =>
+      observable.addListener(listener)
+    }
+
+    subscription
   }
 
   /**
@@ -182,20 +191,31 @@ object RichObservableValue {
    * @return subscription
    */
   def listen(observables: Seq[ObservableValue[_ <: Object]], fn: => Unit): Cancellable = {
-    val dummyCancellable = new Cancellable {
-      override def cancel() {
-        super.cancel()
-      }
+    val listeners = observables.map { observable =>
+      observable -> ChangeListener[Object]((_, _, _) => fn)
+    }
+    listeners.foreach { case (observable, listener) =>
+      observable.addListener(listener)
     }
 
-    observables.foldLeft(dummyCancellable) { (cancellable, observable) =>
-      observable.listen(cancellable, fn)
+    new Cancellable {
+      override def cancel() {
+        listeners.foreach { case (observable, listener) =>
+          observable.removeListener(listener)
+        }
+        super.cancel()
+      }
     }
   }
 
   /** Dummy subscription used for auto subscription. */
   trait CancellableListener[A] extends Cancellable {
     var listener: ChangeListener[A] = _
+  }
+
+  /** Dummy subscription used for auto subscription. */
+  trait CancellableListeners extends Cancellable {
+    var listeners: Seq[(ObservableValue[_ <: Object], ChangeListener[_ <: Object])] = Nil
   }
 
 }
