@@ -24,6 +24,9 @@ object Stages {
    */
   def trackMinimumDimensions(stage: Stage, size: Option[(Double, Double)] = None): Unit = {
     // Notes:
+    // The main problem is to determine the window decoration size: difference
+    // between the stage and scene sizes.
+    //
     // On Windows, letting JavaFX handle changes (by running the code with
     // Platform.runLater) before getting minimal scene root size and setting
     // stage minimal size (taking into account decoration size) works.
@@ -33,15 +36,13 @@ object Stages {
     // stage/scene dimensions may be unknown (NaN) and being changed more than
     // once while the stage is being built/displayed (0.0, 1.0, or the
     // decoration size).
-    // Simply waiting on some properties (e.g. bounds) does not always work:
+    // Simply waiting on some properties like bounds does not always work:
     // sometimes it stays NaN until user interacts with the window.
-    // Waiting on the scene/stage dimensions is not good: sometimes it changes
-    // in multiple steps (different values, only width or height, etc).
-    // What seems to work here (but not 100% on Windows) is to wait for the
-    // 'needsLayout' property (changes far less often than bounds) to become
-    // false, while trying to force layout to change by changing the stage size:
-    // if not doing so, sometimes the window decoration is not accounted in the
-    // stage size until the next user interaction.
+    // Waiting on the scene/stage dimensions is not good either: sometimes it
+    // changes in multiple steps (different values, only width or height, etc),
+    // and sometimes the stage size does not include the window decoration
+    // until user interacts with it ...
+    // There does not seem to be a viable way to do it in Linux, so don't.
 
     if (!isLinux) {
       // The actual tracking code
@@ -79,90 +80,6 @@ object Stages {
         if (showing) {
           cancellable.cancel()
           track()
-        }
-      }
-    }
-    else {
-      val root = stage.getScene.getRoot
-      var step = 0
-
-      // The actual code checking for minimum dimensions
-      def check(): Boolean = {
-        val scene = stage.getScene
-        // Get stage size
-        val stageWidth = stage.getWidth
-        val stageHeight = stage.getHeight
-        // Get scene size
-        val sceneWidth = scene.getWidth
-        val sceneHeight = scene.getHeight
-        // Ask JavaFX for the scene content minimum width and height
-        // Note: '-1' is a special value to retrieve the current value
-        val rootMinWidth = scene.getRoot.minWidth(-1)
-        val rootMinHeight = scene.getRoot.minHeight(-1)
-
-        def valueOk(v: Double, min: Double) = !v.isNaN && (v > min)
-
-        // Check all values are ok
-        // Note: when showing the stage, some or all values will be NaN the
-        // first time, 0.0 or 1.0 later and finally valid.
-        def allOk(min: Double) = valueOk(stageWidth, min) && valueOk(stageHeight, min) &&
-          valueOk(sceneWidth, min) && valueOk(sceneHeight, min) &&
-          valueOk(rootMinWidth, min) && valueOk(rootMinHeight, min)
-
-        // Note: sometimes dimensions on first step are 1.0; and we expect
-        // more valid values in other steps.
-        if (allOk(if (step == 0) 0.0 else 1.0)) {
-          if (step == 0) {
-            step += 1
-            // Change stage dimensions to try to force layout
-            stage.setWidth(stage.getWidth + 1)
-            stage.setHeight(stage.getHeight + 1)
-            false
-          }
-          else if (step == 1) {
-            step += 1
-            // Restore stage previous dimension
-            stage.setWidth(stage.getWidth - 1)
-            stage.setHeight(stage.getHeight - 1)
-            false
-          }
-          else if (stageHeight > sceneHeight) {
-            // Note: we made sure that the stage dimensions take into account
-            // decorations before performing this last step.
-            // At worst we would wait for the next user interaction.
-
-            // Get the decoration size: difference between the stage and the scene
-            val decorationWidth = stageWidth - sceneWidth
-            val decorationHeight = stageHeight - sceneHeight
-            // Compute the minimum stage size
-            val minWidth = rootMinWidth + decorationWidth
-            val minHeight = rootMinHeight + decorationHeight
-
-            // Now we can set the stage minimum dimensions
-            stage.setMinWidth(minWidth)
-            stage.setMinHeight(minHeight)
-            true
-          }
-          else false
-        }
-        else false
-      }
-
-      // Note: set stage size first, because actual final step may be completed
-      // later (user interaction).
-      size match {
-        case Some((width, height)) =>
-          stage.setWidth(width)
-          stage.setHeight(height)
-
-        case None =>
-      }
-
-      // Try to trigger layout from JavaFX
-      root.requestLayout()
-      root.needsLayoutProperty.listen2 { (cancellable, needsLayout) =>
-        if (!needsLayout && check()) {
-          cancellable.cancel()
         }
       }
     }
