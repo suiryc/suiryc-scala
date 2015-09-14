@@ -5,7 +5,7 @@ import java.io.{EOFException, InputStream, OutputStream}
 
 object IOStream {
 
-  /* XXX - move to 'RichInputStream' with implicit conversion ? */
+  // TODO - move to 'RichInputStream' with implicit conversion ?
   def readFully(input: InputStream, b: Array[Byte], off: Int, len: Int): Int = {
     @scala.annotation.tailrec
     def loop(off: Int, len: Int, total: Int): Int =
@@ -39,7 +39,7 @@ object IOStream {
     len: Option[Int] = None
   ): (T, Long) =
   {
-    /* XXX - parameter (with default value, or from Config) to set buffer size ? */
+    // TODO - parameter (with default value, or from Config) to set buffer size ?
     val buffer = new Array[Byte](16 * 1024)
     /* Note: *DO NOT* use Stream.foldLeft as it materializes the next element
      * before calling the folding function (scala 2.10).

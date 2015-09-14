@@ -61,7 +61,7 @@ trait PersistentSetting[T] extends Preference[T]
    */
   override def apply(): T =
     prefsValue(configOption.getOrElse(default))
-    // XXX - more efficient way to check whether path exists and only use 'config' if not ?
+    // TODO - more efficient way to check whether path exists and only use 'config' if not ?
     //option getOrElse(default)
 
 }

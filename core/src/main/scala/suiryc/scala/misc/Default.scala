@@ -23,7 +23,7 @@ object Default extends LowPriorityImplicitsForDefault {
   implicit def forNumeric[A](implicit n: Numeric[A]) = Default.withValue(n.zero)
   implicit val forString = Default.withValue("")
   implicit def forOption[A] = Default.withValue(None:Option[A])
-  // XXX - default value for a collection would be 'empty'
+  // TODO - default value for a collection would be 'empty'
 
   /** Gets the default value for a given type. */
   def value[A : Default] = implicitly[Default[A]].value

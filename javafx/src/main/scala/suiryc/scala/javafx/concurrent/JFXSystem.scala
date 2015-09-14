@@ -22,7 +22,7 @@ object JFXSystem
   // Note: Akka intercepts thrown exception inside JavaFX actor, thus no need to
   //try/catch when doing 'action'.
 
-  // XXX - try/catch when doing 'action' inside JavaFX thread ?
+  // TODO - try/catch when doing 'action' inside JavaFX thread ?
 
   /** Message to delegate action. */
   protected case class Action(action: () => Unit)

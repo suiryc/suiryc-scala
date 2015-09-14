@@ -12,7 +12,7 @@ class PathFinder protected(
 )
 {
 
-  /* XXX - not efficient: parent is associated to each child (== parent.get called multiple times) */
+  // TODO - not efficient: parent is associated to each child (== parent.get called multiple times)
   private def updateParent(other: PathFinder): PathFinder = {
     val newPrevious = previous map { other / _ }
     parent match {
@@ -24,7 +24,7 @@ class PathFinder protected(
     }
   }
 
-  /* XXX - could be more efficient: recursive call on previous */
+  // TODO - could be more efficient: recursive call on previous
   private def queue(other: PathFinder, include: Boolean): PathFinder =
     new PathFinder(other.filters, include, other.parent,
       Some(other.previous map { finder => queue(finder, finder.include) } getOrElse this))
@@ -35,7 +35,7 @@ class PathFinder protected(
 
   def /(other: PathFinder): PathFinder = other.updateParent(this)
 
-  /* XXX - not efficient: parent is associated to each child */
+  // TODO - not efficient: parent is associated to each child
   private def addFilters(filter: PathFilter*): PathFinder =
     new PathFinder(filters ::: filter.toList, include, parent,
       previous map { _ addFilters(filter: _*) })
