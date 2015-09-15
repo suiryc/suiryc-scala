@@ -49,8 +49,6 @@ object TableViews {
         val columns2 = columnsDesc.filterNot { case (key, _) =>
           keys.contains(key)
         }.map(_._2)
-        println(columns1)
-        println(columns2)
         columns1 ::: columns2
 
       case None =>
