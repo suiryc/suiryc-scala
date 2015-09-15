@@ -4,6 +4,7 @@ import javafx.geometry.BoundingBox
 import javafx.scene.control.Dialog
 import javafx.stage.Stage
 import suiryc.scala.javafx.beans.value.RichObservableValue._
+import suiryc.scala.settings.Preference
 
 /** JavaFX Stage helpers. */
 object Stages {
@@ -112,5 +113,67 @@ object Stages {
    */
   def getStage(dialog: Dialog[_]): Stage =
     dialog.getDialogPane.getScene.getWindow.asInstanceOf[Stage]
+
+  /** Stage location. */
+  case class StageLocation(x: Double, y: Double, width: Double, height: Double, maximized: Boolean)
+
+  /**
+   * Gets stage location.
+   *
+   * There is no valid location is stage is minimized.
+   */
+  def getLocation(stage: Stage): Option[StageLocation] =
+    if (stage.isIconified) None
+    else Some(StageLocation(stage.getX, stage.getY, stage.getWidth, stage.getHeight, stage.isMaximized))
+
+  /** Sets stage location. */
+  def setLocation(stage: Stage, loc: StageLocation, setSize: Boolean): Unit = {
+    stage.setX(loc.x)
+    stage.setY(loc.y)
+    if (setSize) {
+      stage.setWidth(loc.width)
+      stage.setHeight(loc.height)
+    }
+    stage.setMaximized(loc.maximized)
+  }
+
+  /** Stage location preference builder. */
+  implicit val locationBuilder = {
+
+    import Preference._
+
+    def fromLocation(loc: StageLocation): String =
+      s"x=${loc.x};y=${loc.y};w=${loc.width};h=${loc.height};m=${loc.maximized}"
+
+    def toLocation(str: String): StageLocation = {
+      val params = str.split(';').flatMap { param =>
+        param.split('=').toList match {
+          case key :: value :: Nil => Some(key -> value)
+          case _                   => None
+        }
+      }.toMap
+
+      def getDoubleParam(key: String): Double =
+        try { params.get(key).map(_.toDouble).getOrElse(0.0) }
+        catch { case ex: Throwable => 0.0 }
+
+      def getBooleanParam(key: String): Boolean =
+        try { params.get(key).exists(_.toBoolean) }
+        catch { case ex: Throwable => false }
+
+      val x = getDoubleParam("x")
+      val y = getDoubleParam("y")
+      val width = getDoubleParam("w")
+      val height = getDoubleParam("h")
+      val maximized = getBooleanParam("m")
+
+      StageLocation(x, y, width, height, maximized)
+    }
+
+    Preference.typeBuilder[StageLocation, String](
+      { l => Option(l).map(fromLocation).orNull },
+      { s => Option(s).map(toLocation).orNull }
+    )
+  }
 
 }
