@@ -3,7 +3,7 @@ package suiryc.scala.javafx.scene.control
 import java.io.{PrintWriter, StringWriter}
 import javafx.scene.control.{Alert, ButtonType, Label, TextArea}
 import javafx.scene.layout.{GridPane, Priority}
-import javafx.stage.Window
+import javafx.stage.{Stage, Window}
 import suiryc.scala.RichOption._
 import suiryc.scala.javafx.concurrent.JFXSystem
 
@@ -16,7 +16,12 @@ object Dialogs {
     // Note: it is mandatory to create the 'Alert' inside JavaFX thread.
     JFXSystem.await({
       val alert = new Alert(Alert.AlertType.ERROR)
-      owner.foreach(alert.initOwner)
+      // Note: if owner is a Stage, its Scene properties are used, so make sure
+      // there is one.
+      owner.find {
+        case stage: Stage => Option(stage.getScene).isDefined
+        case _ => true
+      }.foreach(alert.initOwner)
       title.foreach(alert.setTitle)
       alert.setHeaderText(headerText.orNull)
       alert.setContentText(null)
