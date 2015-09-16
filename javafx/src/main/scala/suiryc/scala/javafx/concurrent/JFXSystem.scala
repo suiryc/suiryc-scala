@@ -20,7 +20,7 @@ object JFXSystem
 {
 
   // Note: Akka intercepts thrown exception inside JavaFX actor, thus no need to
-  //try/catch when doing 'action'.
+  // try/catch when doing 'action'.
 
   // TODO - try/catch when doing 'action' inside JavaFX thread ?
 
@@ -96,7 +96,7 @@ object JFXSystem
   /**
    * Delegates action to JavaFX using dedicated actor.
    *
-   * Unless requested to execute 'later' (i.e. not synchonously), executes the
+   * Unless requested to execute 'later' (i.e. not synchronously), executes the
    * action right away if we are in the JavaFX thread.
    */
   def schedule(action: => Unit, later: Boolean = false, logReentrant: Boolean = true) = {
