@@ -5,6 +5,7 @@ import javafx.scene.control.{Alert, ButtonType, Label, TextArea}
 import javafx.scene.layout.{GridPane, Priority}
 import javafx.stage.{Stage, Window}
 import suiryc.scala.RichOption._
+import suiryc.scala.javafx.I18NBase
 import suiryc.scala.javafx.concurrent.JFXSystem
 
 /** Dialog/Alert helpers. */
@@ -31,8 +32,7 @@ object Dialogs {
       ex.printStackTrace(pw)
       val exceptionText = sw.toString
 
-      // TODO - i18n ?
-      val label = new Label("The exception stacktrace was:")
+      val label = new Label(I18NBase.getResources.getString("error.exception-stacktrace"))
 
       val textArea = new TextArea(exceptionText)
       textArea.setEditable(false)
