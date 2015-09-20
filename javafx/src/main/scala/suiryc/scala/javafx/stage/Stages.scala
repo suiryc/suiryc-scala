@@ -9,10 +9,7 @@ import suiryc.scala.settings.Preference
 /** JavaFX Stage helpers. */
 object Stages {
 
-  private lazy val isLinux: Boolean =
-    Option(System.getProperty("os.name")).exists { os =>
-      os.toLowerCase.startsWith("linux")
-    }
+  import suiryc.scala.javafx.isLinux
 
   /**
    * Tracks minimum stage dimensions.
