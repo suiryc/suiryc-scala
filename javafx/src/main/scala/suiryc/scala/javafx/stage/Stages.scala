@@ -120,7 +120,7 @@ object Stages {
   /**
    * Gets stage location.
    *
-   * There is no valid location is stage is minimized.
+   * There is no valid location if stage is minimized.
    */
   def getLocation(stage: Stage): Option[StageLocation] =
     if (stage.isIconified) None
@@ -137,7 +137,12 @@ object Stages {
     stage.setMaximized(loc.maximized)
   }
 
-  /** Stage location preference builder. */
+  /**
+   * Stage location preference builder.
+   *
+   * Saves x/y/width/height/maximized information in a string using
+   * "x=?;y=?;w=?;h=?;m=?" format.
+   */
   implicit val locationBuilder = {
 
     import Preference._

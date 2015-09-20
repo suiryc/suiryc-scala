@@ -9,6 +9,9 @@ object TableViews {
    * Gets table columns view.
    *
    * Formats columns order and width into a string.
+   * Order and width are derived from given description. Format associates
+   * key and column width pairs, e.g. "key1=column1.width;key2=..." for
+   * List("key1" -> column1, "key2" -> column2, ...).
    */
   def getColumnsView[A](table: TableView[A], columnsDesc: List[(String, TableColumn[A, _])]): String = {
     import scala.collection.JavaConversions._
