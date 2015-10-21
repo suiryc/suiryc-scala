@@ -1,7 +1,5 @@
 package suiryc.scala.util
 
-import scala.language.implicitConversions
-
 
 class RichEither[A, B](val underlying: Either[A, B]) extends AnyVal {
 
@@ -40,10 +38,12 @@ class RichEitherThrowable[B](val underlying: Either[Throwable, B]) extends AnyVa
 
 object RichEither {
 
-  implicit def toRichThrowable[B](either: Either[Throwable, B]) =
+  import scala.language.implicitConversions
+
+  implicit def toRichThrowable[B](either: Either[Throwable, B]): RichEitherThrowable[B] =
     new RichEitherThrowable(either)
 
-  implicit def toRich[A, B](either: Either[A, B]) =
+  implicit def toRich[A, B](either: Either[A, B]): RichEither[A, B] =
     new RichEither(either)
 
 }
