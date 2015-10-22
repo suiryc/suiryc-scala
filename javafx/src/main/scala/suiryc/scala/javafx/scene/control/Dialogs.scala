@@ -11,12 +11,30 @@ import suiryc.scala.javafx.concurrent.JFXSystem
 /** Dialog/Alert helpers. */
 object Dialogs {
 
-  /** Builds and shows Alert dialog with stacktrace as content. */
-  // TODO - link to official online details
-  def error(owner: Option[Window], title: Option[String], headerText: Option[String], ex: Throwable): Option[ButtonType] = {
+  /**
+   * Builds ands shows Alert dialog.
+   *
+   * @param kind dialog kind
+   * @param owner owner
+   * @param title dialog title
+   * @param headerText dialog title text
+   * @param contentText dialog content text
+   * @param ex exception to show in dialog expendable content
+   * @param buttons dialog buttons to use
+   * @return user action
+   */
+  private def buildAlert(
+      kind: Alert.AlertType,
+      owner: Option[Window],
+      title: Option[String],
+      headerText: Option[String],
+      contentText: Option[String],
+      ex: Option[Throwable],
+      buttons: List[ButtonType]): Option[ButtonType] =
+  {
     // Note: it is mandatory to create the 'Alert' inside JavaFX thread.
     JFXSystem.await({
-      val alert = new Alert(Alert.AlertType.ERROR)
+      val alert = new Alert(kind)
       // Note: if owner is a Stage, its Scene properties are used, so make sure
       // there is one.
       owner.find {
@@ -24,34 +42,81 @@ object Dialogs {
         case _ => true
       }.foreach(alert.initOwner)
       title.foreach(alert.setTitle)
-      alert.setHeaderText(headerText.orNull)
-      alert.setContentText(null)
+      alert.setHeaderText(headerText.filterNot(_.trim.isEmpty).orNull)
+      alert.setContentText(contentText.filterNot(_.trim.isEmpty).orNull)
 
-      val sw = new StringWriter()
-      val pw = new PrintWriter(sw)
-      ex.printStackTrace(pw)
-      val exceptionText = sw.toString
+      if (buttons.nonEmpty) {
+        alert.getButtonTypes.setAll(buttons: _*)
+      }
 
-      val label = new Label(I18NBase.getResources.getString("error.exception-stacktrace"))
+      ex.foreach { ex =>
+        // See: http://code.makery.ch/blog/javafx-dialogs-official/
+        val sw = new StringWriter()
+        val pw = new PrintWriter(sw)
+        ex.printStackTrace(pw)
+        val exceptionText = sw.toString
 
-      val textArea = new TextArea(exceptionText)
-      textArea.setEditable(false)
-      textArea.setWrapText(true)
+        val label = new Label(I18NBase.getResources.getString("error.exception-stacktrace"))
 
-      textArea.setMaxWidth(Double.MaxValue)
-      textArea.setMaxHeight(Double.MaxValue)
-      GridPane.setVgrow(textArea, Priority.ALWAYS)
-      GridPane.setHgrow(textArea, Priority.ALWAYS)
+        val textArea = new TextArea(exceptionText)
+        textArea.setEditable(false)
+        textArea.setWrapText(true)
 
-      val expContent = new GridPane()
-      expContent.setMaxWidth(Double.MaxValue)
-      expContent.add(label, 0, 0)
-      expContent.add(textArea, 0, 1)
+        textArea.setMaxWidth(Double.MaxValue)
+        textArea.setMaxHeight(Double.MaxValue)
+        GridPane.setVgrow(textArea, Priority.ALWAYS)
+        GridPane.setHgrow(textArea, Priority.ALWAYS)
 
-      alert.getDialogPane.setExpandableContent(expContent)
+        val expContent = new GridPane()
+        expContent.setMaxWidth(Double.MaxValue)
+        expContent.add(label, 0, 0)
+        expContent.add(textArea, 0, 1)
+
+        alert.getDialogPane.setExpandableContent(expContent)
+      }
 
       alert.showAndWait()
     }, logReentrant = false)
   }
+
+  /** Builds and shows Alert confirmation dialog. */
+  def confirmation(
+      owner: Option[Window],
+      title: Option[String],
+      headerText: Option[String],
+      contentText: Option[String] = None,
+      ex: Option[Throwable] = None,
+      buttons: List[ButtonType] = Nil): Option[ButtonType] =
+    buildAlert(Alert.AlertType.CONFIRMATION, owner, title, headerText, contentText, ex, buttons)
+
+  /** Builds and shows Alert information dialog. */
+  def information(
+      owner: Option[Window],
+      title: Option[String],
+      headerText: Option[String],
+      contentText: Option[String] = None,
+      ex: Option[Throwable] = None,
+      buttons: List[ButtonType] = Nil): Option[ButtonType] =
+    buildAlert(Alert.AlertType.INFORMATION, owner, title, headerText, contentText, ex, buttons)
+
+  /** Builds and shows Alert warning dialog. */
+  def warning(
+      owner: Option[Window],
+      title: Option[String],
+      headerText: Option[String],
+      contentText: Option[String] = None,
+      ex: Option[Throwable] = None,
+      buttons: List[ButtonType] = Nil): Option[ButtonType] =
+    buildAlert(Alert.AlertType.WARNING, owner, title, headerText, contentText, ex, buttons)
+
+  /** Builds and shows Alert error dialog. */
+  def error(
+      owner: Option[Window],
+      title: Option[String],
+      headerText: Option[String],
+      contentText: Option[String] = None,
+      ex: Option[Throwable] = None,
+      buttons: List[ButtonType] = Nil): Option[ButtonType] =
+    buildAlert(Alert.AlertType.ERROR, owner, title, headerText, contentText, ex, buttons)
 
 }
