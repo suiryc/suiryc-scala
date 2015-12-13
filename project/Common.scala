@@ -5,10 +5,11 @@ import Keys._
 object Common {
 
   val versions = Map[String, String](
-    "akka" -> "2.3.3",
-    "config" -> "1.2.1",
+    "akka" -> "2.4.1",
+    "config" -> "1.3.0",
     "grizzled" -> "1.0.2",
-    "logback" -> "1.1.2",
+    "logback" -> "1.1.3",
+    "scala" -> "2.11.7",
     "suiryc-scala" -> "0.0.2-SNAPSHOT"
   )
 
@@ -17,7 +18,7 @@ object Common {
     Seq(
       organization := "suiryc",
       version := versions("suiryc-scala"),
-      scalaVersion := "2.11.1",
+      scalaVersion := versions("scala"),
       scalacOptions ++= Seq("-deprecation", "-feature", "-optimize", "-unchecked", "-Yinline-warnings"),
       scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-implicits"),
       org.scalastyle.sbt.PluginKeys.config := file("project/scalastyle-config.xml"),

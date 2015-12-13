@@ -59,6 +59,7 @@ abstract class Reaper
 class ShutdownReaper extends Reaper {
 
   /** Shutdown */
-  override protected def allSoulsReaped(): Unit = context.system.shutdown()
+  override protected def allSoulsReaped(): Unit =
+    context.system.terminate()
 
 }
