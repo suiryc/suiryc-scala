@@ -6,8 +6,6 @@ import java.nio.charset.Charset
 import suiryc.scala.io.FilesEx
 import suiryc.scala.misc.EnumerationEx
 
-// TODO: describe other view modes
-
 /**
  * Hexadecimal data dumper.
  *
@@ -30,6 +28,28 @@ import suiryc.scala.misc.EnumerationEx
  * D0: D0D1 D2D3 D4D5 D6D7 D8D9 DADB DCDD DEDF  |ÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß|
  * E0: E0E1 E2E3 E4E5 E6E7 E8E9 EAEB ECED EEEF  |àáâãäåæçèéêëìíîï|
  * F0: F0F1 F2F3 F4F5 F6F7 F8F9 FAFB FCFD FEFF  |ðñòóôõö÷øùúûüýþÿ|
+ * }}}
+ *
+ * Hexadecimal and ASCII views can be changed:<ul>
+ *   <li>(default) compact hexadecimal view: one space every 2 bytes, one more space every 16 bytes</li>
+ *   <li>large hexadecimal view: one space every byte, one more space every 8 bytes</li>
+ *   <li>(default) divided ASCII view: '|' separation every 16 chars</li>
+ *   <li>undivided ASCII view: no separation</li>
+ * </ul>
+ *
+ * Compact hexadecimal and divided ASCII view with more than 16 bytes:
+ * {{{
+ * 40: 4041 4243 4445 4647 4849 4A4B 4C4D 4E4F  5051 5253 5455 5657 5859 5A5B 5C5D 5E5F  |@ABCDEFGHIJKLMNO|PQRSTUVWXYZ[\]^_|
+ * }}}
+ *
+ * Large hexadecimal view:
+ * {{{
+ * 40: 40 41 42 43 44 45 46 47  48 49 4A 4B 4C 4D 4E 4F  |@ABCDEFGHIJKLMNO|
+ * }}}
+ *
+ * Undivided ASCII view:
+ * {{{
+ * 40: 4041 4243 4445 4647 4849 4A4B 4C4D 4E4F  5051 5253 5455 5657 5859 5A5B 5C5D 5E5F  |@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_|
  * }}}
  *
  * @param settings dumper parameters
