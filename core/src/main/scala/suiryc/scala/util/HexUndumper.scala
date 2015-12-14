@@ -67,7 +67,7 @@ object HexUndumper {
   private val inputCodec = scala.io.Codec.apply("ASCII").decodingReplaceWith(".").onMalformedInput(java.nio.charset.CodingErrorAction.REPLACE).onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPLACE)
 
   /** Regular expression extracting hexadecimal representation. */
-  private val lineFormat = """(?m)^[^:]*:?([\s-0-9A-Fa-f]+)\|?.*$""".r
+  private val lineFormat = """(?m)^(?:[^:]*:)?([\s-0-9A-Fa-f]+)\|?.*$""".r
   /** Regular expression extracting hexadecimal data from a representation. */
   private val hexFormat = """([0-9A-Fa-f]{2})""".r
 
