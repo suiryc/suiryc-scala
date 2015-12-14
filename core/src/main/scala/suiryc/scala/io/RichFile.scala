@@ -1,6 +1,7 @@
 package suiryc.scala.io
 
 import java.io.{File, PrintWriter}
+import java.net.URL
 import java.nio.file.{Files, FileSystems, LinkOption, Path}
 import java.nio.file.attribute.{PosixFileAttributeView, PosixFilePermission}
 import scala.io.Codec
@@ -15,23 +16,23 @@ final class RichFile(val asFile: File) extends AnyVal
     if (component == ".") asFile
     else new File(asFile, component)
 
-  def exists = asFile.exists
+  def exists: Boolean = asFile.exists
 
-  def isDirectory = asFile.isDirectory
+  def isDirectory: Boolean = asFile.isDirectory
 
-  def lastModified = asFile.lastModified
+  def lastModified: Long = asFile.lastModified
 
-  def asURL = asFile.toURI.toURL
+  def asURL: URL = asFile.toURI.toURL
 
   def absolutePath: String = asFile.getAbsolutePath
 
   def canonicalPath: String = asFile.getCanonicalPath
 
-  def name = asFile.getName
+  def name: String = asFile.getName
 
-  def ext = baseAndExt._2
+  def ext: String = baseAndExt._2
 
-  def base = baseAndExt._1
+  def base: String = baseAndExt._1
 
   def baseAndExt: (String, String) = {
     val nme = name
@@ -40,9 +41,9 @@ final class RichFile(val asFile: File) extends AnyVal
     else (nme.substring(0, dot), nme.substring(dot+1))
   }
 
-  def mkdir = asFile.mkdir
+  def mkdir: Boolean = asFile.mkdir
 
-  def changeOwner(user: Option[String], group: Option[String]) {
+  def changeOwner(user: Option[String], group: Option[String]): Unit = {
     if (user.isDefined || group.isDefined) {
       val lookupService = FileSystems.getDefault.getUserPrincipalLookupService
       val posix: PosixFileAttributeView = Files.getFileAttributeView(asFile.toPath,
@@ -56,7 +57,7 @@ final class RichFile(val asFile: File) extends AnyVal
     }
   }
 
-  def changeMode(permissions: java.util.Set[PosixFilePermission]) {
+  def changeMode(permissions: java.util.Set[PosixFilePermission]): Unit = {
     val posix: PosixFileAttributeView = Files.getFileAttributeView(asFile.toPath,
       classOf[PosixFileAttributeView], LinkOption.NOFOLLOW_LINKS)
     posix.setPermissions(permissions)
@@ -104,11 +105,11 @@ final class RichFile(val asFile: File) extends AnyVal
   def read(): String =
     SourceEx.autoCloseFile(asFile)(_.mkString)
 
-  def write(s: String)(implicit codec: Codec) {
+  def write(s: String)(implicit codec: Codec): Unit = {
     write(s, codec.name)
   }
 
-  def write(s: String, enc: String) {
+  def write(s: String, enc: String): Unit = {
     val writer = new PrintWriter(asFile, enc)
     try {
       writer.write(s)
@@ -147,7 +148,7 @@ object RichFile {
    * Creates temporary directory.
    *
    * @param prefix name prefix, can be <tt>null</tt>
-   * @return temporary directory 
+   * @return temporary directory
    */
   def createTempDirectory(prefix: String): File =
     Files.createTempDirectory(prefix).toFile

@@ -23,11 +23,11 @@ class PersistentProperty[T](val setting: PersistentSetting[T])
   }
 
   /** Gets value. */
-  def apply() =
+  def apply(): T =
     getValue
 
   /** Updates value. */
-  def update(value: T) =
+  def update(value: T): Unit =
     setValue(value)
 
   /**
@@ -35,11 +35,11 @@ class PersistentProperty[T](val setting: PersistentSetting[T])
    *
    * Reads the setting value and sets the property one.
    */
-  def reset() =
+  def reset(): Unit =
     setValue(setting())
 
   /** Resets value toi default (setting). */
-  def resetDefault() =
+  def resetDefault(): Unit =
     setValue(setting.default)
 
 }
@@ -47,7 +47,7 @@ class PersistentProperty[T](val setting: PersistentSetting[T])
 object PersistentProperty {
 
   /** Builds a persistent property from a persistent setting. */
-  def apply[T](setting: PersistentSetting[T]) =
+  def apply[T](setting: PersistentSetting[T]): PersistentProperty[T] =
     new PersistentProperty(setting)
 
 }

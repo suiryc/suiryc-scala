@@ -67,15 +67,15 @@ class Device(val block: Path) {
 
   val partitions = {
     val devName = dev.getFileName.toString
-    (block * s"""${devName}$partitionInfix[0-9]+""".r).get map { path =>
+    (block * s"""$devName$partitionInfix[0-9]+""".r).get map { path =>
       DevicePartition(this, path.getName.substring(devName.length() + partitionInfix.length()).toInt)
     }
   }
 
-  def partprobe() =
+  def partprobe(): CommandResult =
     Command.execute(Seq("partprobe", dev.toString))
 
-  override def toString =
+  override def toString: String =
     s"Device(block=$block, vendor=$vendor, model=$model, ueventProps=$ueventProps)"
 
 }

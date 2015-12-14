@@ -16,7 +16,7 @@ class SimplePathFilter(filter: FileFilter)
   extends PathFilter
 {
 
-  def search(base: File) =
+  override def search(base: File): Set[File] =
     if (filter.accept(base)) Set(base)
     else Set()
 
@@ -26,7 +26,7 @@ class ChildPathFilter(child: String)
   extends PathFilter
 {
 
-  def search(base: File) = Set(new File(base, child))
+  override def search(base: File): Set[File] = Set(new File(base, child))
 
 }
 
@@ -45,7 +45,7 @@ class ChildrenPathFilter(
     else DirectoryFileFilter & recursiveFilter) &
       (if (followLinks) AllPassFileFilter else -LinkFileFilter)
 
-  def search(base: File) =
+  override def search(base: File): Set[File] =
     if (Files.isDirectory(base.toPath)) {
       searchDescendants(base, maxDepth.getOrElse(Int.MaxValue) - 1)
     }

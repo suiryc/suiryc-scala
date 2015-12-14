@@ -1,7 +1,8 @@
 package suiryc.scala.util
 
 import java.io._
-import scala.io.Source
+import java.nio.charset.CodingErrorAction
+import scala.io.{Codec, Source}
 
 /**
  * Hexadecimal data undumper.
@@ -63,8 +64,10 @@ class HexUndumper(settings: HexUndumper.Settings) {
 object HexUndumper {
 
   /** Use ASCII as input charset, since we don't care about binary. */
-  private val inputCharset = "ASCII"
-  private val inputCodec = scala.io.Codec.apply("ASCII").decodingReplaceWith(".").onMalformedInput(java.nio.charset.CodingErrorAction.REPLACE).onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPLACE)
+  private val inputCodec = Codec.apply("ASCII")
+    .decodingReplaceWith(".")
+    .onMalformedInput(CodingErrorAction.REPLACE)
+    .onUnmappableCharacter(CodingErrorAction.REPLACE)
 
   /** Regular expression extracting hexadecimal representation. */
   private val lineFormat = """(?m)^(?:[^:]*:)?([\s-0-9A-Fa-f]+)\|?.*$""".r
@@ -225,7 +228,7 @@ object HexUndumper {
     lazy val stdout = apply(System.out)
 
     /** Output based on OutputStream. */
-    def apply(out: OutputStream) = new StreamOutput(out)
+    def apply(out: OutputStream): StreamOutput = new StreamOutput(out)
 
   }
 

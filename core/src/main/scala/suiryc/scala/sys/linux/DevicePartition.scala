@@ -72,9 +72,9 @@ class DevicePartition(val device: Device, val partNumber: Int)
     }
   }
 
-  def umount = Command.execute(Seq("umount", dev.toString))
+  def umount: CommandResult = Command.execute(Seq("umount", dev.toString))
 
-  override def toString =
+  override def toString: String =
     s"Partition(device=$device, partNumber=$partNumber, uuid=$uuid, size=$size)"
 
 }

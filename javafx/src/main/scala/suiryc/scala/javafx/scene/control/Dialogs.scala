@@ -23,6 +23,7 @@ object Dialogs {
    * @param buttons dialog buttons to use
    * @return user action
    */
+  // scalastyle:off method.length
   private def buildAlert(
       kind: Alert.AlertType,
       owner: Option[Window],
@@ -78,6 +79,7 @@ object Dialogs {
       alert.showAndWait()
     }, logReentrant = false)
   }
+  // scalastyle:on method.length
 
   /** Builds and shows Alert confirmation dialog. */
   def confirmation(

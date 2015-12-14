@@ -7,7 +7,7 @@ class SystemStreams(val in: InputStream, val out: PrintStream, val err: PrintStr
 
 object SystemStreams {
 
-  def apply(in: InputStream, out: PrintStream, err: PrintStream) =
+  def apply(in: InputStream, out: PrintStream, err: PrintStream): SystemStreams =
     new SystemStreams(in, out, err)
 
   def replace(in: Option[InputStream] = None, out: Option[PrintStream] = None, err: Option[PrintStream] = None): SystemStreams = {
@@ -35,8 +35,9 @@ object SystemStreams {
   def replace(in: InputStream, out: PrintStream, err: PrintStream): SystemStreams =
     replace(in = Some(in), out = Some(out), err = Some(err))
 
-  def restore(streams: SystemStreams) {
+  def restore(streams: SystemStreams): Unit = {
     replace(streams.in, streams.out, streams.err)
+    ()
   }
 
 }

@@ -19,6 +19,6 @@ class BaseSettings(
   private val recreatable = new RecreatablePreferences(_prefs)
 
   /** Gets (automatically re-created if necessary) underlying Preferences node. */
-  def prefs = recreatable.prefs
+  def prefs: Preferences = recreatable.prefs
 
 }

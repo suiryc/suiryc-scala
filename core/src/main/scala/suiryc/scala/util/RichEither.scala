@@ -3,22 +3,22 @@ package suiryc.scala.util
 
 class RichEither[A, B](val underlying: Either[A, B]) extends AnyVal {
 
-  def &&[A2 >: A, B2 >: B](other: => Either[A2, B2]) = underlying match {
+  def &&[A2 >: A, B2 >: B](other: => Either[A2, B2]): Either[A2, B2] = underlying match {
     case Left(_) => underlying
     case Right(_) => other
   }
 
-  def ||[A2 >: A, B2 >: B](other: => Either[A2, B2]) = underlying match {
+  def ||[A2 >: A, B2 >: B](other: => Either[A2, B2]): Either[A2, B2] = underlying match {
     case Left(_) => other
     case Right(_) => underlying
   }
 
-  def &&[A2 >: A, B2 >: B](other: => Unit) = underlying match {
+  def &&[A2 >: A, B2 >: B](other: => Unit): Unit = underlying match {
     case Left(_) =>
     case Right(_) => other
   }
 
-  def ||[A2 >: A, B2 >: B](other: => Unit) = underlying match {
+  def ||[A2 >: A, B2 >: B](other: => Unit): Unit = underlying match {
     case Left(_) => other
     case Right(_) =>
   }

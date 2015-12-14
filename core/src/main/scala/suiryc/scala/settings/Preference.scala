@@ -73,31 +73,41 @@ trait Preference[T] {
 }
 
 /** Boolean preference. */
-class BooleanPreference(protected val path: String, val default: Boolean)(implicit val prefs: Preferences) extends Preference[Boolean] {
+class BooleanPreference(protected val path: String, val default: Boolean)
+  (implicit val prefs: Preferences)
+  extends Preference[Boolean] {
   override protected def prefsValue(default: Boolean): Boolean = prefs.getBoolean(path, default)
   override protected def updateValue(v: Boolean) = prefs.putBoolean(path, v)
 }
 
 /** Long preference. */
-class LongPreference(protected val path: String, val default: Long)(implicit val prefs: Preferences) extends Preference[Long] {
+class LongPreference(protected val path: String, val default: Long)
+  (implicit val prefs: Preferences)
+  extends Preference[Long] {
   override protected def prefsValue(default: Long): Long = prefs.getLong(path, default)
   override protected def updateValue(v: Long) = prefs.putLong(path, v)
 }
 
 /** String preference. */
-class StringPreference(protected val path: String, val default: String)(implicit val prefs: Preferences) extends Preference[String] {
+class StringPreference(protected val path: String, val default: String)
+  (implicit val prefs: Preferences)
+  extends Preference[String] {
   override protected def prefsValue(default: String): String = prefs.get(path, default)
   override protected def updateValue(v: String) = prefs.put(path, v)
 }
 
 /** EnumerationEx preference. */
-class EnumerationExPreference[T <: EnumerationEx](protected val path: String, val default: T#Value)(implicit val prefs: Preferences, enum: T) extends Preference[T#Value] {
+class EnumerationExPreference[T <: EnumerationEx](protected val path: String, val default: T#Value)
+  (implicit val prefs: Preferences, enum: T)
+  extends Preference[T#Value] {
   override protected def prefsValue(default: T#Value): T#Value = enum(prefs.get(path, default.toString))
   override protected def updateValue(v: T#Value) = prefs.put(path, v.toString)
 }
 
 /** Special Enumeration preference. */
-class SEnumerationPreference[T <: sEnumeration](protected val path: String, val default: T#Value)(implicit val prefs: Preferences, enum: T) extends Preference[T#Value] {
+class SEnumerationPreference[T <: sEnumeration](protected val path: String, val default: T#Value)
+  (implicit val prefs: Preferences, enum: T)
+  extends Preference[T#Value] {
   override protected def prefsValue(default: T#Value): T#Value = enum.withName(prefs.get(path, default.toString))
   override protected def updateValue(v: T#Value) = prefs.put(path, v.toString)
 }
@@ -150,16 +160,18 @@ object Preference {
    * @param toInner function to convert value from Inner to Outer type
    * @param toOuter function to convert value from Outer to Inner type
    */
-  def typeBuilder[Outer, Inner](toInner: Outer => Inner, toOuter: Inner => Outer)(implicit innerBuilder: PreferenceBuilder[Inner]) = new PreferenceBuilder[Outer] {
-    def build(bpath: String, bdefault: Outer)(implicit bprefs: Preferences): Preference[Outer] = new Preference[Outer] {
-      private val prefInner = innerBuilder.build(bpath, toInner(bdefault))
-      override protected val path: String = bpath
-      override val default: Outer = bdefault
-      override val prefs: Preferences = bprefs
-      override protected def prefsValue(default: Outer): Outer = prefInner.option.map(toOuter).getOrElse(default)
-      override protected def updateValue(v: Outer) = prefInner.updateValue(toInner(v))
+  def typeBuilder[Outer, Inner](toInner: Outer => Inner, toOuter: Inner => Outer)
+    (implicit innerBuilder: PreferenceBuilder[Inner]) =
+    new PreferenceBuilder[Outer] {
+      def build(bpath: String, bdefault: Outer)(implicit bprefs: Preferences): Preference[Outer] = new Preference[Outer] {
+        private val prefInner = innerBuilder.build(bpath, toInner(bdefault))
+        override protected val path: String = bpath
+        override val default: Outer = bdefault
+        override val prefs: Preferences = bprefs
+        override protected def prefsValue(default: Outer): Outer = prefInner.option.map(toOuter).getOrElse(default)
+        override protected def updateValue(v: Outer): Unit = prefInner.updateValue(toInner(v))
+      }
     }
-  }
 
   /** Path preference builder. */
   implicit val pathBuilder = typeBuilder[Path, String](

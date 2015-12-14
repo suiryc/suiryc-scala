@@ -48,7 +48,7 @@ class ProxyAppender(_writers: Seq[LogWriter] = Seq.empty, async: Boolean = false
 
   private class ProxyActor extends Actor {
 
-    override def receive = proxy(writers.toSet)
+    override def receive: Receive = proxy(writers.toSet)
 
     def proxy(writers: Set[LogWriter]): Receive = {
       case event: ILoggingEvent =>

@@ -38,11 +38,12 @@ abstract class Reaper
   protected def allSoulsReaped(): Unit
 
   /** Watch and check for termination. */
-  final override def receive = {
+  final override def receive: Receive = {
     case WatchMe(ref) =>
       trace(s"Watching $ref")
       context.watch(ref)
       watched += ref
+      ()
 
     case Terminated(ref) =>
       trace(s"$ref terminated")
@@ -59,7 +60,9 @@ abstract class Reaper
 class ShutdownReaper extends Reaper {
 
   /** Shutdown */
-  override protected def allSoulsReaped(): Unit =
+  override protected def allSoulsReaped(): Unit = {
     context.system.terminate()
+    ()
+  }
 
 }

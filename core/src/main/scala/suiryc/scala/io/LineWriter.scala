@@ -11,7 +11,7 @@ trait LineWriter {
    *
    * Note: line must not contain line ending (CR and/or LF).
    */
-  def write(line: String)
+  def write(line: String): Unit
 
 }
 
@@ -52,7 +52,7 @@ class ProxyLineWriter(_writers: Seq[LineWriter] = Seq.empty, async: Boolean = fa
 
   private class ProxyActor extends Actor {
 
-    override def receive = proxy(writers.toSet)
+    override def receive: Receive = proxy(writers)
 
     def proxy(writers: Set[LineWriter]): Receive = {
       case line: String =>

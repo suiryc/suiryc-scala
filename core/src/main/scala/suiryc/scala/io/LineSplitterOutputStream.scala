@@ -87,12 +87,14 @@ class LineSplitterOutputStream(
         }
         else {
           line.appendAll(array, offset, charBuffer.position - offset)
+          ()
         }
       }
     }
 
     loop(0)
     charBuffer.position(0)
+    ()
   }
 
 }

@@ -56,6 +56,7 @@ class HashSuite extends FunSuite {
       Hash(null.asInstanceOf[Array[Byte]])
       // scalastyle:on null
     }
+    ()
   }
 
   test("null hexadecimal representation is an illegal argument") {
@@ -64,6 +65,7 @@ class HashSuite extends FunSuite {
       Hash(null.asInstanceOf[String])
       // scalastyle:on null
     }
+    ()
   }
 
   test("Odd hexadecimal representation") {

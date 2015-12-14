@@ -12,7 +12,7 @@ object Util {
    * @param a array to wrap
    * @return non-null array
    */
-  def wrapNull[T: ClassTag](a: Array[T]) =
+  def wrapNull[T: ClassTag](a: Array[T]): Array[T] =
     if (a == null) new Array[T](0)
     else a
 

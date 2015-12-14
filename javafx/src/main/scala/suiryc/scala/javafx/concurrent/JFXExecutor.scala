@@ -6,7 +6,7 @@ import akka.dispatch.{
   ExecutorServiceFactory
 }
 import com.typesafe.config.Config
-import java.util.Collections
+import java.util.{Collections, List => jList}
 import java.util.concurrent.{
   AbstractExecutorService,
   ExecutorService,
@@ -17,11 +17,10 @@ import javafx.application.Platform
 import scala.concurrent.{ExecutionContextExecutor, ExecutionContext}
 
 
-/* See:
- *  - https://groups.google.com/forum/#!msg/scalafx-users/JxXXNTKC4Kk/riJCqyaEG1cJ
- *  - https://gist.github.com/saberduck/5150719
- *  - https://gist.github.com/viktorklang/2422443
- */
+// See:
+//  - https://groups.google.com/forum/#!msg/scalafx-users/JxXXNTKC4Kk/riJCqyaEG1cJ
+//  - https://gist.github.com/saberduck/5150719
+//  - https://gist.github.com/viktorklang/2422443
 
 object JFXExecutor {
 
@@ -32,17 +31,17 @@ object JFXExecutor {
 
 object JFXExecutorService extends AbstractExecutorService {
 
-  def execute(command: Runnable) = Platform.runLater(command)
+  def execute(command: Runnable): Unit = Platform.runLater(command)
 
   def shutdown(): Unit = ()
 
-  def shutdownNow() = Collections.emptyList[Runnable]
+  def shutdownNow(): jList[Runnable] = Collections.emptyList[Runnable]
 
-  def isShutdown = false
+  def isShutdown: Boolean = false
 
-  def isTerminated = false
+  def isTerminated: Boolean = false
 
-  def awaitTermination(l: Long, timeUnit: TimeUnit) = true
+  def awaitTermination(l: Long, timeUnit: TimeUnit): Boolean = true
 
 }
 

@@ -21,7 +21,7 @@ class ExactNameFilter(val matchName: String)
   extends NameFilter
 {
 
-  def accept(name: String) = matchName == name
+  def accept(name: String): Boolean = matchName == name
 
 }
 
@@ -30,7 +30,7 @@ class PatternNameFilter(val regex: Regex)
   extends NameFilter
 {
 
-  def accept(name: String) = regex.pattern.matcher(name).matches
+  def accept(name: String): Boolean = regex.pattern.matcher(name).matches
 
 }
 

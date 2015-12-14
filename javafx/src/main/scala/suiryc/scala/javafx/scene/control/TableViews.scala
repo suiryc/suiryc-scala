@@ -59,6 +59,7 @@ object TableViews {
     }
 
     table.getColumns.addAll(columns:_*)
+    ()
   }
 
 }

@@ -143,6 +143,7 @@ class HexDumper(settings: HexDumper.Settings) {
       settings.output.append(ensureLength(processHexSection(section), sectionSize))
       index + 1
     }
+    ()
   }
 
   /** Processes ASCII view. */
@@ -382,8 +383,8 @@ object HexDumper {
       }
       else if (length != 0) {
         val request =
-          if (length < 0) buffer.length
-          else math.min(length, buffer.length)
+          if (length < 0) buffer.length.toLong
+          else math.min(length, buffer.length.toLong)
         val read = input.read(buffer, 0, request.toInt)
         if (read > 0) {
           dumper.dump(buffer, 0, read)
@@ -502,23 +503,23 @@ object HexDumper {
     lazy val stdout = apply(System.out)
 
     /** Output based on Appendable. */
-    def apply(out: Appendable) = new AppendableOutput(out)
+    def apply(out: Appendable): AppendableOutput = new AppendableOutput(out)
 
     /** Output based on (scala) StringBuilder. */
-    def apply(out: StringBuilder) = new ScalaStringBuilderOutput(out)
+    def apply(out: StringBuilder): ScalaStringBuilderOutput = new ScalaStringBuilderOutput(out)
 
   }
 
   /** Output based on Appendable. */
   class AppendableOutput(out: Appendable) extends Output {
-    override def append(data: Char): Unit = out.append(data)
-    override def append(data: CharSequence): Unit = out.append(data)
+    override def append(data: Char): Unit = { out.append(data); () }
+    override def append(data: CharSequence): Unit = { out.append(data); () }
   }
 
   /** Output based on (scala) StringBuilder. */
   class ScalaStringBuilderOutput(out: StringBuilder) extends Output {
-    override def append(data: Char): Unit = out.append(data)
-    override def append(data: CharSequence): Unit = out.append(data)
+    override def append(data: Char): Unit = { out.append(data); () }
+    override def append(data: CharSequence): Unit = { out.append(data); () }
   }
 
   /** CLI parameters. */

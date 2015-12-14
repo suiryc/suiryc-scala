@@ -36,7 +36,7 @@ object Units {
         throw new IllegalArgumentException(s"Invalid value[$value]")
     }
 
-    def toHumanReadable(value: Long, runits: List[Unit] = units.head) = {
+    def toHumanReadable(value: Long, runits: List[Unit] = units.head): String = {
       @scala.annotation.tailrec
       def loop(units: List[Unit]): (Long, Unit) = units match {
         case head :: tail =>
@@ -61,9 +61,9 @@ object Units {
     val tera = Unit(s"T${unity.label}", 1000L * 1000L * 1000L * 1000L)
     val peta = Unit(s"P${unity.label}", 1000L * 1000L * 1000L * 1000L * 1000L)
 
-    def units_SI = List(kilo, mega, giga, tera, peta)
+    def units_SI: List[Unit] = List(kilo, mega, giga, tera, peta)
 
-    override def units = super.units :+ units_SI
+    override def units: List[List[Unit]] = super.units :+ units_SI
 
   }
 
@@ -74,9 +74,9 @@ object Units {
     val tebi = Unit(s"Ti${unity.label}", 1024L * 1024L * 1024L * 1024L)
     val pebi = Unit(s"Pi${unity.label}", 1024L * 1024L * 1024L * 1024L * 1024L)
 
-    def units_Binary = List(kibi, mebi, gibi, tebi, pebi)
+    def units_Binary: List[Unit] = List(kibi, mebi, gibi, tebi, pebi)
 
-    override def units = super.units :+ units_Binary
+    override def units: List[List[Unit]] = super.units :+ units_Binary
 
   }
 

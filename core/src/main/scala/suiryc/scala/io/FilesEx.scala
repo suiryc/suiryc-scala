@@ -26,6 +26,7 @@ object FilesEx
    * @param owner       specific owner to set when creating target directories
    *   that do not have a source equivalent
    */
+  // scalastyle:off method.length
   def copy(
     sourceRoot: Path,
     source: Path,
@@ -33,7 +34,7 @@ object FilesEx
     followLinks: Boolean = true,
     owner: Option[Owner] = None,
     options: List[CopyOption] = List(StandardCopyOption.COPY_ATTRIBUTES, LinkOption.NOFOLLOW_LINKS)
-  ) {
+  ): Unit = {
     def copy(sourceRoot: Path, source: Option[Path], targetRoot: Path) {
       import RichFile._
 
@@ -49,21 +50,22 @@ object FilesEx
             val sourceReal = sourceRoot.relativize(sourceRealPath)
             val pathTarget = targetRoot.resolve(sourceReal)
             if (!pathTarget.exists) {
-              /* first make sure parent exists (both real and possible link) */
+              // first make sure parent exists (both real and possible link)
               copy(sourceRoot, Option(source.getParent), targetRoot)
               if (followLinks) copy(sourceRoot, Option(sourceReal.getParent), targetRoot)
-              /* then copy source to target */
+              // then copy source to target
               trace(s"Copying source[$sourceRealPath] to[$pathTarget]")
               Files.copy(sourceRealPath, pathTarget,
                 options:_*)
+              ()
             }
           }
 
         case None =>
           if (!targetRoot.exists) {
-            /* first make sure parent exists */
+            // first make sure parent exists
             copy(sourceRoot, None, targetRoot.getParent)
-            /* then create target (directory) with user/group if necessary */
+            // then create target (directory) with user/group if necessary
             trace(s"Creating target[$targetRoot]")
             targetRoot.mkdir
             owner.foreach { owner =>
@@ -77,22 +79,25 @@ object FilesEx
 
     copy(sourceRoot, Some(source), targetRoot)
   }
+  // scalastyle:on method.length
 
-  def setTimes(path: Path, times: FileTimes) {
+  // scalastyle:off null
+  def setTimes(path: Path, times: FileTimes): Unit = {
     if ((times.lastModified != null) || (times.creation != null) || (times.lastAccess != null)) {
-      /* If there is only the 'last modified' time, set it directly on 'File'.
-       * Otherwise change the file attributes.
-       */
+      // If there is only the 'last modified' time, set it directly on 'File'.
+      // Otherwise change the file attributes.
       if ((times.creation == null) && (times.lastAccess == null)) {
         path.toFile.setLastModified(times.lastModified.toMillis)
+        ()
       }
       else {
         val attrView = Files.getFileAttributeView(path, classOf[BasicFileAttributeView])
         attrView.setTimes(times.lastModified, times.lastAccess, times.creation)
       }
     }
-    /* else: no time to set */
+    // else: no time to set
   }
+  // scalastyle:on null
 
   /**
    * Maps file in memory.

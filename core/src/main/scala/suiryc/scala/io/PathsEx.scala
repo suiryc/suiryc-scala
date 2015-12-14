@@ -14,7 +14,7 @@ object PathsEx {
     }
     else Paths.get(path)
 
-  def filename(name: String) =
+  def filename(name: String): String =
     name.split("/").toList.reverse.head
 
   def atomicName(name: String): String =

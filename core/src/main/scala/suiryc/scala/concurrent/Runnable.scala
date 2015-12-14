@@ -9,7 +9,7 @@ object Runnable {
 
   /** Creates a Runnable from a by-name parameter. */
   def apply(action: => Unit): jRunnable = new jRunnable {
-    override def run() = action
+    override def run(): Unit = action
   }
 
   /** Implicit conversion from function to Runnable. */

@@ -74,7 +74,7 @@ class SimpleFileFilter(val acceptFunction: File => Boolean)
   extends FileFilter
 {
 
-  def accept(file: File) = acceptFunction(file)
+  def accept(file: File): Boolean = acceptFunction(file)
 
 }
 
@@ -83,7 +83,7 @@ object ExistsFileFilter
   extends FileFilter
 {
 
-  def accept(file: File) = file.exists
+  def accept(file: File): Boolean = file.exists
 
 }
 
@@ -95,7 +95,7 @@ object RegularFileFilter
   extends FileFilter
 {
 
-  def accept(file: File) = Files.isRegularFile(file.toPath)
+  def accept(file: File): Boolean = Files.isRegularFile(file.toPath)
 
 }
 
@@ -107,7 +107,7 @@ object DirectoryFileFilter
   extends FileFilter
 {
 
-  def accept(file: File) = Files.isDirectory(file.toPath)
+  def accept(file: File): Boolean = Files.isDirectory(file.toPath)
 
 }
 
@@ -116,7 +116,7 @@ object LinkFileFilter
   extends FileFilter
 {
 
-  def accept(file: File) = Files.isSymbolicLink(file.toPath)
+  def accept(file: File): Boolean = Files.isSymbolicLink(file.toPath)
 
 }
 
@@ -125,6 +125,6 @@ object AllPassFileFilter
   extends FileFilter
 {
 
-  def accept(file: File) = true
+  def accept(file: File): Boolean = true
 
 }

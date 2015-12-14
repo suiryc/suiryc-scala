@@ -19,30 +19,27 @@ class LogArea(
 
   import LogArea._
 
-  /* Note: final newline is important in case an exception is to be included
-   * (directly follows the formatted message line, without leading newline).
-   */
-  protected var pattern = "%d{HH:mm:ss.SSS} %-5level %logger{24} - %msg%n"
+  // Note: final newline is important in case an exception is to be included
+  // (directly follows the formatted message line, without leading newline).
+  protected var pattern: String = "%d{HH:mm:ss.SSS} %-5level %logger{24} - %msg%n"
 
   def setPattern(pattern: String) {
     this.pattern = pattern
     msgWriter.setPattern(pattern)
   }
 
-  def getPattern = pattern
+  def getPattern: String = pattern
 
   textArea.setEditable(false)
 
-  /* Note: JavaFX thread CPU usage may reach limit when updating on each change.
-   * So limit the refresh rate to 10 times per second. 
-   */
+  // Note: JavaFX thread CPU usage may reach limit when updating on each change.
+  // So limit the refresh rate to 10 times per second.
 
   protected val system = CoreSystem.system
-  /* Note: we need to give the creator function because the actor is tied to
-   * this class instance. So the compiler automagically adds a (first) parameter
-   * - which is the reference to the outer class - to any constructor, hence no
-   * default constructor available for the type parameter variant of Props.
-   */
+  // Note: we need to give the creator function because the actor is tied to
+  // this class instance. So the compiler automagically adds a (first) parameter
+  // - which is the reference to the outer class - to any constructor, hence no
+  // default constructor available for the type parameter variant of Props.
   protected val actor = system.actorOf(Props(new LogAreaActor))
 
   lazy val msgWriter: ThresholdLogLinePatternWriter =
@@ -66,7 +63,7 @@ class LogArea(
 
     setPattern(pattern)
 
-    override def write(line: String) =
+    override def write(line: String): Unit =
       logArea.write(line)
 
   }
@@ -75,7 +72,7 @@ class LogArea(
 
     case object Flush
 
-    override def receive = nominal
+    override def receive: Receive = nominal
 
     protected def setText(s: String) {
       JFXSystem.schedule {
@@ -89,6 +86,7 @@ class LogArea(
         import system.dispatcher
         context.become(bufferize(s))
         system.scheduler.scheduleOnce(100.millis, self, Flush)
+        ()
 
       case Set(s) =>
         setText(s)
@@ -123,7 +121,7 @@ object LogArea {
 
   protected case class Set(text: String)
 
-  def apply(textArea: TextArea) =
+  def apply(textArea: TextArea): LogArea =
     new LogArea(textArea)
 
 }

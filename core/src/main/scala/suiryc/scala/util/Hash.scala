@@ -56,9 +56,9 @@ class Hash private (val bytes: Array[Byte]) {
 
   override def toString: String = hex
 
-  override def hashCode = hex.hashCode
+  override def hashCode: Int = hex.hashCode
 
-  override def equals(other: Any) = other match {
+  override def equals(other: Any): Boolean = other match {
     case that: Hash => this.hex == that.hex
     case _ => false
   }

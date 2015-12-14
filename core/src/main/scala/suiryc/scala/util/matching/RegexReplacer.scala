@@ -20,16 +20,15 @@ object RegexReplacer {
   def apply(regex: String, replacer: String): RegexReplacer =
     RegexReplacer(regex.r, (m: Regex.Match) => replacer)
 
-  def replace(content: String, rrs: RegexReplacer*) = {
+  def replace(content: String, rrs: RegexReplacer*): RegexReplacement = {
     val newContent = rrs.foldLeft(content) { (content, rr) =>
       rr.regex.replaceAllIn(content, rr.replacer)
     }
 
-    /* Note: doing any replacement then checking the result is not the most
-     * efficient. We would need to get all matches and then perform the
-     * replacements if needed; however the scala API does not seem to expose
-     * the necessary classes/fields to do that cleanly.
-     */
+    // Note: doing any replacement then checking the result is not the most
+    // efficient. We would need to get all matches and then perform the
+    // replacements if needed; however the scala API does not seem to expose
+    // the necessary classes/fields to do that cleanly.
     RegexReplacement(newContent, newContent != content)
   }
 

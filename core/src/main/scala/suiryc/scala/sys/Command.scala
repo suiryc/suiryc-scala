@@ -15,13 +15,16 @@ import scala.sys.process.{BasicIO, Process, ProcessIO}
 import suiryc.scala.misc.RichOptional._
 import suiryc.scala.misc.Util
 
-/** Command execution result. */
+/**
+ * Command execution result.
+ *
+ * @param exitCode exit code
+ * @param stdout captured stdout, or empty string
+ * @param stderr captured stderr, or empty string
+ */
 case class CommandResult(
-  /** Exit code */
   exitCode: Int,
-  /** Captured stdout, or empty string */
   stdout: String,
-  /** Captured stderr, or empty string */
   stderr: String
 )
 {
@@ -76,14 +79,14 @@ object Command
    *
    * @param os where the sink sends the output
    */
-  def addExtraOutputSink(os: OutputStream, kind: OutputType.Value = OutputType.both) {
+  def addExtraOutputSink(os: OutputStream, kind: OutputType.Value = OutputType.both): Unit = {
     val sinks = kind match {
       case OutputType.stdout => List(extraStdoutSink)
       case OutputType.stderr => List(extraStderrSink)
       case OutputType.both => List(extraStdoutSink, extraStderrSink)
     }
 
-    sinks foreach { sink =>
+    sinks.foreach { sink =>
       sink += new Stream(os, false)
     }
   }
@@ -93,13 +96,13 @@ object Command
    *
    * @param os where the sink was sending the output
    */
-  def removeExtraOutputSink(os: OutputStream, kind: OutputType.Value = OutputType.both) {
+  def removeExtraOutputSink(os: OutputStream, kind: OutputType.Value = OutputType.both): Unit = {
     def filter(sink: mutable.ListBuffer[Stream[OutputStream]]): mutable.ListBuffer[Stream[OutputStream]] =
-      sink filterNot { stream =>
+      sink.filterNot { stream =>
         stream.stream eq os
       }
 
-    val sinks = kind match {
+    kind match {
       case OutputType.stdout =>
         extraStdoutSink = filter(extraStdoutSink)
 
@@ -118,7 +121,7 @@ object Command
    * @param is    stream to connect
    * @param close whether to close stream once finished
    */
-  def input(is: InputStream, close: Boolean = true) =
+  def input(is: InputStream, close: Boolean = true): Option[Stream[InputStream]] =
     Some(new Stream(is, close))
 
   /**
@@ -126,7 +129,7 @@ object Command
    *
    * @param bytes bytes to send
    */
-  def input(bytes: Array[Byte]) =
+  def input(bytes: Array[Byte]): Option[Stream[ByteArrayInputStream]] =
     Some(new Stream(new ByteArrayInputStream(Util.wrapNull(bytes)), true))
 
   /**
@@ -135,7 +138,7 @@ object Command
    * @param os    stream to connect
    * @param close whether to close stream once finished
    */
-  def output(os: OutputStream, close: Boolean = true) =
+  def output(os: OutputStream, close: Boolean = true): Option[Stream[OutputStream]] =
     Some(new Stream(os, close))
 
   /**
@@ -153,6 +156,7 @@ object Command
    * @param skipResult       whether to not check return code
    * @return command result
    */
+  // scalastyle:off method.length parameter.number
   def execute(
       cmd: Seq[String],
       workingDirectory: Option[File] = None,
@@ -194,7 +198,7 @@ object Command
 
       _filterOutput(input, sink ++ tee)
 
-      buffer map { buffer =>
+      buffer.foreach { buffer =>
         buffer.append(tee.get.stream.toString)
       }
     }
@@ -211,7 +215,7 @@ object Command
         }
         else {
           output.write(buffer, 0, read)
-          /* flush will throw an exception once the process has terminated */
+          // flush will throw an exception once the process has terminated
           val available = try {
             output.flush()
             true
@@ -233,9 +237,8 @@ object Command
       if (captureStderr) Some(new StringBuffer())
       else None
     val process = envf.map { f =>
-      /* scala Process only handles adding variables, so - as Process - build
-       * the java ProcessBuilder, and let callback adapt its environment.
-       */
+      // scala Process only handles adding variables, so - as Process - build
+      // the java ProcessBuilder, and let callback adapt its environment.
       val jpb = new java.lang.ProcessBuilder(cmd.toArray: _*)
       workingDirectory foreach (jpb directory _)
       f(jpb.environment())
@@ -266,12 +269,13 @@ object Command
       )
     }
 
-    /* Process may have ended before consuming the whole input */
+    // Process may have ended before consuming the whole input
     stdinSource foreach { input =>
       if (input.close) input.stream.close()
     }
 
     CommandResult(result, stdoutResult, stderrResult)
   }
+  // scalastyle:on method.length parameter.number
 
 }

@@ -8,13 +8,13 @@ class CancellableFuture[T](
   val future: Future[T]
 ) {
 
-  def cancel() = cancellable.cancel()
+  def cancel(): Unit = cancellable.cancel()
 
 }
 
 object CancellableFuture {
 
-  def apply[T](body: Cancellable => T)(implicit executor: ExecutionContext) = {
+  def apply[T](body: Cancellable => T)(implicit executor: ExecutionContext): CancellableFuture[T] = {
     val cancellable = new Cancellable()
     new CancellableFuture(cancellable, Future(body(cancellable)))
   }

@@ -90,11 +90,11 @@ class SettingsSnapshot {
   }
 
   /** Gets whether any setting changed. */
-  def changed() =
+  def changed(): Boolean =
     snapshots.exists(_.changed())
 
   /** Resets all settings. */
-  def reset() {
+  def reset(): Unit = {
     snapshots.foreach(_.reset())
   }
 

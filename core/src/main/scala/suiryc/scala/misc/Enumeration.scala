@@ -29,7 +29,7 @@ abstract class Enumeration {
       else if (this.id == that.id) 0
       else 1
 
-    override def toString = name
+    override def toString: String = name
 
     nextId += 1
     add(this)
@@ -44,7 +44,7 @@ abstract class Enumeration {
 
   private var nextId = 0
 
-  def maxId = nextId
+  def maxId: Int = nextId
 
   protected def ordering: Ordering[Value] = ValueOrdering
 
@@ -55,15 +55,15 @@ abstract class Enumeration {
     value
   }
 
-  def values = _values
+  def values: ValueSet = _values
 
-  def apply(n: Int) =
+  def apply(n: Int): Value =
     values.find(_.id == n).get
 
-  def apply(name: String) =
+  def apply(name: String): Value =
     withName(name)
 
-  def withName(name: String) =
+  def withName(name: String): Value =
     values.find { value =>
       if (caseSensitive) value.name == name
       else value.name.toLowerCase == name.toLowerCase
@@ -77,7 +77,7 @@ abstract class Enumeration {
       }
     }.get
 
-  override def toString =
+  override def toString: String =
     ((getClass.getName stripSuffix MODULE_SUFFIX_STRING split '.').last split
        Regex.quote(NAME_JOIN_STRING)).last
 

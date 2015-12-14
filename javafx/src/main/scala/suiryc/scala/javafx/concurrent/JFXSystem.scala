@@ -1,6 +1,6 @@
 package suiryc.scala.javafx.concurrent
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import grizzled.slf4j.Logging
 import javafx.application.Platform
 import scala.concurrent.{Await, Future}
@@ -99,7 +99,7 @@ object JFXSystem
    * Unless requested to execute 'later' (i.e. not synchronously), executes the
    * action right away if we are in the JavaFX thread.
    */
-  def schedule(action: => Unit, later: Boolean = false, logReentrant: Boolean = true) = {
+  def schedule(action: => Unit, later: Boolean = false, logReentrant: Boolean = true): Unit = {
     if (!later && Platform.isFxApplicationThread) {
       if (logReentrant) reentrant()
       action
@@ -108,16 +108,16 @@ object JFXSystem
   }
 
   /** Delegates periodic action to JavaFX using dedicated actor. */
-  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(action: => Unit) =
+  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(action: => Unit): Cancellable =
     system.scheduler.schedule(initialDelay, interval, jfxActor, Action { () => action })
 
   /** Delegates delayed action to JavaFX using dedicated actor. */
-  def scheduleOnce(delay: FiniteDuration)(action: => Unit) =
+  def scheduleOnce(delay: FiniteDuration)(action: => Unit): Cancellable =
     system.scheduler.scheduleOnce(delay, jfxActor, Action { () => action })
 
   private class JFXActor extends Actor {
 
-    override def receive = {
+    override def receive: Receive = {
       case msg: Action =>
         msg.action()
     }

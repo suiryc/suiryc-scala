@@ -14,11 +14,11 @@ class FileTimes(
 object FileTimes {
 
   def apply(creation: FileTime, lastModified: FileTime, lastAccess: FileTime, time: Long): FileTimes = {
-    def orNull(time: FileTime) =
+    def orNull(time: FileTime): FileTime =
       if ((time != null) && (time.toMillis <= 0)) null
       else time
 
-    def orTime(time1: FileTime, time2: FileTime) =
+    def orTime(time1: FileTime, time2: FileTime): FileTime =
       if (time1 == null) time2
       else time1
 

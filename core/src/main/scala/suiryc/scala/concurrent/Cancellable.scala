@@ -7,7 +7,7 @@ class Cancellable {
 
   private var _cancelled = false
 
-  def cancelled() = _cancelled
+  def cancelled(): Boolean = _cancelled
 
   def cancel() {
     _cancelled = true

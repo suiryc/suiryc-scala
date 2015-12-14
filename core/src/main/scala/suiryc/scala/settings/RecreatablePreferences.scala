@@ -38,7 +38,7 @@ class RecreatablePreferences(_prefs: Preferences) {
    *
    * Re-creates parent hierarchy if necessary.
    */
-  def prefs = {
+  def prefs: Preferences = {
     if (!node.nodeExists("")) {
       recreate()
     }

@@ -20,6 +20,7 @@ object Stages {
    * @param stage stage to set minimum dimensions on
    * @param size initial stage size to set, or None
    */
+  // scalastyle:off method.length
   def trackMinimumDimensions(stage: Stage, size: Option[(Double, Double)] = None): Unit = {
     // Notes:
     // The main problem is to determine the window decoration size: difference
@@ -80,8 +81,10 @@ object Stages {
           track()
         }
       }
+      ()
     }
   }
+  // scalastyle:on method.length
 
   /** Keeps stage bounds (x, y, width, height) upon hiding/showing. */
   def keepBounds(stage: Stage): Unit = {
@@ -101,6 +104,7 @@ object Stages {
       }
       else box = Some(new BoundingBox(stage.getX, stage.getY, stage.getWidth, stage.getHeight))
     }
+    ()
   }
 
   /**

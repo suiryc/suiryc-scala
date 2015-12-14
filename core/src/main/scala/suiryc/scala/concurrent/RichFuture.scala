@@ -24,6 +24,7 @@ class RichFuture[A](val underlying: Future[A]) extends AnyVal {
         // Nothing to do if given Future is already completed
         if (!promise.isCompleted) {
           promise.tryFailure(new TimeoutException(s"Future timeout ($delay $unit)"))
+          ()
         }
       }
       promise.completeWith(underlying)
