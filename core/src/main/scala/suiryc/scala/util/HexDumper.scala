@@ -353,9 +353,10 @@ object HexDumper {
    * @param settings dumper settings
    */
   def dump(data: Array[Byte], settings: Settings): Unit = {
+    val maxLength = data.length - settings.offset
     val actualLength =
-      if (settings.length >= 0) settings.length
-      else data.length - settings.offset
+      if (settings.length >= 0) math.min(settings.length, maxLength)
+      else maxLength
     val actualSettings = guessOffsetSize(settings.copy(length = actualLength))
     val dumper = new HexDumper(actualSettings)
     dumper.dump(data, actualSettings.offset.toInt, actualSettings.length.toInt, end = true)

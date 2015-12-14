@@ -63,6 +63,24 @@ class HexDumperSuite extends FunSuite {
     assert(a === b)
   }
 
+  test("default settings with offset beyond data") {
+    val builder = new StringBuilder()
+    val settings = settingsDefault.copy(output = Output(builder), offset = 50)
+    dump(binary, settings)
+    val a = builder.toString()
+    assert(a.isEmpty)
+  }
+
+  test("default settings with length beyond data") {
+    val builder = new StringBuilder()
+    val settings = settingsDefault.copy(output = Output(builder), length = 50)
+    dump(binary, settings)
+    val a = builder.toString()
+    val b = """00: 1CCC 54C6 8885 3788 8E91 A819 0D8B 568A  |.ÌTÆ..7...¨...V.|
+              |10: D638 A817 A37E 62A4 4428 A276            |Ö8¨.£~b¤D(¢v    |""".stripMargin
+    assert(a === b)
+  }
+
   test("default settings with non-empty output") {
     val builder = new StringBuilder("#")
     val settings = settingsDefault.copy(output = Output(builder))
