@@ -1,6 +1,9 @@
 package suiryc.scala.io
 
 import grizzled.slf4j.Logging
+import java.io.{File, FileInputStream}
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 import java.nio.file.{CopyOption, Files, LinkOption, Path, StandardCopyOption}
 import java.nio.file.attribute.BasicFileAttributeView
 
@@ -89,6 +92,24 @@ object FilesEx
       }
     }
     /* else: no time to set */
+  }
+
+  /**
+   * Maps file in memory.
+   *
+   * @param file file to map
+   * @param offset offset in file
+   * @param length length of data to map
+   * @return mapped buffer
+   */
+  def map(file: File, offset: Long = 0, length: Long = -1): MappedByteBuffer = {
+    val input = new FileInputStream(file)
+    val channel = input.getChannel
+    val size = if (length >= 0) length else channel.size
+    val mapped = channel.map(FileChannel.MapMode.READ_ONLY, offset, size)
+    // Note: we can safely close the input after mapping in memory
+    input.close()
+    mapped
   }
 
 }
