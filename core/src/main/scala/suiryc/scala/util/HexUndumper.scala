@@ -1,10 +1,6 @@
 package suiryc.scala.util
 
 import java.io._
-import java.nio.charset.Charset
-import suiryc.scala.io.FilesEx
-import suiryc.scala.util.HexDumper._
-
 import scala.io.Source
 
 /**
@@ -19,14 +15,42 @@ class HexUndumper(settings: HexUndumper.Settings) {
 
   import HexUndumper._
 
+  /** How many bytes to skip. */
+  protected var skip: Long = settings.offset
+
+  /** How many bytes to undump. */
+  protected var remaining: Long = settings.length
+
   /** Processes a dump. */
-  def process(dump: String): Unit = {
-    val data = for {
-      lineFormat(data) <- lineFormat findAllIn dump
-      hexFormat(hex) <- hexFormat findAllIn data
-    } yield hex
-    settings.output.write((data.mkString: Hash).bytes)
-  }
+  def process(dump: String): Unit =
+    if (remaining != 0) {
+      val data = for {
+        lineFormat(data) <- lineFormat findAllIn dump
+        hexFormat(hex) <- hexFormat findAllIn data
+      } yield hex
+
+      @annotation.tailrec
+      def skipLoop(): Unit =
+        if (data.nonEmpty) {
+          skip -= 1
+          data.next()
+          if (skip > 0) skipLoop()
+        }
+
+      @annotation.tailrec
+      def writeLoop(): Unit =
+        if (data.nonEmpty) {
+          val request = math.min(remaining, Int.MaxValue).toInt
+          val actualData = (data.take(request).mkString: Hash).bytes
+          settings.output.write(actualData)
+          remaining -= actualData.length
+          if (remaining > 0) writeLoop()
+        }
+
+      if (skip > 0) skipLoop()
+      if (remaining > 0) writeLoop()
+      else settings.output.write((data.mkString: Hash).bytes)
+    }
 
 }
 
@@ -54,12 +78,17 @@ object HexUndumper {
   protected def parseParams(args: Array[String]): Params = {
     val parser = new scopt.OptionParser[Params](getClass.getSimpleName) {
       note("Converts hexadecimal representation to binary data")
-      // TODO: offset and length too ?
       opt[File]("input").valueName("<file>").text("Input file (standard input by default)").action { (v, c) =>
         c.copy(input = Some(v))
       }
       opt[File]("output").valueName("<file>").text("Output file (standard output by default)").action { (v, c) =>
         c.copy(output = Some(v))
+      }
+      opt[Long]("offset").text("Offset in converted output from which to start").action { (v, c) =>
+        c.copy(offset = v)
+      }
+      opt[Long]("length").text("Number of bytes in converted output to process").action { (v, c) =>
+        c.copy(offset = v)
       }
       checkConfig { c =>
         val inputEqualsOutputOpt = for {
@@ -88,7 +117,7 @@ object HexUndumper {
         (Output.stdout, { () => System.out.flush() })
     }
 
-    val settings = Settings(output = output)
+    val settings = Settings(params).copy(output = output)
     params.input match {
       case Some(file) =>
         undump(file, settings)
@@ -99,11 +128,23 @@ object HexUndumper {
     onDone()
   }
 
+  /**
+   * Undumps data.
+   *
+   * @param dump where to get data to undump
+   * @param settings undumper settings
+   */
   def undump(dump: String, settings: Settings): Unit = {
     val undumper = new HexUndumper(settings)
     undumper.process(dump)
   }
 
+  /**
+   * Undumps data.
+   *
+   * @param source where to get data to undump
+   * @param settings undumper settings
+   */
   def undump(source: Source, settings: Settings): Unit = {
     val undumper = new HexUndumper(settings)
     for (line <- source.getLines) {
@@ -111,9 +152,21 @@ object HexUndumper {
     }
   }
 
+  /**
+   * Undumps data.
+   *
+   * @param input where to get data to undump
+   * @param settings undumper settings
+   */
   def undump(input: InputStream, settings: Settings): Unit =
     undump(Source.fromInputStream(input)(inputCodec), settings)
 
+  /**
+   * Undumps data.
+   *
+   * @param file where to get data to undump
+   * @param settings undumper settings
+   */
   def undump(file: File, settings: Settings): Unit =
     undump(Source.fromFile(file)(inputCodec), settings)
 
@@ -124,12 +177,14 @@ object HexUndumper {
    * @return original data corresponding to the given hexadecimal representation
    */
   def undump(dump: String): Array[Byte] = {
-    Source.fromString(dump).getLines
-    val data = for {
-      lineFormat(data) <- lineFormat findAllIn dump
-      hexFormat(hex) <- hexFormat findAllIn data
-    } yield hex
-    (data.mkString: Hash).bytes
+    // Re-use common function to undump
+    var result: Option[Array[Byte]] = None
+    val output = new Output {
+      override def write(data: Array[Byte]): Unit = result = Some(data)
+    }
+    val settings = Settings(output)
+    undump(dump, settings)
+    result.get
   }
 
   /**
@@ -137,13 +192,27 @@ object HexUndumper {
    *
    * Defaults are:<ul>
    *   <li>output: standard output</li>
+   *   <li>offset: 0</li>
+   *   <li>length: -1 (meaning whole data)</li>
    * </ul>
    *
    * @param output where to dump the hexadecimal representation of data
+   * @param offset data offset
+   * @param length data length, negative value means whole data
    */
   case class Settings(
-    output: Output = Output.stdout
+    output: Output = Output.stdout,
+    offset: Long = 0,
+    length: Long = -1
   )
+
+  object Settings {
+    def apply(params: Params): Settings =
+      Settings(
+        offset = params.offset,
+        length = params.length
+      )
+  }
 
   /** Undumper output. */
   trait Output {
@@ -168,7 +237,9 @@ object HexUndumper {
   /** CLI parameters. */
   protected case class Params(
     input: Option[File] = None,
-    output: Option[File] = None
+    output: Option[File] = None,
+    offset: Long = 0,
+    length: Long = -1
   )
 
 }

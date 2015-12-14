@@ -1,5 +1,6 @@
 package suiryc.scala.util
 
+import java.io.ByteArrayOutputStream
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
@@ -17,22 +18,74 @@ class HexUndumperSuite extends FunSuite {
 
   val dumperSettingsDefault = HexDumper.Settings(endWithEOL = false)
 
-  test("undump") {
+  test("undump various number of bytes") {
     for (input <- List(binary.take(3), binary.take(16), binary)) {
       val builder = new StringBuilder()
       val settings = dumperSettingsDefault.copy(output = HexDumper.Output(builder))
       HexDumper.dump(input, settings)
-      val a = builder.toString()
-      val b = undump(a)
-      assert(b === input)
+      val a = undump(builder.toString)
+      assert(a === input)
     }
   }
 
+  test("undump with specific length") {
+    val dump = """00 01 02 03 04 05 06 07 08 09"""
+    val baos = new ByteArrayOutputStream()
+    val settings = Settings(output = Output(baos), length = 3)
+    undump(dump, settings)
+    val a = baos.toByteArray
+    val b = (0 to 2).map(_.toByte)
+    assert(a === b)
+  }
+
+  test("undump with specific offset and length") {
+    val dump = """00 01 02 03 04 05 06 07 08 09"""
+    val baos = new ByteArrayOutputStream()
+    val settings = Settings(output = Output(baos), offset = 1, length = 3)
+    undump(dump, settings)
+    val a = baos.toByteArray
+    val b = (1 to 3).map(_.toByte)
+    assert(a === b)
+  }
+
+  test("undump with offset beyond data") {
+    val dump = """00 01 02 03 04 05 06 07 08 09"""
+    val baos = new ByteArrayOutputStream()
+    val settings = Settings(output = Output(baos), offset = 10)
+    undump(dump, settings)
+    val a = baos.toByteArray
+    assert(a.isEmpty)
+  }
+
+  test("undump with length beyond data") {
+    val dump = """00 01 02 03 04 05 06 07 08 09"""
+    val baos = new ByteArrayOutputStream()
+    val settings = Settings(output = Output(baos), length = 20)
+    undump(dump, settings)
+    val a = baos.toByteArray
+    val b = (0 to 9).map(_.toByte)
+    assert(a === b)
+  }
+
+  test("undump without offset prefix") {
+    val dump = """0000 0000 0000 0000 0000 0000 0000 0000"""
+    val a = undump(dump).toList
+    val b = List.fill(16)(0x00.toByte)
+    assert(a === b)
+  }
+
+  test("undump with authorized chars in hexadecimal view") {
+    val dump = """00 00-0000 0000 0000 0000 0000 0000 0000"""
+    val a = undump(dump).toList
+    val b = List.fill(16)(0x00.toByte)
+    assert(a === b)
+  }
+
   test("undump with matching pattern in ASCII view") {
-    val dump ="""00: 0000 0000 0000 0000 0000 0000 0000 0000  |00: 1122|"""
-    val a = List.fill(16)(0x00.toByte)
-    val b = undump(dump).toList
-    assert(b === a)
+    val dump = """00: 0000 0000 0000 0000 0000 0000 0000 0000  |00: 1122|"""
+    val a = undump(dump).toList
+    val b = List.fill(16)(0x00.toByte)
+    assert(a === b)
   }
 
 }
