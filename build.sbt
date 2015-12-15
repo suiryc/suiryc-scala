@@ -53,6 +53,7 @@ lazy val core = project.in(file("core")).
     libraryDependencies ++= Seq(
       "com.github.scopt"  %% "scopt"          % versions("scopt"),
       "com.typesafe.akka" %% "akka-actor"     % versions("akka")      % "provided",
+      "com.typesafe.akka" %% "akka-testkit"   % versions("akka")      % "test",
       "com.typesafe"      %  "config"         % versions("config")    % "provided",
       "junit"             %  "junit"          % versions("junit")     % "test",
       "org.clapper"       %% "grizzled-slf4j" % versions("grizzled"),
