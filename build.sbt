@@ -13,7 +13,7 @@ lazy val versions = Map[String, String](
   "suiryc-scala" -> "0.0.2-SNAPSHOT"
 )
 
-lazy val commonSettings = org.scalastyle.sbt.ScalastylePlugin.Settings ++ Seq(
+lazy val commonSettings = Seq(
   organization := "suiryc",
   version := versions("suiryc-scala"),
   scalaVersion := versions("scala"),
@@ -37,17 +37,14 @@ lazy val commonSettings = org.scalastyle.sbt.ScalastylePlugin.Settings ++ Seq(
     "-Ywarn-unused",
     "-Ywarn-unused-import"
   ),
-
   scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-implicits"),
-  org.scalastyle.sbt.PluginKeys.config := file("project/scalastyle-config.xml"),
   resolvers += Resolver.mavenLocal,
   publishMavenStyle := true,
   publishTo := Some(Resolver.mavenLocal)
 )
 
 
-lazy val coreFile = file("core")
-lazy val core = project.in(coreFile).
+lazy val core = project.in(file("core")).
   settings(commonSettings:_*).
   settings(
     name := "suiryc-scala-core",
@@ -64,8 +61,7 @@ lazy val core = project.in(coreFile).
   )
 
 
-lazy val logFile = file("log")
-lazy val log = project.in(logFile).
+lazy val log = project.in(file("log")).
   dependsOn(core).
   settings(commonSettings:_*).
   settings(
@@ -78,8 +74,7 @@ lazy val log = project.in(logFile).
   )
 
 
-lazy val javaFXFile = file("javafx")
-lazy val javaFX = project.in(javaFXFile).
+lazy val javaFX = project.in(file("javafx")).
   dependsOn(core, log).
   settings(commonSettings:_*).
   settings(
