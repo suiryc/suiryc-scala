@@ -239,6 +239,7 @@ class HexDumper(settings: HexDumper.Settings) {
   def done(): Unit = {
     flush()
     if (settings.endWithEOL && (offset > 0)) settings.output.append('\n')
+    settings.output.done()
   }
 
 }
@@ -323,17 +324,8 @@ object HexDumper {
   protected def dump(params: Params): Unit = {
     // Note: create settings when necessary (first try to access the input)
     lazy val (output, onDone) = params.output match {
-      case Some(file) =>
-        val writer = new BufferedWriter(
-          new OutputStreamWriter(
-            new FileOutputStream(file),
-            params.charset
-          )
-        )
-        (Output.apply(writer), { () => writer.close() })
-
-      case None =>
-        (Output.stdout, { () => System.out.flush() })
+      case Some(file) => (Output.apply(file), { () => })
+      case None       => (Output.stdout, { () => System.out.flush() })
     }
 
     lazy val settings = Settings(params).copy(output = output)
@@ -495,6 +487,7 @@ object HexDumper {
   trait Output {
     def append(data: Char): Unit
     def append(data: CharSequence): Unit
+    def done(): Unit = { }
   }
 
   object Output {
@@ -508,6 +501,9 @@ object HexDumper {
     /** Output based on (scala) StringBuilder. */
     def apply(out: StringBuilder): ScalaStringBuilderOutput = new ScalaStringBuilderOutput(out)
 
+    /** Output writing to file. */
+    def apply(file: File, charset: Charset = defaultCharset): FileOutput =
+      new FileOutput(file, charset)
   }
 
   /** Output based on Appendable. */
@@ -520,6 +516,19 @@ object HexDumper {
   class ScalaStringBuilderOutput(out: StringBuilder) extends Output {
     override def append(data: Char): Unit = { out.append(data); () }
     override def append(data: CharSequence): Unit = { out.append(data); () }
+  }
+
+  /** Output writing to File. */
+  class FileOutput(file: File, charset: Charset) extends Output {
+    protected val writer = new BufferedWriter(
+      new OutputStreamWriter(
+        new FileOutputStream(file),
+        charset
+      )
+    )
+    override def append(data: Char): Unit = { writer.append(data); () }
+    override def append(data: CharSequence): Unit = { writer.append(data); () }
+    override def done(): Unit = writer.close()
   }
 
   /** CLI parameters. */
