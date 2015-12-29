@@ -5,7 +5,9 @@ trait Default[A] {
 }
 
 trait LowPriorityImplicitsForDefault { this: Default.type =>
+  // scalastyle:off null
   implicit def forAnyRef[A](implicit ev: Null <:< A): Default[A] = Default.withValue(ev(null))
+  // scalastyle:on null
 }
 
 /**

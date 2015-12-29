@@ -41,6 +41,7 @@ trait Preference[T] {
    *
    * @return value or None if not present
    */
+  // scalastyle:off null
   def option: Option[T] =
     Option(prefs.get(path, null)) match {
       case Some(_) =>
@@ -49,6 +50,7 @@ trait Preference[T] {
       case None =>
         None
     }
+  // scalastyle:on null
 
   /**
    * Gets the preference value.
@@ -161,7 +163,7 @@ object Preference {
    * @param toOuter function to convert value from Outer to Inner type
    */
   def typeBuilder[Outer, Inner](toInner: Outer => Inner, toOuter: Inner => Outer)
-    (implicit innerBuilder: PreferenceBuilder[Inner]) =
+    (implicit innerBuilder: PreferenceBuilder[Inner]): PreferenceBuilder[Outer] =
     new PreferenceBuilder[Outer] {
       def build(bpath: String, bdefault: Outer)(implicit bprefs: Preferences): Preference[Outer] = new Preference[Outer] {
         private val prefInner = innerBuilder.build(bpath, toInner(bdefault))

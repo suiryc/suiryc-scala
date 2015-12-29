@@ -5,6 +5,9 @@ package suiryc.scala.misc
 // TODO - handle floating points in human representation ?
 object Units {
 
+  val scaleSI = 1000L
+  val scaleBinary = 1024L
+
   case class Unit(label: String, factor: Long)
 
   abstract class AbstractSystem(unityLabel: String) {
@@ -54,12 +57,12 @@ object Units {
   }
 
   trait SI extends AbstractSystem {
-    /* Note: 'K' is reserved for 'Kelvin' */
-    val kilo = Unit(s"k${unity.label}", 1000L)
-    val mega = Unit(s"M${unity.label}", 1000L * 1000L)
-    val giga = Unit(s"G${unity.label}", 1000L * 1000L * 1000L)
-    val tera = Unit(s"T${unity.label}", 1000L * 1000L * 1000L * 1000L)
-    val peta = Unit(s"P${unity.label}", 1000L * 1000L * 1000L * 1000L * 1000L)
+    // Note: 'K' is reserved for 'Kelvin'
+    val kilo = Unit(s"k${unity.label}", scaleSI)
+    val mega = Unit(s"M${unity.label}", scaleSI * scaleSI)
+    val giga = Unit(s"G${unity.label}", scaleSI * scaleSI * scaleSI)
+    val tera = Unit(s"T${unity.label}", scaleSI * scaleSI * scaleSI * scaleSI)
+    val peta = Unit(s"P${unity.label}", scaleSI * scaleSI * scaleSI * scaleSI * scaleSI)
 
     def units_SI: List[Unit] = List(kilo, mega, giga, tera, peta)
 
@@ -68,11 +71,11 @@ object Units {
   }
 
   trait Binary extends AbstractSystem {
-    val kibi = Unit(s"Ki${unity.label}", 1024L)
-    val mebi = Unit(s"Mi${unity.label}", 1024L * 1024L)
-    val gibi = Unit(s"Gi${unity.label}", 1024L * 1024L * 1024L)
-    val tebi = Unit(s"Ti${unity.label}", 1024L * 1024L * 1024L * 1024L)
-    val pebi = Unit(s"Pi${unity.label}", 1024L * 1024L * 1024L * 1024L * 1024L)
+    val kibi = Unit(s"Ki${unity.label}", scaleBinary)
+    val mebi = Unit(s"Mi${unity.label}", scaleBinary * scaleBinary)
+    val gibi = Unit(s"Gi${unity.label}", scaleBinary * scaleBinary * scaleBinary)
+    val tebi = Unit(s"Ti${unity.label}", scaleBinary * scaleBinary * scaleBinary * scaleBinary)
+    val pebi = Unit(s"Pi${unity.label}", scaleBinary * scaleBinary * scaleBinary * scaleBinary * scaleBinary)
 
     def units_Binary: List[Unit] = List(kibi, mebi, gibi, tebi, pebi)
 
@@ -80,9 +83,11 @@ object Units {
 
   }
 
+  // scalastyle:off object.name
   object storage
     extends AbstractSystem("B")
     with Binary
     with SI
+  // scalastyle:off object.name
 
 }

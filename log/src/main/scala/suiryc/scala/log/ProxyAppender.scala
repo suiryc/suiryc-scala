@@ -13,32 +13,41 @@ class ProxyAppender(_writers: Seq[LogWriter] = Seq.empty, async: Boolean = false
   protected var writers = _writers.toSet
 
   protected val system = CoreSystem.system
-  protected val actor: ActorRef =
-    if (async) system.actorOf(Props(new ProxyActor).withDispatcher("log.dispatcher"))
-    else null
+  protected val actor: Option[ActorRef] =
+    if (!async) None
+    else Some(system.actorOf(Props(new ProxyActor).withDispatcher("log.dispatcher")))
 
 
-  override def start() {
+  override def start(): Unit = {
     super.start()
   }
 
-  override def append(event: ILoggingEvent) {
-    if (async) actor ! event
-    else write(writers, event)
+  override def append(event: ILoggingEvent): Unit = {
+    actor.fold{
+      write(writers, event)
+    } {
+      _ ! event
+    }
   }
 
-  def addWriter(writer: LogWriter) {
-    if (async) actor ! AddWriter(writer)
-    else writers += writer
+  def addWriter(writer: LogWriter): Unit = {
+    actor.fold{
+      writers += writer
+    } {
+      _ ! AddWriter(writer)
+    }
   }
 
-  def removeWriter(writer: LogWriter) {
-    if (async) actor ! RemoveWriter(writer)
-    else writers -= writer
+  def removeWriter(writer: LogWriter): Unit = {
+    actor.fold{
+      writers -= writer
+    } {
+      _ ! RemoveWriter(writer)
+    }
   }
 
-  @inline private def write(writers: Set[LogWriter], event: ILoggingEvent) {
-    writers foreach { writer =>
+  @inline private def write(writers: Set[LogWriter], event: ILoggingEvent): Unit = {
+    writers.foreach { writer =>
       writer.write(event)
     }
   }
@@ -48,7 +57,7 @@ class ProxyAppender(_writers: Seq[LogWriter] = Seq.empty, async: Boolean = false
 
   private class ProxyActor extends Actor {
 
-    override def receive: Receive = proxy(writers.toSet)
+    override def receive: Receive = proxy(writers)
 
     def proxy(writers: Set[LogWriter]): Receive = {
       case event: ILoggingEvent =>

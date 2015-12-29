@@ -13,6 +13,7 @@ final class RichFileFilter(val asFilter: FileFilter)
 
 }
 
+// scalastyle:off method.name
 trait FileFilterOps {
 
   def accept(file: File): Boolean
@@ -57,6 +58,7 @@ trait FileFilterOps {
     )
 
 }
+// scalastyle:on method.name
 
 /** Companion object. */
 object RichFileFilter

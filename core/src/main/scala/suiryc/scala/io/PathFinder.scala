@@ -4,6 +4,7 @@ import java.io.{File, FileFilter}
 import java.nio.file.Path
 import scala.language.implicitConversions
 
+// scalastyle:off method.name
 class PathFinder protected(
   val filters: List[PathFilter],
   val include: Boolean,
@@ -50,10 +51,9 @@ class PathFinder protected(
 
   def ? : PathFinder = ?(ExistsFileFilter)
 
-  /* Note: using a PathFinder here is more efficient than an ExactNameFilter;
-   * the latter does indeed search in all the children folders to match our
-   * path.
-   */
+  // Note: using a PathFinder here is more efficient than an ExactNameFilter;
+  // the latter does indeed search in all the children folders to match our
+  // path.
   def /(path: String): PathFinder = this / PathFinder(path)
 
   def **(filter: FileFilter, recursiveFilter: FileFilter = DirectoryFileFilter,
@@ -104,6 +104,7 @@ class PathFinder protected(
     get(parent, filters)
 
 }
+// scalastyle:on method.name
 
 object PathFinder {
 

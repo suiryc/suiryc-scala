@@ -1,6 +1,7 @@
 package suiryc.scala.util
 
 
+// scalastyle:off method.name
 class RichEither[A, B](val underlying: Either[A, B]) extends AnyVal {
 
   def &&[A2 >: A, B2 >: B](other: => Either[A2, B2]): Either[A2, B2] = underlying match {
@@ -24,6 +25,7 @@ class RichEither[A, B](val underlying: Either[A, B]) extends AnyVal {
   }
 
 }
+// scalastyle:on method.name
 
 
 class RichEitherThrowable[B](val underlying: Either[Throwable, B]) extends AnyVal {

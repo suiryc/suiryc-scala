@@ -16,16 +16,17 @@ class LineSplitterOutputStream(
 ) extends OutputStream
 {
 
-  /* Note: once flushed, the charset decoder *must not* be used again.
-   * Thus:
-   *  - only flush it upon closing the stream
-   *  - stream 'flush' does nothing, and needs not be overridden
-   *  - drop anything written after closing the stream
-   */
+  import LineSplitterOutputStream._
+
+  // Note: once flushed, the charset decoder *must not* be used again.
+  // Thus:
+  //  - only flush it upon closing the stream
+  //  - stream 'flush' does nothing, and needs not be overridden
+  //  - drop anything written after closing the stream
 
   protected var closed = false
   protected val decoder = charset.newDecoder
-  protected val charBuffer = CharBuffer.allocate(1024)
+  protected val charBuffer = CharBuffer.allocate(defaultBufferSize)
   protected var line = new StringBuilder()
 
   override def write(b: Int) {
@@ -97,4 +98,8 @@ class LineSplitterOutputStream(
     ()
   }
 
+}
+
+object LineSplitterOutputStream {
+  val defaultBufferSize = 1024
 }

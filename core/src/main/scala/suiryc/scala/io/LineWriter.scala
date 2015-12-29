@@ -23,28 +23,37 @@ class ProxyLineWriter(_writers: Seq[LineWriter] = Seq.empty, async: Boolean = fa
   protected var writers = _writers.toSet
 
   protected val system = CoreSystem.system
-  protected val actor: ActorRef =
-    if (async) system.actorOf(Props(new ProxyActor).withDispatcher("dispatcher"))
-    else null
+  protected val actor: Option[ActorRef] =
+    if (!async) None
+    else Some(system.actorOf(Props(new ProxyActor).withDispatcher("dispatcher")))
 
 
-  override def write(line: String) {
-    if (async) actor ! line
-    else write(writers, line)
+  override def write(line: String): Unit = {
+    actor.fold {
+      write(writers, line)
+    } {
+      _ ! line
+    }
   }
 
-  def addWriter(writer: LineWriter) {
-    if (async) actor ! AddWriter(writer)
-    else writers += writer
+  def addWriter(writer: LineWriter): Unit = {
+    actor.fold {
+      writers += writer
+    } {
+      _ ! AddWriter(writer)
+    }
   }
 
-  def removeWriter(writer: LineWriter) {
-    if (async) actor ! RemoveWriter(writer)
-    else writers -= writer
+  def removeWriter(writer: LineWriter): Unit = {
+    actor.fold {
+      writers -= writer
+    } {
+      _ ! RemoveWriter(writer)
+    }
   }
 
   @inline private def write(writers: Set[LineWriter], line: String) {
-    writers foreach(_.write(line))
+    writers.foreach(_.write(line))
   }
 
   private case class AddWriter(writer: LineWriter)

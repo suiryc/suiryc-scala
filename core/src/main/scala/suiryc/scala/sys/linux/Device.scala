@@ -99,17 +99,16 @@ object Device
   def propertyContent(block: Path, path: String*): Option[String] = {
     val file = Paths.get(block.toString, path: _*).toFile
 
-    Option(
-      if (file.exists())
-        SourceEx.autoCloseFile(file) { source =>
-          source.getLines().map { line =>
-            line.trim()
-          }.filterNot { line =>
-            line == ""
-          }.mkString(" / ")
-        }
-      else null
-    )
+    if (file.exists()) Option {
+      SourceEx.autoCloseFile(file) { source =>
+        source.getLines().map { line =>
+          line.trim()
+        }.filterNot { line =>
+          line == ""
+        }.mkString(" / ")
+      }
+    }
+    else None
   }
 
   def size(block: Path): EitherEx[Throwable, Long] = {

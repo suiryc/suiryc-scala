@@ -15,16 +15,14 @@ object FileTimes {
 
   def apply(creation: FileTime, lastModified: FileTime, lastAccess: FileTime, time: Long): FileTimes = {
     def orNull(time: FileTime): FileTime =
-      if ((time != null) && (time.toMillis <= 0)) null
-      else time
+      Option(time).find(_.toMillis > 0).orNull
 
     def orTime(time1: FileTime, time2: FileTime): FileTime =
-      if (time1 == null) time2
-      else time1
+      Option(orNull(time1)).getOrElse(orNull(time2))
 
     new FileTimes(
       orNull(creation),
-      orTime(orNull(lastModified), if (time < 0) null else FileTime.fromMillis(time)),
+      orTime(lastModified, FileTime.fromMillis(time)),
       orNull(lastAccess)
     )
   }

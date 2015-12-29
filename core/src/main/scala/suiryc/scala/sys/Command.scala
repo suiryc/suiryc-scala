@@ -46,6 +46,8 @@ object Command
   extends Logging
 {
 
+  val bufferSize = 1024
+
   /** Command output type. */
   object OutputType extends Enumeration {
     /** stdout output */
@@ -174,16 +176,16 @@ object Command
       input: InputStream,
       outputs: Iterable[Stream[OutputStream]]
     ) {
-      val buffer = new Array[Byte](1024)
+      val buffer = new Array[Byte](bufferSize)
 
-      Stream.continually(input.read(buffer)) takeWhile { read =>
+      Stream.continually(input.read(buffer)).takeWhile { read =>
         read != -1
       } foreach { read =>
         outputs foreach { _.stream.write(buffer, 0, read) }
       }
 
       input.close()
-      outputs foreach { output =>
+      outputs.foreach { output =>
         output.stream.flush()
         if (output.close) output.stream.close()
       }
@@ -192,8 +194,8 @@ object Command
     def filterOutput(sink: Iterable[Stream[OutputStream]], buffer: Option[StringBuffer])
       (input: InputStream)
     {
-      val tee = buffer map { _ =>
-        new Stream(new ByteArrayOutputStream(256), true)
+      val tee = buffer.map { _ =>
+        new Stream(new ByteArrayOutputStream(bufferSize), true)
       }
 
       _filterOutput(input, sink ++ tee)
@@ -204,7 +206,7 @@ object Command
     }
 
     def filterInput(input: Stream[InputStream], output: OutputStream) {
-      val buffer = new Array[Byte](1024)
+      val buffer = new Array[Byte](bufferSize)
 
       @scala.annotation.tailrec
       def loop() {
@@ -270,7 +272,7 @@ object Command
     }
 
     // Process may have ended before consuming the whole input
-    stdinSource foreach { input =>
+    stdinSource.foreach { input =>
       if (input.close) input.stream.close()
     }
 

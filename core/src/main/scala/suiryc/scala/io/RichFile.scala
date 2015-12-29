@@ -12,9 +12,11 @@ import suiryc.scala.misc
 final class RichFile(val asFile: File) extends AnyVal
 {
 
+  // scalastyle:off method.name
   def /(component: String): File =
     if (component == ".") asFile
     else new File(asFile, component)
+  // scalastyle:on method.name
 
   def exists: Boolean = asFile.exists
 
@@ -38,7 +40,7 @@ final class RichFile(val asFile: File) extends AnyVal
     val nme = name
     val dot = nme.lastIndexOf('.')
     if (dot < 0) (nme, "")
-    else (nme.substring(0, dot), nme.substring(dot+1))
+    else (nme.substring(0, dot), nme.substring(dot + 1))
   }
 
   def mkdir: Boolean = asFile.mkdir

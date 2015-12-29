@@ -1,6 +1,5 @@
 package suiryc.scala.settings
 
-import com.typesafe.config.ConfigException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.prefs.Preferences
@@ -154,7 +153,7 @@ object PersistentSetting {
    * @param toOuter function to convert value from Outer to Inner type
    */
   def typeBuilder[Outer, Inner](toInner: Outer => Inner, toOuter: Inner => Outer)
-    (implicit innerBuilder: PersistentSettingBuilder[Inner]) =
+    (implicit innerBuilder: PersistentSettingBuilder[Inner]): PersistentSettingBuilder[Outer] =
     new PersistentSettingBuilder[Outer] {
       def build(bpath: String, bdefault: Outer)(implicit bsettings: BaseSettings): PersistentSetting[Outer] = new PersistentSetting[Outer] {
         private val settingInner = innerBuilder.build(bpath, toInner(bdefault))
