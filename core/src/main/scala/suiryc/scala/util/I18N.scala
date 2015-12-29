@@ -54,7 +54,7 @@ class I18N(baseName: String, defaultLanguage: String = "en") extends I18NBase(ba
 
   /** Gets 'language' from resource name. */
   protected def getLanguage(name: String): String =
-    name.substring(5, name.length - 11)
+    name.substring(resourceNamePrefix.length + 1, name.length - (resourceNameSuffix.length + 1))
 
   /**
    * Languages that we handle.
