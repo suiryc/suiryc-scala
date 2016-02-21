@@ -43,6 +43,17 @@ object RichFuture {
 
   import scala.language.implicitConversions
 
+  /** An 'action' (which returns a future when triggered). */
+  type Action[A] = () => Future[A]
+
+  object Action {
+
+    /** Builds an action from a by-name parameter. */
+    def apply[A](action: => Future[A]): Action[A] =
+      () => action
+
+  }
+
   // Note: we need a scheduler, and Java provides some.
   // But we don't want the created threads to prevent leaving application,
   // so create a simple factory - based on Java default one - and set created
@@ -89,7 +100,7 @@ object RichFuture {
    * @tparam A kind of action result
    * @return result of actions
    */
-  def executeSequentially[A](stopOnError: Boolean, fs: (() => Future[A])*)(implicit ec: ExecutionContext): Future[Seq[A]] = {
+  def executeSequentially[A](stopOnError: Boolean, fs: Action[A]*)(implicit ec: ExecutionContext): Future[Seq[A]] = {
     // Notes:
     // Since we may wish to keep on triggering futures even if a previous one
     // failed, we need to use a 'Try' as computation result.
