@@ -81,7 +81,7 @@ object CheckBoxListCellEx {
    * Cell info:
    *   - text to display
    *   - observable boolean that will be tied to checkbox
-   *   - checked initial checkbox status
+   *   - initial checkbox status
    *   - whether checkbox status can be changed (that is whether initial status is read-only)
    */
   case class CellInfo(text: String, observable: BooleanProperty, checked: Boolean, locked: Boolean)
