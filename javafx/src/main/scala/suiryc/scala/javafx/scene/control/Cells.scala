@@ -1,7 +1,7 @@
 package suiryc.scala.javafx.scene.control
 
 import javafx.beans.property.{BooleanProperty, SimpleBooleanProperty}
-import javafx.scene.control.{Cell, ListCell, TableCell}
+import javafx.scene.control.{Cell, ListCell, Separator, TableCell}
 import javafx.scene.control.cell.CheckBoxListCell
 import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.javafx.util.Callback
@@ -16,6 +16,31 @@ trait CellEx[A] extends Cell[A] {
     super.updateItem(item, empty)
     if (empty) setText(null)
     else setText(itemText(item))
+  }
+  // scalastyle:on null
+
+}
+
+/**
+ * Cell extension that can display a Separator.
+ *
+ * Items are Options; None is used to display a Separator.
+ */
+trait CellWithSeparator[A] extends Cell[Option[A]] {
+
+  protected def itemText(item: A): String
+
+  // scalastyle:off null
+  override protected def updateItem(item: Option[A], empty: Boolean): Unit = {
+    super.updateItem(item, empty)
+    if (empty) setText(null)
+    else {
+      setText(item.map(itemText).orNull)
+      if (item.isEmpty) {
+        setDisable(true)
+        setGraphic(new Separator())
+      }
+    }
   }
   // scalastyle:on null
 
