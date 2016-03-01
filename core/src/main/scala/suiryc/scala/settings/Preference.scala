@@ -107,12 +107,10 @@ class StringPreference(protected val path: String, val default: String)
 }
 
 /** Enumeration preference. */
-class EnumerationPreference[T <: Enumeration](protected val path: String, val default: T#Value, caseSensitive: Boolean = false)
+class EnumerationPreference[T <: Enumeration](protected val path: String, val default: T#Value)
   (implicit val prefs: Preferences, enum: T)
   extends Preference[T#Value] {
-  override protected def prefsValue(default: T#Value): T#Value =
-    if (caseSensitive) enum.withName(prefs.get(path, default.toString))
-    else enum.byName(prefs.get(path, default.toString))
+  override protected def prefsValue(default: T#Value): T#Value = enum.byName(prefs.get(path, default.toString))
   override protected def updateValue(v: T#Value) = prefs.put(path, v.toString)
 }
 
@@ -141,8 +139,8 @@ object Preference {
     builder.build(path, default)
 
   /** Builds an Enumeration preference. */
-  def from[T <: Enumeration](path: String, default: T#Value, caseSensitive: Boolean = false)(implicit prefs: Preferences, enum: T): Preference[T#Value] =
-    new EnumerationPreference(path, default, caseSensitive)
+  def from[T <: Enumeration](path: String, default: T#Value)(implicit prefs: Preferences, enum: T): Preference[T#Value] =
+    new EnumerationPreference(path, default)
 
   /** Builds a special Enumeration preference. */
   def from[T <: sEnumeration](path: String, default: T#Value)(implicit prefs: Preferences, enum: T): Preference[T#Value] =
