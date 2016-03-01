@@ -3,8 +3,8 @@ package suiryc.scala.settings
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.prefs.Preferences
+import suiryc.scala.RichEnumeration
 import suiryc.scala.misc.{Enumeration => sEnumeration}
-import suiryc.scala.misc.EnumerationEx
 
 /**
  * Persistent setting value.
@@ -95,17 +95,12 @@ class PersistentStringSetting(override protected val path: String, override val 
 }
 
 /** Enumeration persistent setting. */
-class PersistentEnumerationSetting[T <: Enumeration](override protected val path: String, override val default: T#Value)
+class PersistentEnumerationSetting[T <: Enumeration](override protected val path: String, override val default: T#Value, caseSensitive: Boolean = false)
   (implicit val settings: BaseSettings, enum: T)
   extends EnumerationPreference[T](path, default)(settings.prefs, enum) with PersistentSetting[T#Value] {
-  override protected def configValue: T#Value = enum.withName(settings.config.getString(path))
-}
-
-/** EnumerationEx persistent setting. */
-class PersistentEnumerationExSetting[T <: EnumerationEx](override protected val path: String, override val default: T#Value)
-  (implicit val settings: BaseSettings, enum: T)
-  extends EnumerationExPreference[T](path, default)(settings.prefs, enum) with PersistentSetting[T#Value] {
-  override protected def configValue: T#Value = enum(settings.config.getString(path))
+  override protected def configValue: T#Value =
+    if (caseSensitive) enum.withName(settings.config.getString(path))
+    else enum.byName(settings.config.getString(path))
 }
 
 /** Special Enumeration persistent setting. */
@@ -132,12 +127,9 @@ object PersistentSetting {
     builder.build(path, default)
 
   /** Builds an Enumeration persistent setting. */
-  def from[T <: Enumeration](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T): PersistentSetting[T#Value] =
-    new PersistentEnumerationSetting[T](path, default)
-
-  /** Builds an EnumerationEx persistent setting. */
-  def from[T <: EnumerationEx](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T, d: DummyImplicit): PersistentSetting[T#Value] =
-    new PersistentEnumerationExSetting[T](path, default)
+  def from[T <: Enumeration](path: String, default: T#Value, caseSensitive: Boolean = false)
+    (implicit settings: BaseSettings, enum: T): PersistentSetting[T#Value] =
+    new PersistentEnumerationSetting[T](path, default, caseSensitive)
 
   /** Builds a special Enumeration persistent setting. */
   def from[T <: sEnumeration](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T): PersistentSetting[T#Value] =

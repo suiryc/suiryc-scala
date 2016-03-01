@@ -4,7 +4,7 @@ import java.io._
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import suiryc.scala.io.FilesEx
-import suiryc.scala.misc.EnumerationEx
+import suiryc.scala.RichEnumeration
 
 /**
  * Hexadecimal data dumper.
@@ -298,10 +298,10 @@ object HexDumper {
         c.copy(charset = Charset.forName(v))
       }
       opt[String]("view-hex-mode").text("Hexadecimal view mode").action { (v, c) =>
-        c.copy(hexViewMode = HexadecimalViewMode(v))
+        c.copy(hexViewMode = HexadecimalViewMode.byName(v))
       }
       opt[String]("view-ascii-mode").text("ASCII view mode").action { (v, c) =>
-        c.copy(asciiViewMode = AsciiViewMode(v))
+        c.copy(asciiViewMode = AsciiViewMode.byName(v))
       }
       opt[Int]("view-bytes").text("How many bytes to display per line").action { (v, c) =>
         c.copy(viewBytes = v)
@@ -426,7 +426,7 @@ object HexDumper {
 
   protected def guessOffsetSize(length: Long): Int =
     if (length < 0) maxOffsetSize
-    else (1 to (maxOffsetSize - 1)).find { bytes =>
+    else (1 until maxOffsetSize).find { bytes =>
       length <= (1 << (bytes * 2 * 4))
     }.getOrElse(maxOffsetSize)
 
@@ -545,7 +545,7 @@ object HexDumper {
   )
 
   /** Hexadecimal view modes. */
-  object HexadecimalViewMode extends EnumerationEx {
+  object HexadecimalViewMode extends Enumeration {
     /** Large: one space every byte, one more space every 8 bytes. */
     val Large = Value
     /** Compact: one space every 2 bytes, one more space every 16 bytes. */
@@ -553,7 +553,7 @@ object HexDumper {
   }
 
   /** ASCII view modes. */
-  object AsciiViewMode extends EnumerationEx {
+  object AsciiViewMode extends Enumeration {
     /** Undivided: whole sequence shown. */
     val Undivided = Value
     /** Divided: '|' separation every 16 bytes. */

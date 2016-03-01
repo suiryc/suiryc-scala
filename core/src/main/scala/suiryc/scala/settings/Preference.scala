@@ -3,8 +3,8 @@ package suiryc.scala.settings
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.prefs.Preferences
+import suiryc.scala.RichEnumeration
 import suiryc.scala.misc.{Enumeration => sEnumeration}
-import suiryc.scala.misc.EnumerationEx
 
 /**
  * Preference value.
@@ -107,18 +107,12 @@ class StringPreference(protected val path: String, val default: String)
 }
 
 /** Enumeration preference. */
-class EnumerationPreference[T <: Enumeration](protected val path: String, val default: T#Value)
+class EnumerationPreference[T <: Enumeration](protected val path: String, val default: T#Value, caseSensitive: Boolean = false)
   (implicit val prefs: Preferences, enum: T)
   extends Preference[T#Value] {
-  override protected def prefsValue(default: T#Value): T#Value = enum.withName(prefs.get(path, default.toString))
-  override protected def updateValue(v: T#Value) = prefs.put(path, v.toString)
-}
-
-/** EnumerationEx preference. */
-class EnumerationExPreference[T <: EnumerationEx](protected val path: String, val default: T#Value)
-  (implicit val prefs: Preferences, enum: T)
-  extends Preference[T#Value] {
-  override protected def prefsValue(default: T#Value): T#Value = enum(prefs.get(path, default.toString))
+  override protected def prefsValue(default: T#Value): T#Value =
+    if (caseSensitive) enum.withName(prefs.get(path, default.toString))
+    else enum.byName(prefs.get(path, default.toString))
   override protected def updateValue(v: T#Value) = prefs.put(path, v.toString)
 }
 
@@ -147,12 +141,8 @@ object Preference {
     builder.build(path, default)
 
   /** Builds an Enumeration preference. */
-  def from[T <: Enumeration](path: String, default: T#Value)(implicit prefs: Preferences, enum: T): Preference[T#Value] =
-    new EnumerationPreference(path, default)
-
-  /** Builds an EnumerationEx preference. */
-  def from[T <: EnumerationEx](path: String, default: T#Value)(implicit prefs: Preferences, enum: T, d: DummyImplicit): Preference[T#Value] =
-    new EnumerationExPreference(path, default)
+  def from[T <: Enumeration](path: String, default: T#Value, caseSensitive: Boolean = false)(implicit prefs: Preferences, enum: T): Preference[T#Value] =
+    new EnumerationPreference(path, default, caseSensitive)
 
   /** Builds a special Enumeration preference. */
   def from[T <: sEnumeration](path: String, default: T#Value)(implicit prefs: Preferences, enum: T): Preference[T#Value] =
