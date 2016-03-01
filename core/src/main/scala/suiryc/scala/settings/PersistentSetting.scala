@@ -73,6 +73,13 @@ class PersistentBooleanSetting(override protected val path: String, override val
   override protected def configValue: Boolean = settings.config.getBoolean(path)
 }
 
+/** Int persistent setting. */
+class PersistentIntSetting(override protected val path: String, override val default: Int)
+  (implicit val settings: BaseSettings)
+  extends IntPreference(path, default)(settings.prefs) with PersistentSetting[Int] {
+  override protected def configValue: Int = settings.config.getInt(path)
+}
+
 /** Long persistent setting. */
 class PersistentLongSetting(override protected val path: String, override val default: Long)
   (implicit val settings: BaseSettings)
@@ -85,6 +92,13 @@ class PersistentStringSetting(override protected val path: String, override val 
   (implicit val settings: BaseSettings)
   extends StringPreference(path, default)(settings.prefs) with PersistentSetting[String] {
   override protected def configValue: String = settings.config.getString(path)
+}
+
+/** Enumeration persistent setting. */
+class PersistentEnumerationSetting[T <: Enumeration](override protected val path: String, override val default: T#Value)
+  (implicit val settings: BaseSettings, enum: T)
+  extends EnumerationPreference[T](path, default)(settings.prefs, enum) with PersistentSetting[T#Value] {
+  override protected def configValue: T#Value = enum.withName(settings.config.getString(path))
 }
 
 /** EnumerationEx persistent setting. */
@@ -117,8 +131,12 @@ object PersistentSetting {
   def from[T](path: String, default: T)(implicit settings: BaseSettings, builder: PersistentSettingBuilder[T]): PersistentSetting[T] =
     builder.build(path, default)
 
+  /** Builds an Enumeration persistent setting. */
+  def from[T <: Enumeration](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T): PersistentSetting[T#Value] =
+    new PersistentEnumerationSetting[T](path, default)
+
   /** Builds an EnumerationEx persistent setting. */
-  def from[T <: EnumerationEx](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T): PersistentSetting[T#Value] =
+  def from[T <: EnumerationEx](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T, d: DummyImplicit): PersistentSetting[T#Value] =
     new PersistentEnumerationExSetting[T](path, default)
 
   /** Builds a special Enumeration persistent setting. */
@@ -129,6 +147,12 @@ object PersistentSetting {
   implicit val booleanBuilder = new PersistentSettingBuilder[Boolean] {
     def build(path: String, default: Boolean)(implicit settings: BaseSettings): PersistentSetting[Boolean] =
       new PersistentBooleanSetting(path, default)
+  }
+
+  /** Int persistent setting builder. */
+  implicit val intBuilder = new PersistentSettingBuilder[Int] {
+    def build(path: String, default: Int)(implicit settings: BaseSettings): PersistentSetting[Int] =
+      new PersistentIntSetting(path, default)
   }
 
   /** Long persistent setting builder. */
