@@ -1,0 +1,116 @@
+/*
+ * This section is a copy of 'combo-box-base' CSS elements from modena.css
+ * It is necessary to use our own class (even if copying many stuff) to
+ * prevent any issue related to loading order when this stylesheet is
+ * automatically used for our control through 'getUserAgentStylesheet'.
+ */
+.text-field-with-button,
+.text-field-with-button > .arrow-button {
+    -fx-background-color: -fx-shadow-highlight-color, -fx-outer-border, -fx-inner-border, -fx-body-color;
+    -fx-background-insets: 0 0 -1 0, 0, 1, 2;
+    -fx-background-radius: 3px, 3px, 2px, 1px;
+    -fx-padding: 0.333333em 0.666667em 0.333333em 0.666667em; /* 4 8 4 8 */
+    -fx-text-fill: -fx-text-base-color;
+    -fx-alignment: CENTER;
+    -fx-content-display: LEFT;
+}
+
+.text-field-with-button:hover {
+    -fx-color: -fx-hover-base;
+}
+
+.text-field-with-button:focused {
+    -fx-background-color: -fx-focus-color, -fx-inner-border, -fx-body-color, -fx-faint-focus-color, -fx-body-color;
+    -fx-background-insets: -0.2, 1, 2, -1.4, 2.6;
+    -fx-background-radius: 3, 2, 1, 4, 1;
+}
+
+.text-field-with-button:disabled {
+    -fx-opacity: 0.4;
+}
+
+.text-field-with-button > .arrow-button > .arrow {
+    -fx-background-color: -fx-mark-highlight-color, -fx-mark-color;
+    -fx-background-insets: 0 0 -1 0, 0;
+    -fx-padding: 0.166667em 0.333333em 0.166667em 0.333333em; /* 2 4 2 4 */
+    -fx-shape: "M 0 0 h 7 l -3.5 4 z";
+}
+
+.text-field-with-button {
+    -fx-padding: 0;
+}
+
+.text-field-with-button > .arrow-button {
+    -fx-background-color: -fx-outer-border, -fx-inner-border, -fx-body-color;
+    -fx-background-insets: 1 1 1 0, 1, 2;
+    -fx-background-radius: 0 3 3 0, 0 2 2 0, 0 1 1 0;
+    -fx-padding: 0.5em 0.667em 0.5em 0.833333em; /* 6 8 6 10 */
+}
+.text-field-with-button > .text-field {
+    -fx-background-color:
+        linear-gradient(to bottom, derive(-fx-text-box-border, -10%), -fx-text-box-border),
+        linear-gradient(from 0px 0px to 0px 5px, derive(-fx-control-inner-background, -9%), -fx-control-inner-background);
+    -fx-background-insets: 1 0 1 1;
+    -fx-background-radius: 2 0 0 2;
+}
+.text-field-with-button:focused > .text-field,
+.text-field-with-button > .text-field:focused {
+    -fx-background-color:
+        -fx-control-inner-background,
+        -fx-faint-focus-color,
+        linear-gradient(from 0px 0px to 0px 5px, derive(-fx-control-inner-background, -9%), -fx-control-inner-background);
+    -fx-background-insets: 1 0 1 1, 1 0 1 1, 3 2 3 3;
+    -fx-background-radius: 2 0 0 2, 1 0 0 1, 0;
+}
+
+
+/*
+ * This section overrides copied style and applies generic customization.
+ * It could be used alone after scene creation if:
+ *   - added manually through 'scene.getStylesheets.add', which seems to apply
+ *     our stylesheet after all others (hence really overriding default style)
+ *   - the control would also use the 'combo-box-base' class with 'editable'
+ *     pseudo-class (making the first section of this stylesheet unnecessary)
+ */
+
+/* Override 'arrow-button' padding so that 'arrow' fills most of the content. */
+.text-field-with-button > .arrow-button {
+  -fx-padding: 0.333333em; /* 4 */
+}
+
+/* Compared to default 'combo-box-base' behavior, reset 'hover' color for our
+ * control but apply it to its children.
+ * Otherwise, since we can disable the 'arrow-button' alone, changing the
+ * parent control color gets in the way.
+ */
+.text-field-with-button:hover {
+  -fx-color: -fx-base;
+}
+
+.text-field-with-button:hover > .text-field,
+.text-field-with-button:hover > .arrow-button {
+  /* This is actually already the default for 'arrow-button' in 'combo-box-base'. */
+  -fx-color: -fx-hover-base;
+}
+
+/* Define 'pressed' behavior as it is not done in 'combo-box-base'. */
+.text-field-with-button > .arrow-button:pressed {
+  -fx-color: -fx-pressed-base;
+}
+
+/* Define 'disabled' behavior for 'arrow-button'. */
+.text-field-with-button > .arrow-button:disabled {
+  -fx-color: -fx-base;
+  -fx-opacity: 0.4;
+}
+
+/* Override default 'arrow' behavior. */
+.text-field-with-button > .arrow-button > .arrow {
+  /* Override padding so that we fill most of the 'arrow-button' content. */
+  -fx-padding: 0.666667em; /* 8 */
+  -fx-scale-shape: true;
+  /* Override with empty path to draw nothing.
+   * Actual style class has to override it in order to display something.
+   */
+  -fx-shape: "M0,0z";
+}
