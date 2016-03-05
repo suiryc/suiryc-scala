@@ -84,10 +84,13 @@ class SettingsSnapshot {
   /** Setting snapshots. */
   private var snapshots: List[SettingSnapshot[_]] = Nil
 
-  /** Adds a setting snapshot. */
-  def add(others: SettingSnapshot[_]*) {
+  /** Adds setting snapshots. */
+  def add(others: Seq[SettingSnapshot[_]]): Unit =
     snapshots ++= others.toList
-  }
+
+  /** Adds setting snapshots. (vararg variant) */
+  def add(others: SettingSnapshot[_]*)(implicit d: DummyImplicit): Unit =
+    add(others)
 
   /** Gets whether any setting changed. */
   def changed(): Boolean =
