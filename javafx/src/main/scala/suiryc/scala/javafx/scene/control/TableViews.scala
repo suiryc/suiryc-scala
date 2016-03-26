@@ -8,17 +8,22 @@ object TableViews {
   /**
    * Gets table columns view.
    *
-   * Formats columns order and width into a string.
-   * Order and width are derived from given description. Format associates
+   * Formats columns order, width and visibility into a string.
+   * Settings are derived from given columns description. Format associates
    * key and column width pairs, e.g. "key1=column1.width;key2=..." for
-   * List("key1" -> column1, "key2" -> column2, ...).
+   * List("key1" -> column1, "key2" -> column2, ...). Negative width indicates
+   * column is not visible.
    */
   def getColumnsView[A](table: TableView[A], columnsDesc: List[(String, TableColumn[A, _])]): String = {
     import scala.collection.JavaConversions._
 
     table.getColumns.toList.map { column =>
       val key = columnsDesc.find(_._2 eq column).get._1
-      s"$key=${column.getWidth}"
+      if (column.isVisible) {
+        s"$key=${column.getWidth}"
+      } else {
+        s"$key=-${column.getWidth}"
+      }
     }.mkString(";")
   }
 
@@ -33,8 +38,16 @@ object TableViews {
         val params = str.split(';').toList.flatMap { param =>
           param.split('=').toList match {
             case key :: value :: Nil =>
-              try { Some(key -> value.toDouble) }
-              catch { case ex: Throwable => Some(key -> 0.0) }
+              val settings = try {
+                if (value.startsWith("-")) {
+                  ColumnSettings(visible = false, Some(value.substring(1).toDouble))
+                } else {
+                  ColumnSettings(visible = true, Some(value.toDouble))
+                }
+              } catch {
+                case ex: Throwable => ColumnSettings(visible = true, None)
+              }
+              Some(key -> settings)
 
             case _ =>
               None
@@ -42,9 +55,10 @@ object TableViews {
         }
 
         val columns1 = params.flatMap { param =>
-          val (key, width) = param
+          val (key, settings) = param
           columnsDesc.find(_._1 == key).map { case (_, column) =>
-            if (width > 0) column.setPrefWidth(width)
+            settings.width.find(_ > 0).foreach(column.setPrefWidth)
+            column.setVisible(settings.visible)
             column
           }
         }
@@ -61,5 +75,7 @@ object TableViews {
     table.getColumns.addAll(columns:_*)
     ()
   }
+
+  case class ColumnSettings(visible: Boolean, width: Option[Double])
 
 }
