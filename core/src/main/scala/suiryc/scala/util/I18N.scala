@@ -182,6 +182,25 @@ trait I18NWithPreference { this: I18N =>
 
 }
 
+/**  I18N trait with cache for retrieved keys. */
+trait I18NWithCache { this: I18N =>
+
+  protected var cache = Map[String, String]()
+
+  /** Gets string from cache, or from resources (and cache it). */
+  def getString(key: String): String =
+    cache.getOrElse(key, {
+      val value = getResources.getString(key)
+      cache += key -> value
+      value
+    })
+
+  /** Resets cache. */
+  def reset(): Unit =
+    cache = Map.empty
+
+}
+
 object I18N {
 
   protected val resourceNameSuffix = "properties"
