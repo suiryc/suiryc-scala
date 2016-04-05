@@ -1,6 +1,7 @@
 package suiryc.scala.javafx.scene.control
 
-import javafx.scene.control.{TableColumn, TableView}
+import javafx.collections.ObservableList
+import javafx.scene.control.{TableColumn, TableColumnBase, TableView}
 
 /** TableView helpers. */
 object TableViews {
@@ -13,29 +14,71 @@ object TableViews {
    * key and column width pairs, e.g. "key1=column1.width;key2=..." for
    * List("key1" -> column1, "key2" -> column2, ...). Negative width indicates
    * column is not visible.
+   *
+   * Works with nested columns (only inner-most columns are processed).
    */
   def getColumnsView[A](table: TableView[A], columnsDesc: List[(String, TableColumn[A, _])]): String = {
     import scala.collection.JavaConversions._
 
-    table.getColumns.toList.map { column =>
-      val key = columnsDesc.find(_._2 eq column).get._1
-      if (column.isVisible) {
-        s"$key=${column.getWidth}"
-      } else {
-        s"$key=-${column.getWidth}"
+    @scala.annotation.tailrec
+    def processColumns(columns: List[TableColumn[A, _]], acc: List[String]): List[String] = {
+      columns match {
+        case column :: tail =>
+          val children = column.getColumns
+          if (children.size > 0) {
+            processColumns(children.toList ::: tail, acc)
+          } else {
+            val key = columnsDesc.find(_._2 eq column).get._1
+            val value = if (column.isVisible) {
+              s"$key=${column.getWidth}"
+            } else {
+              s"$key=-${column.getWidth}"
+            }
+            processColumns(tail, acc :+ value)
+          }
+
+        case Nil => acc
       }
-    }.mkString(";")
+    }
+
+    processColumns(table.getColumns.toList, Nil).mkString(";")
   }
 
   /**
    * Sets table columns view.
    *
    * Orders columns and set preferred width from given view.
+   *
+   * Works with nested columns (parent column must have been set beforehand).
    */
+  // scalastyle:off method.length
   def setColumnsView[A](table: TableView[A], columnsDesc: List[(String, TableColumn[A, _])], view: Option[String]): Unit = {
-    val columns = view match {
+    var alreadyOrdered = List[TableColumnBase[A, _]]()
+
+    // Ordering a column being processed (in order) is 'simple': just add it at
+    // the (current) end of its parent (either another column, or the table).
+    @scala.annotation.tailrec
+    def orderColumn(column: TableColumnBase[A, _]): Unit = {
+      val owner = Option(column.getParentColumn).map(_.getColumns).getOrElse(table.getColumns).asInstanceOf[ObservableList[TableColumnBase[A, _]]]
+      owner.remove(column)
+      owner.add(column)
+      // Order recursively so that parent column is ordered too, unless it has
+      // already been done.
+      Option(column.getParentColumn) match {
+        case Some(parent) =>
+          if (!alreadyOrdered.contains(parent)) {
+            alreadyOrdered ::= parent
+            orderColumn(parent)
+          }
+
+        case None =>
+      }
+    }
+
+    // First extract columns settings from view
+    val columnsSettings = view match {
       case Some(str) =>
-        val params = str.split(';').toList.flatMap { param =>
+        str.split(';').toList.flatMap { param =>
           param.split('=').toList match {
             case key :: value :: Nil =>
               val settings = try {
@@ -54,27 +97,28 @@ object TableViews {
           }
         }
 
-        val columns1 = params.flatMap { param =>
-          val (key, settings) = param
-          columnsDesc.find(_._1 == key).map { case (_, column) =>
-            settings.width.find(_ > 0).foreach(column.setPrefWidth)
-            column.setVisible(settings.visible)
-            column
-          }
-        }
-        val keys = params.map(_._1).toSet
-        val columns2 = columnsDesc.filterNot { case (key, _) =>
-          keys.contains(key)
-        }.map(_._2)
-        columns1 ::: columns2
-
       case None =>
-        columnsDesc.map(_._2)
+        Nil
     }
 
-    table.getColumns.addAll(columns:_*)
-    ()
+    // Then order (and set width/visibility) known columns.
+    columnsSettings.foreach { case (key, settings) =>
+      columnsDesc.find(_._1 == key).foreach { case (_, column) =>
+        settings.width.find(_ > 0).foreach(column.setPrefWidth)
+        column.setVisible(settings.visible)
+        orderColumn(column)
+      }
+    }
+
+    // Finally order remaining columns.
+    val keys = columnsSettings.map(_._1).toSet
+    columnsDesc.filterNot { case (key, _) =>
+      keys.contains(key)
+    }.foreach { case (_, column) =>
+      orderColumn(column)
+    }
   }
+  // scalastyle:on method.length
 
   case class ColumnSettings(visible: Boolean, width: Option[Double])
 
