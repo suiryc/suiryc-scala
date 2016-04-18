@@ -1,9 +1,9 @@
 package suiryc.scala.javafx.scene.control
 
 import javafx.collections.ObservableList
-import javafx.scene.control.{TableColumn, TableColumnBase, TableView}
+import javafx.scene.control._
 
-/** TableView helpers. */
+/** TableView (and TreeTableView) helpers. */
 object TableViews {
 
   /**
@@ -17,22 +17,22 @@ object TableViews {
    *
    * Works with nested columns (only inner-most columns are processed).
    */
-  def getColumnsView[A](table: TableView[A], columnsDesc: List[(String, TableColumn[A, _])]): String = {
+  def getColumnsView[A](handler: ViewHandler[A], columnsDesc: List[(String, TableColumnBase[A, _])]): String = {
     import scala.collection.JavaConversions._
 
     @scala.annotation.tailrec
-    def processColumns(columns: List[TableColumn[A, _]], acc: List[String]): List[String] = {
+    def processColumns(columns: List[TableColumnBase[A, _]], acc: List[String]): List[String] = {
       columns match {
         case column :: tail =>
-          val children = column.getColumns
+          val children = handler.getColumns(column)
           if (children.size > 0) {
             processColumns(children.toList ::: tail, acc)
           } else {
             val key = columnsDesc.find(_._2 eq column).get._1
-            val value = if (column.isVisible) {
-              s"$key=${column.getWidth}"
+            val value = if (handler.isVisible(column)) {
+              s"$key=${handler.getWidth(column)}"
             } else {
-              s"$key=-${column.getWidth}"
+              s"$key=-${handler.getWidth(column)}"
             }
             processColumns(tail, acc :+ value)
           }
@@ -41,7 +41,7 @@ object TableViews {
       }
     }
 
-    processColumns(table.getColumns.toList, Nil).mkString(";")
+    processColumns(handler.getColumns.toList, Nil).mkString(";")
   }
 
   /**
@@ -52,19 +52,19 @@ object TableViews {
    * Works with nested columns (parent column must have been set beforehand).
    */
   // scalastyle:off method.length
-  def setColumnsView[A](table: TableView[A], columnsDesc: List[(String, TableColumn[A, _])], view: Option[String]): Unit = {
-    var alreadyOrdered = List[TableColumnBase[A, _]]()
+  def setColumnsView[A](handler: ViewHandler[A], columnsDesc: List[(String, ViewHandler[A]#Column)], view: Option[String]): Unit = {
+    var alreadyOrdered = List[ViewHandler[A]#Column]()
 
     // Ordering a column being processed (in order) is 'simple': just add it at
     // the (current) end of its parent (either another column, or the table).
     @scala.annotation.tailrec
-    def orderColumn(column: TableColumnBase[A, _]): Unit = {
-      val owner = Option(column.getParentColumn).map(_.getColumns).getOrElse(table.getColumns).asInstanceOf[ObservableList[TableColumnBase[A, _]]]
+    def orderColumn(column: ViewHandler[A]#Column): Unit = {
+      val owner = Option(handler.getParentColumn(column)).map(_.getColumns).getOrElse(handler.getColumns).asInstanceOf[ObservableList[ViewHandler[A]#Column]]
       owner.remove(column)
       owner.add(column)
       // Order recursively so that parent column is ordered too, unless it has
       // already been done.
-      Option(column.getParentColumn) match {
+      Option(handler.getParentColumn(column)) match {
         case Some(parent) =>
           if (!alreadyOrdered.contains(parent)) {
             alreadyOrdered ::= parent
@@ -104,8 +104,8 @@ object TableViews {
     // Then order (and set width/visibility) known columns.
     columnsSettings.foreach { case (key, settings) =>
       columnsDesc.find(_._1 == key).foreach { case (_, column) =>
-        settings.width.find(_ > 0).foreach(column.setPrefWidth)
-        column.setVisible(settings.visible)
+        settings.width.find(_ > 0).foreach(handler.setPrefWidth(column, _))
+        handler.setVisible(column, settings.visible)
         orderColumn(column)
       }
     }
@@ -121,5 +121,57 @@ object TableViews {
   // scalastyle:on method.length
 
   case class ColumnSettings(visible: Boolean, width: Option[Double])
+
+  /**
+   * View handler.
+   *
+   * Defines how to manipulate a view.
+   */
+  trait ViewHandler[A] {
+    type Column = TableColumnBase[A, _]
+    def getColumns: ObservableList[Column]
+    def getParentColumn(column: Column): Column
+    def getColumns(column: Column): ObservableList[Column]
+    def isVisible(column: Column): Boolean
+    def setVisible(column: Column, v: Boolean): Unit
+    def getWidth(column: Column): Double
+    def setPrefWidth(column: Column, v: Double): Unit
+  }
+
+  /** TableView handler. */
+  implicit class TableViewDesc[A](table: TableView[A]) extends ViewHandler[A] {
+    override def getColumns: ObservableList[Column] =
+      table.getColumns.asInstanceOf[ObservableList[Column]]
+    override def getParentColumn(column: Column): Column =
+      column.getParentColumn
+    override def getColumns(column: Column): ObservableList[Column] =
+      column.getColumns.asInstanceOf[ObservableList[Column]]
+    override def isVisible(column: Column): Boolean =
+      column.isVisible
+    override def setVisible(column: Column, v: Boolean): Unit =
+      column.setVisible(v)
+    override def getWidth(column: Column): Double =
+      column.getWidth
+    override def setPrefWidth(column: Column, v: Double): Unit =
+      column.setPrefWidth(v)
+  }
+
+  /** TreeTableView handler. */
+  implicit class TreeTableViewDesc[A](table: TreeTableView[A]) extends ViewHandler[TreeItem[A]] {
+    override def getColumns: ObservableList[Column] =
+      table.getColumns.asInstanceOf[ObservableList[Column]]
+    override def getParentColumn(column: Column): Column =
+      column.getParentColumn
+    override def getColumns(column: Column): ObservableList[Column] =
+      column.getColumns.asInstanceOf[ObservableList[Column]]
+    override def isVisible(column: Column): Boolean =
+      column.isVisible
+    override def setVisible(column: Column, v: Boolean): Unit =
+      column.setVisible(v)
+    override def getWidth(column: Column): Double =
+      column.getWidth
+    override def setPrefWidth(column: Column, v: Double): Unit =
+      column.setPrefWidth(v)
+  }
 
 }
