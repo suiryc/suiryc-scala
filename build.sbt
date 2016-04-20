@@ -10,6 +10,7 @@ lazy val versions = Map[String, String](
   "scala"        -> "2.11.7",
   "scalatest"    -> "2.2.6",
   "scopt"        -> "3.4.0",
+  "spray-json"   -> "1.3.2",
   "suiryc-scala" -> "0.0.2-SNAPSHOT"
 )
 
@@ -84,7 +85,8 @@ lazy val javaFX = project.in(file("javafx")).
       "com.typesafe.akka" %% "akka-actor"      % versions("akka")     % "provided",
       "org.clapper"       %% "grizzled-slf4j"  % versions("grizzled") % "provided",
       "ch.qos.logback"    %  "logback-classic" % versions("logback")  % "provided",
-      "ch.qos.logback"    %  "logback-core"    % versions("logback")  % "provided"
+      "ch.qos.logback"    %  "logback-core"    % versions("logback")  % "provided",
+      "io.spray"          %% "spray-json"      % versions("spray-json")
     )
   )
 
