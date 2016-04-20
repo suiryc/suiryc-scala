@@ -119,7 +119,7 @@ object RichFuture {
           } else {
             // Recover Failure with itself.
             f2.recover {
-              case ex: Throwable => Failure(ex)
+              case ex: Exception => Failure(ex)
             }
           }
 

@@ -18,7 +18,7 @@ class DevicePartition(val device: Device, val partNumber: Int)
 
   val size = Device.size(block)
 
-  protected def blkid(tag: String): Either[Throwable, String] =
+  protected def blkid(tag: String): Either[Exception, String] =
     try {
       /* Try a direct approach using 'blkid' (requires privileges) */
       val CommandResult(result, stdout, stderr) = Command.execute(Seq("blkid", "-o", "value", "-s", tag.toUpperCase, dev.toString))
@@ -47,18 +47,18 @@ class DevicePartition(val device: Device, val partNumber: Int)
       }
     }
     catch {
-      case e: Throwable =>
+      case e: Exception =>
         Left(e)
     }
 
   /* Note: UUID may be set or changed upon formatting partition */
-  def uuid: Either[Throwable, String] =
+  def uuid: Either[Exception, String] =
     blkid("UUID").right.map(uuid => if (uuid == "") "<unknown-uuid>" else uuid)
 
-  def label: Either[Throwable, String] =
+  def label: Either[Exception, String] =
     blkid("LABEL")
 
-  def fsType: Either[Throwable, String] =
+  def fsType: Either[Exception, String] =
     blkid("TYPE")
 
   def mounted: Boolean = {

@@ -161,11 +161,11 @@ object Stages {
 
       def getDoubleParam(key: String): Double =
         try { params.get(key).map(_.toDouble).getOrElse(0.0) }
-        catch { case ex: Throwable => 0.0 }
+        catch { case ex: Exception => 0.0 }
 
       def getBooleanParam(key: String): Boolean =
         try { params.get(key).exists(_.toBoolean) }
-        catch { case ex: Throwable => false }
+        catch { case ex: Exception => false }
 
       val x = getDoubleParam("x")
       val y = getDoubleParam("y")

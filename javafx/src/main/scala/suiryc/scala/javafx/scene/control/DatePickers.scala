@@ -34,7 +34,7 @@ object DatePickers {
             try {
               Some(field.getConverter.fromString(edited))
             } catch {
-              case ex: Throwable => None
+              case ex: Exception => None
             }
 
           case None =>

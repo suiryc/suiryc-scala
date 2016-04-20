@@ -111,7 +111,7 @@ object Device
     else None
   }
 
-  def size(block: Path): EitherEx[Throwable, Long] = {
+  def size(block: Path): EitherEx[Exception, Long] = {
     propertyContent(block, "size") map { size =>
       EitherEx(Right(size.toLong * 512))
     } getOrElse {
@@ -128,7 +128,7 @@ object Device
         }
       }
       catch {
-        case e: Throwable =>
+        case e: Exception =>
           EitherEx(Left(e), -1L)
       }
     }
