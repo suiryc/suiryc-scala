@@ -16,6 +16,9 @@ object Ordering {
     def compare(a1: A, a2: A): Int = a1.compareTo(a2)
   }
 
+  // Note: to get an 'Ordering[A]' when 'A <: Comparable[A]',
+  // simply 'import scala.math.Ordering._'.
+
   /** Ordering for LocalDate. */
   implicit val localDateOrdering = comparableOrdering[LocalDate, ChronoLocalDate]
 
