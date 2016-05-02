@@ -45,18 +45,40 @@ object BoundsEx {
     val hvalue = scrollPane.getHvalue
     val contentWidth = contentBounds.getWidth
     val viewportWidth = viewportBounds.getWidth
-    val hoffset = if ((contentWidth <= viewportWidth) || (hmax - hmin <= 0)) 0
-    else math.max(0, contentWidth - viewportWidth) * (hvalue - hmin) / (hmax - hmin)
+    val hoffset =
+      if ((contentWidth <= viewportWidth) || ((hmax - hmin) <= 0)) 0
+      else (contentWidth - viewportWidth) * (hvalue - hmin) / (hmax - hmin)
 
     val vmin = scrollPane.getVmin
     val vmax = scrollPane.getVmax
     val vvalue = scrollPane.getVvalue
     val contentHeight = contentBounds.getHeight
     val viewportHeight = viewportBounds.getHeight
-    val voffset = if ((contentHeight <= viewportHeight) || (vmax - vmin <= 0)) 0
-    else math.max(0, contentHeight - viewportHeight) * (vvalue - vmin) / (vmax - vmin)
+    val voffset =
+      if ((contentHeight <= viewportHeight) || ((vmax - vmin) <= 0)) 0
+      else (contentHeight - viewportHeight) * (vvalue - vmin) / (vmax - vmin)
 
     new BoundingBox(hoffset, voffset, 0, viewportWidth, viewportHeight, 0)
+  }
+
+  /**
+   * Determines the hvalue for which the given hoffset appears at the left of
+   * the scroll pane view.
+   *
+   * @param scrollPane scroll pane to get hvalue from
+   * @param hoffset the hoffset for which to compute the hvalue
+   * @return the corresponding hvalue
+   */
+  def computeHValue(scrollPane: ScrollPane, hoffset: Double): Double = {
+    val contentBounds = scrollPane.getContent.getLayoutBounds
+    val viewportBounds = scrollPane.getViewportBounds
+
+    val hmin = scrollPane.getHmin
+    val hmax = scrollPane.getHmax
+    val contentWidth = contentBounds.getWidth
+    val viewportWidth = viewportBounds.getWidth
+    if ((contentWidth <= viewportWidth) || (hmax - hmin <= 0)) 0
+    else hmin + hoffset * (hmax - hmin) / (contentWidth - viewportWidth)
   }
 
 }
