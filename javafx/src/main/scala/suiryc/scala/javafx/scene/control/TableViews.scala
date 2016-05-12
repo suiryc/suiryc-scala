@@ -1,6 +1,7 @@
 package suiryc.scala.javafx.scene.control
 
 import javafx.collections.ObservableList
+import javafx.collections.transformation.SortedList
 import javafx.scene.control._
 import scala.collection.JavaConversions._
 import scala.reflect._
@@ -8,6 +9,38 @@ import spray.json._
 
 /** TableView (and TreeTableView) helpers. */
 object TableViews {
+
+  /**
+   * Sets items, keeping table sort order.
+   *
+   * Upon changing items which are not in a SortedList, the table sort order is
+   * cleared (see https://bugs.openjdk.java.net/browse/JDK-8092759).
+   * This function re-applies the sorting order if necessary.
+   */
+  def setItems[A](table: TableView[A], items: ObservableList[A]): Unit = {
+    val sortOrder = table.getSortOrder
+    val restoreSortOrder =
+      if (sortOrder.isEmpty || table.getItems.isInstanceOf[SortedList[A]]) None
+      else Some(sortOrder.toList)
+    table.setItems(items)
+    restoreSortOrder.foreach(table.getSortOrder.setAll(_))
+  }
+
+  /**
+   * Sets root, keeping table sort order.
+   *
+   * Upon changing root, the table sort order is cleared (see
+   * https://bugs.openjdk.java.net/browse/JDK-8092759).
+   * This function re-applies the sorting order if necessary.
+   */
+  def setRoot[A](table: TreeTableView[A], root: TreeItem[A]): Unit = {
+    val sortOrder = table.getSortOrder
+    val restoreSortOrder =
+      if (sortOrder.isEmpty) None
+      else Some(sortOrder.toList)
+    table.setRoot(root)
+    restoreSortOrder.foreach(table.getSortOrder.setAll(_))
+  }
 
   /**
    * Gets table columns view.
