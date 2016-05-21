@@ -1,0 +1,17 @@
+/* Modal Node (inside transparent stage) styles.
+ * Based on http://stackoverflow.com/a/17579619, with only what matters
+ * remaining, and tweaked.
+ */
+.modal-node-root {
+  -fx-opacity: 0.8;
+}
+
+.modal-node-content {
+  -fx-padding: 20;
+  -fx-alignment: center;
+  -fx-background-color: linear-gradient(to bottom, derive(cadetblue, 20%), cadetblue);
+  -fx-border-color: derive(cadetblue, -20%);
+  -fx-border-width: 5;
+  -fx-border-radius: 6;
+  -fx-background-radius: 6;
+}

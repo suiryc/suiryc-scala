@@ -1,11 +1,16 @@
 package suiryc.scala.javafx.scene.control
 
 import java.io.{PrintWriter, StringWriter}
+import javafx.scene.{Node, Scene}
 import javafx.scene.control.{Alert, ButtonType, Label, TextArea}
-import javafx.scene.layout.{GridPane, Priority}
-import javafx.stage.{Stage, Window}
+import javafx.scene.effect.BoxBlur
+import javafx.scene.layout.{GridPane, Priority, StackPane}
+import javafx.scene.paint.Color
+import javafx.stage.{Modality, Stage, StageStyle, Window}
 import suiryc.scala.RichOption._
 import suiryc.scala.javafx.I18NBase
+import suiryc.scala.javafx.beans.value.RichObservableValue
+import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.javafx.concurrent.JFXSystem
 
 /** Dialog/Alert helpers. */
@@ -120,5 +125,78 @@ object Dialogs {
       ex: Option[Throwable] = None,
       buttons: List[ButtonType] = Nil): Option[ButtonType] =
     buildAlert(Alert.AlertType.ERROR, owner, title, headerText, contentText, ex, buttons)
+
+  /**
+   * Helps to display a Node the modal way.
+   *
+   * Actually creates a transparent modal stage which contains the Node.
+   * The returned stage can be shown when necessary, and re-used if applicable.
+   *
+   * @param parent the parent (relating to which we are modal)
+   * @param builder callback that gives the content while handling how and when
+   *                the stage is closed
+   * @return modal stage
+   */
+  // scalastyle:off method.length null
+  def modalNode(parent: Window, builder: (Stage) => Node): Stage = {
+    // Notes:
+    // We wish to display a Node, centered on parent window, in a modal way
+    // (parent cannot be interacted with until we are done).
+    // To do so, we can build a transparent modal stage, which scenes contains
+    // the Node, and let caller close the stage when we are done.
+    // As visual hint, we blur parent window and surround Node with visible
+    // border, color and CSS effects.
+    // Based on http://stackoverflow.com/a/17579619, with only what matters
+    // remaining, and tweaked.
+    val parentEffect = new BoxBlur()
+
+    class ModalNode extends Stage {
+      initStyle(StageStyle.TRANSPARENT)
+      initOwner(parent)
+      initModality(Modality.WINDOW_MODAL)
+
+      val contentPane = new StackPane()
+      contentPane.getStyleClass.add("modal-node-content")
+      contentPane.getChildren.add(builder(this))
+      val layout = new StackPane()
+      layout.getChildren.setAll(contentPane)
+      val scene = new Scene(layout, Color.TRANSPARENT)
+      scene.getStylesheets.add(getClass.getResource("modal-node.css").toExternalForm)
+      scene.getRoot.getStyleClass.add("modal-dialog-root")
+      setScene(scene)
+
+      // Centers us (and thus the node)
+      def centerNode(): Unit = {
+        setX(parent.getX + parent.getWidth / 2 - getWidth / 2)
+        setY(parent.getY + parent.getHeight / 2 - getHeight / 2)
+      }
+
+      // Notes:
+      // We could listen to parent being moved or resized in order to re-center,
+      // but this should not be necessary (we are modal). Moreover it prevents
+      // the Stage from being GCed until the parent is GCed, unless we cancel
+      // the listener when necessary, which is not worth the hassle.
+      // We can at least listen for the node being resized (dynamic content).
+      RichObservableValue.listen(
+        List(widthProperty, heightProperty),
+        centerNode()
+      )
+
+      showingProperty.listen {
+        // Center and apply blur effect on parent when we are showing
+        if (isShowing) centerNode()
+        parent.getScene.getRoot.setEffect(
+          if (isShowing) {
+            parentEffect
+          } else {
+            null
+          }
+        )
+      }
+    }
+
+    new ModalNode()
+  }
+  // scalastyle:on method.length null
 
 }
