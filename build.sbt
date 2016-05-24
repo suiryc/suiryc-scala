@@ -57,6 +57,7 @@ lazy val core = project.in(file("core")).
       "com.typesafe.akka" %% "akka-testkit"   % versions("akka")      % "test",
       "com.typesafe"      %  "config"         % versions("config")    % "provided",
       "junit"             %  "junit"          % versions("junit")     % "test",
+      "io.spray"          %% "spray-json"     % versions("spray-json"),
       "org.clapper"       %% "grizzled-slf4j" % versions("grizzled"),
       "org.scalatest"     %% "scalatest"      % versions("scalatest") % "test"
     )
@@ -85,8 +86,7 @@ lazy val javaFX = project.in(file("javafx")).
       "com.typesafe.akka" %% "akka-actor"      % versions("akka")     % "provided",
       "org.clapper"       %% "grizzled-slf4j"  % versions("grizzled") % "provided",
       "ch.qos.logback"    %  "logback-classic" % versions("logback")  % "provided",
-      "ch.qos.logback"    %  "logback-core"    % versions("logback")  % "provided",
-      "io.spray"          %% "spray-json"      % versions("spray-json")
+      "ch.qos.logback"    %  "logback-core"    % versions("logback")  % "provided"
     )
   )
 
