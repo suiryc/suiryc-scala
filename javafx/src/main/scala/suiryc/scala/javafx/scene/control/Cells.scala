@@ -3,6 +3,7 @@ package suiryc.scala.javafx.scene.control
 import javafx.beans.property.{BooleanProperty, SimpleBooleanProperty}
 import javafx.scene.control.{Cell, ListCell, Separator, TableCell}
 import javafx.scene.control.cell.CheckBoxListCell
+import suiryc.scala.concurrent.Cancellable
 import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.javafx.util.Callback
 
@@ -61,16 +62,24 @@ trait ListCellEx[A] extends ListCell[A] with CellEx[A]
 trait TableCellEx[A, B] extends TableCell[A, B] with CellEx[B]
 
 /**
- * CheckBox ListCell extension.
+ * CheckBox ListCell with information.
  *
  * Automatically updates Cell according to content by setting text, checkbox
  * selection and cell disabling if value is locked.
  *
  * @tparam A cell data type
  */
-abstract class CheckBoxListCellEx[A] extends CheckBoxListCell[A] {
+// Note we cannot use a 'trait' due to a compilation restriction:
+// "Implementation restriction: trait ... accesses protected method setDisabled inside a concrete trait method.
+// Add an accessor in a class extending class Node as a workaround."
+abstract class CheckBoxListCellWithInfo[A] extends CheckBoxListCell[A] {
 
-  import CheckBoxListCellEx._
+  import CheckBoxListCellWithInfo._
+
+  protected var propertyListener: Option[Cancellable] = None
+
+  /** Whether there is an actual item. */
+  protected def hasActualItem(item: A): Boolean = true
 
   /** Gets cell info for a given item. */
   protected def getInfo(item: A): CellInfo
@@ -81,35 +90,72 @@ abstract class CheckBoxListCellEx[A] extends CheckBoxListCell[A] {
   /** Callback for checkbox change. */
   protected def statusChanged(oldValue: Boolean, newValue: Boolean): Unit
 
+  // Link the checkbox state to the cell info property.
+  // Note this must be set before any call to 'updateItem' as it is needed when
+  // an item is present. It is called each time item is updated and not empty.
   setSelectedStateCallback(Callback { item =>
-    // We are supposed to have an item
-    Option(item).map { _ =>
+    // We are supposed to have an item, but it may not hold actual data, in
+    // which case there is no link to create.
+    Option(item).filter(hasActualItem).map { _ =>
       val info = getInfo(item)
       val property = info.observable
-      property.set(info.checked)
-      property.listen { (_, v0, v1) =>
+      // Listen before setting property as it may be useful to trigger change
+      // from here right now for caller.
+      propertyListener = Some(property.listen { (_, v0, v1) =>
         statusChanged(v0, v1)
-      }
+      })
+      property.set(info.checked)
       property
     }.getOrElse(new SimpleBooleanProperty())
   })
 
   // scalastyle:off null
-  override protected def updateItem(item: A, empty: Boolean) {
+  override protected def updateItem(item: A, empty: Boolean): Unit = {
+    // Cancel previous listener if any
+    propertyListener.foreach(_.cancel())
+    propertyListener = None
+
+    // Do the standard update (note: CheckBoxListCell does reset text and
+    // graphic for empty items).
     super.updateItem(item, empty)
-    if (empty) setText(null)
-    else {
-      val info = getInfo(item)
-      setText(info.text)
-      setDisabled(info.locked)
-      setLocked(info.locked)
+
+    // Then do our specific update
+    if (!empty) {
+      if (!hasActualItem(item)) {
+        setText(null)
+        setGraphic(null)
+        setDisable(true)
+      } else {
+        val info = getInfo(item)
+        setText(info.text)
+        setDisabled(info.locked)
+        setLocked(info.locked)
+      }
     }
   }
   // scalastyle:on null
 
 }
 
-object CheckBoxListCellEx {
+/**
+ * CheckBox ListCell with information that can display a Separator.
+ *
+ * Items are Options; None is used to display a Separator.
+ *
+ * @tparam A actual data type
+ */
+trait CheckBoxListCellWithSeparator[A] extends CheckBoxListCellWithInfo[Option[A]] {
+
+  override protected def hasActualItem(item: Option[A]): Boolean = item.isDefined
+
+  override protected def updateItem(item: Option[A], empty: Boolean): Unit = {
+    super.updateItem(item, empty)
+    if (!empty && !hasActualItem(item)) setGraphic(new Separator())
+  }
+
+}
+
+object CheckBoxListCellWithInfo {
   /**
    * Cell info:
    *   - text to display
