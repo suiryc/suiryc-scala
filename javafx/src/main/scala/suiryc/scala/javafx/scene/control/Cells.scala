@@ -39,6 +39,11 @@ trait CellWithSeparator[A] extends Cell[Option[A]] {
       if (item.isEmpty) {
         setDisable(true)
         setGraphic(new Separator())
+      } else {
+        // Don't forget to re-enable cell (and remove graphic), as it could have
+        // previously been disabled (used as entries separator).
+        setDisable(false)
+        setGraphic(null)
       }
     }
   }
