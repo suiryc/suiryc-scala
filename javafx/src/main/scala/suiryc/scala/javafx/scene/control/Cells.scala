@@ -33,15 +33,18 @@ trait CellWithSeparator[A] extends Cell[Option[A]] {
   // scalastyle:off null
   override protected def updateItem(item: Option[A], empty: Boolean): Unit = {
     super.updateItem(item, empty)
-    if (empty) setText(null)
-    else {
+    // Don't forget to re-enable cell (and remove graphic) when applicable as
+    // it could have previously been disabled (used as entries separator).
+    if (empty) {
+      setText(null)
+      setDisable(false)
+      setGraphic(null)
+    } else {
       setText(item.map(itemText).orNull)
       if (item.isEmpty) {
         setDisable(true)
         setGraphic(new Separator())
       } else {
-        // Don't forget to re-enable cell (and remove graphic), as it could have
-        // previously been disabled (used as entries separator).
         setDisable(false)
         setGraphic(null)
       }
