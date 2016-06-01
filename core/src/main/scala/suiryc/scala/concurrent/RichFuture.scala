@@ -90,9 +90,41 @@ object RichFuture {
    *
    * Provided a sequence of actions (functions returning a Future), execute them
    * sequentially and return a sequence containing the results of each action.
+   *
+   * @param fs sequence of actions
+   * @param ec execution context
+   * @tparam A kind of action result
+   * @return result of actions
+   */
+  def executeSequentially[A](fs: Seq[Action[A]])(implicit ec: ExecutionContext): Future[Seq[Try[A]]] =
+    fs.foldLeft(Future.successful(List.empty[Try[A]])) { (acc, f) =>
+      acc.flatMap { r1 =>
+        // Combine new result with previous one.
+        f().map { r2 =>
+          r1 :+ Success(r2)
+        }.recover {
+          case ex: Exception => r1 :+ Failure(ex)
+        }
+      }
+    }
+
+  /**
+   * Executes futures sequentially.
+   *
+   * Vararg variant.
+   */
+  def executeSequentially[A](fs: Action[A]*)(implicit ec: ExecutionContext, d: DummyImplicit): Future[Seq[Try[A]]] =
+    executeSequentially(fs)
+
+  /**
+   * Executes futures sequentially.
+   *
+   * Provided a sequence of actions (functions returning a Future), execute them
+   * sequentially and return a sequence containing the results of all actions.
    * If stopping on error is required, any failed action prevent execution of
    * the following ones, and resulting Future contains the failure.
-   * If not stopping on error
+   * If not stopping on error, all futures are executed, and result is available
+   * once all executions are done.
    *
    * @param stopOnError whether to stop on error
    * @param fs sequence of actions
@@ -100,7 +132,7 @@ object RichFuture {
    * @tparam A kind of action result
    * @return result of actions
    */
-  def executeSequentially[A](stopOnError: Boolean, fs: Seq[Action[A]])(implicit ec: ExecutionContext): Future[Seq[A]] = {
+  def executeAllSequentially[A](stopOnError: Boolean, fs: Seq[Action[A]])(implicit ec: ExecutionContext): Future[Seq[A]] = {
     // Notes:
     // Since we may wish to keep on triggering futures even if a previous one
     // failed, we need to use a 'Try' as computation result.
@@ -140,7 +172,7 @@ object RichFuture {
    *
    * Vararg variant.
    */
-  def executeSequentially[A](stopOnError: Boolean, fs: Action[A]*)(implicit ec: ExecutionContext, d: DummyImplicit): Future[Seq[A]] =
-    executeSequentially(stopOnError, fs)
+  def executeAllSequentially[A](stopOnError: Boolean, fs: Action[A]*)(implicit ec: ExecutionContext, d: DummyImplicit): Future[Seq[A]] =
+    executeAllSequentially(stopOnError, fs)
 
 }
