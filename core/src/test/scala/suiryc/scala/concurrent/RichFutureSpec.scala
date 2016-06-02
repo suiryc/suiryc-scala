@@ -1,12 +1,13 @@
 package suiryc.scala.concurrent
 
 import akka.actor.ActorSystem
+import java.util.UUID
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{Matchers, WordSpec}
-import scala.concurrent.{Await, Future, Promise, TimeoutException}
+import scala.concurrent.{Await, Promise, TimeoutException}
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 // scalastyle:off magic.number
 @RunWith(classOf[JUnitRunner])
@@ -21,15 +22,15 @@ class RichFutureSpec extends WordSpec with Matchers {
 
     "not kick-in if future succeeds before timeout" in {
       val wrapper = new Wrapper(delay = 10.millis)
-      val f = wrapper.futureExec().withTimeout(50.millis)
+      val f = wrapper.action().withTimeout(50.millis)
       Await.ready(f, 2.seconds)
       wrapper.executed shouldBe 1
-      f.value shouldBe Some(Success(()))
+      f.value shouldBe Some(Success(wrapper.id))
     }
 
     "not kick-in if future fails before timeout" in {
       val wrapper = new Wrapper(success = false, delay = 10.millis)
-      val f = wrapper.futureExec().withTimeout(50.millis)
+      val f = wrapper.action().withTimeout(50.millis)
       Await.ready(f, 2.seconds)
       wrapper.executed shouldBe 1
       val value = f.value
@@ -40,7 +41,7 @@ class RichFutureSpec extends WordSpec with Matchers {
 
     "kick-in if future succeeds after timeout" in {
       val wrapper = new Wrapper(delay = 100.millis)
-      val f = wrapper.futureExec().withTimeout(50.millis)
+      val f = wrapper.action().withTimeout(50.millis)
       Await.ready(f, 2.seconds)
       // Note future will be executed even if timeout was reached.
       val value = f.value
@@ -51,7 +52,7 @@ class RichFutureSpec extends WordSpec with Matchers {
 
     "kick-in if future fails after timeout" in {
       val wrapper = new Wrapper(success = false, delay = 100.millis)
-      val f = wrapper.futureExec().withTimeout(50.millis)
+      val f = wrapper.action().withTimeout(50.millis)
       Await.ready(f, 2.seconds)
       // Note future will be executed even if timeout was reached.
       val value = f.value
@@ -62,19 +63,40 @@ class RichFutureSpec extends WordSpec with Matchers {
 
   }
 
+  "ActionTry" should {
+
+    "have an implicit conversion to Try" in {
+      // We merely check that some 'Try' functions are accessible thanks to the
+      // implicit function defined in the ActionTry companion object.
+      val exception = new Exception
+      val actionFailure = ActionFailure(1, exception)
+      val actionSuccess = ActionSuccess(1, 2)
+
+      actionFailure.isFailure shouldBe true
+      actionFailure.isSuccess shouldBe false
+      actionFailure.failed shouldBe Success(exception)
+
+      actionSuccess.isFailure shouldBe false
+      actionSuccess.isSuccess shouldBe true
+      actionSuccess.failed.isFailure shouldBe true
+      actionSuccess.failed.failed.isSuccess shouldBe true
+      actionSuccess.failed.failed.get shouldBe a[UnsupportedOperationException]
+    }
+
+  }
+
   "executeSequentially" should {
 
     "execute successful tests sequentially" in {
-      val r = testWrappers(List(
+      testWrappers(List(
         new Wrapper(),
         new Wrapper(delay = 50.millis),
         new Wrapper()
       ))
-      r shouldBe Success(Seq.tabulate(3)(_ => Success(())))
     }
 
     "execute tests sequentially even with failures" in {
-      val r = testWrappers(List(
+      testWrappers(List(
         new Wrapper(),
         new Wrapper(delay = 50.millis),
         new Wrapper(success = false),
@@ -85,18 +107,6 @@ class RichFutureSpec extends WordSpec with Matchers {
         new Wrapper(success = false),
         new Wrapper()
       ))
-      r.isSuccess shouldBe true
-      val list = r.get
-      list.size shouldBe 9
-      list.head.isSuccess shouldBe true
-      list(1).isSuccess shouldBe true
-      list(2).isFailure shouldBe true
-      list(3).isSuccess shouldBe true
-      list(4).isFailure shouldBe true
-      list(5).isSuccess shouldBe true
-      list(6).isFailure shouldBe true
-      list(7).isFailure shouldBe true
-      list(8).isSuccess shouldBe true
     }
 
   }
@@ -104,16 +114,15 @@ class RichFutureSpec extends WordSpec with Matchers {
   "executeAllSequentially" should {
 
     "execute successful tests sequentially" in {
-      val r = testWrappersAll(stopOnError = true, List(
+      testWrappersAll(stopOnError = true, List(
         new Wrapper(),
         new Wrapper(delay = 50.millis),
         new Wrapper()
       ))
-      r shouldBe Success(Seq.tabulate(3)(_ => ()))
     }
 
     "execute tests sequentially until failure if stopping on error" in {
-      val r = testWrappersAll(stopOnError = true, List(
+      testWrappersAll(stopOnError = true, List(
         new Wrapper(),
         new Wrapper(delay = 50.millis),
         new Wrapper(success = false),
@@ -124,11 +133,10 @@ class RichFutureSpec extends WordSpec with Matchers {
         new Wrapper(success = false),
         new Wrapper()
       ))
-      r.isFailure shouldBe true
     }
 
     "execute all tests sequentially even upon failure if not stopping on error" in {
-      val r = testWrappersAll(stopOnError = false, List(
+      testWrappersAll(stopOnError = false, List(
         new Wrapper(),
         new Wrapper(delay = 50.millis),
         new Wrapper(success = false),
@@ -139,7 +147,6 @@ class RichFutureSpec extends WordSpec with Matchers {
         new Wrapper(success = false),
         new Wrapper()
       ))
-      r.isFailure shouldBe true
     }
 
   }
@@ -158,11 +165,16 @@ class RichFutureSpec extends WordSpec with Matchers {
     }
   }
 
-  def testWrappers(wrappers: List[Wrapper]): Try[Seq[Try[Unit]]] = {
+  def testWrappers(wrappers: List[Wrapper]): Unit = {
     // Execute sequentially and wait for result.
-    val f = executeSequentially(wrappers.map(_.futureExec))
+    val f = executeSequentially(wrappers.map(_.action))
     val r = Await.ready(f, 2.seconds).value.get
+    val expected = wrappers.map { wrapper =>
+      if (wrapper.success) ActionSuccess(wrapper.id, wrapper.id)
+      else ActionFailure(wrapper.id, wrapper.failure)
+    }
 
+    r shouldBe Success(expected)
     wrappers.foldLeft(Option.empty[Wrapper]) { (previousOpt, wrapper) =>
       previousOpt.map { previous =>
         checkProcessed(wrapper, Some(previous))
@@ -173,15 +185,19 @@ class RichFutureSpec extends WordSpec with Matchers {
         Some(wrapper)
       }
     }
-
-    r
+    ()
   }
 
-  def testWrappersAll(stopOnError: Boolean, wrappers: List[Wrapper]): Try[Seq[Unit]] = {
+  def testWrappersAll(stopOnError: Boolean, wrappers: List[Wrapper]): Unit = {
     // Execute sequentially and wait for result.
-    val f = executeAllSequentially(stopOnError, wrappers.map(_.futureExec))
+    val f = executeAllSequentially(stopOnError, wrappers.map(w => w.action.asInstanceOf[Action[Unit, UUID]]))
     val r = Await.ready(f, 2.seconds).value.get
 
+    if (wrappers.forall(_.success)) {
+      r shouldBe Success(wrappers.map(_.id))
+    } else {
+      r shouldBe Failure(wrappers.find(!_.success).get.failure)
+    }
     wrappers.foldLeft(Option.empty[Wrapper]) { (previousOpt, wrapper) =>
       previousOpt.map { previous =>
         if (previous.success || !stopOnError) {
@@ -203,15 +219,18 @@ class RichFutureSpec extends WordSpec with Matchers {
         Some(wrapper)
       }
     }
-
-    r
+    ()
   }
-
-  type FutureExec = () => Future[Unit]
 
   class Wrapper(val success: Boolean = true, delay: FiniteDuration = Duration.Zero) {
 
-    private val promise = Promise[Unit]()
+    // Identifies this wrapper
+    val id = UUID.randomUUID()
+
+    // The underlying promise used to build the Future response
+    private val promise = Promise[UUID]()
+    // The actual exception in case of failure
+    lazy val failure = new Exception(id.toString)
 
     // How many times the wrapper was executed
     var executed = 0
@@ -220,7 +239,7 @@ class RichFutureSpec extends WordSpec with Matchers {
     // End execution time
     var end: Long = 0L
 
-    val futureExec: FutureExec = () => {
+    val action = Action(id, {
       executed += 1
       start = System.currentTimeMillis
       if (delay.length > 0) {
@@ -231,14 +250,14 @@ class RichFutureSpec extends WordSpec with Matchers {
         complete()
       }
       promise.future
-    }
+    })
 
     private def complete(): Unit = {
       end = System.currentTimeMillis
       if (success) {
-        promise.success(())
+        promise.success(id)
       } else {
-        promise.failure(new Exception)
+        promise.failure(failure)
       }
       ()
     }

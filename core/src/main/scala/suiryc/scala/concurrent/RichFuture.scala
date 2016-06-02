@@ -43,15 +43,52 @@ object RichFuture {
 
   import scala.language.implicitConversions
 
-  /** An 'action' (which returns a future when triggered). */
-  type Action[A] = () => Future[A]
+  /**
+   * An 'action'.
+   *
+   * Holds an input, and returns a future when triggered.
+   */
+  case class Action[A, +B](input: A, f: A => Future[B]) extends (() => Future[B]) {
+    override def apply(): Future[B] = f(input)
+  }
 
   object Action {
 
     /** Builds an action from a by-name parameter. */
-    def apply[A](action: => Future[A]): Action[A] =
-      () => action
+    def apply[A](action: => Future[A]): Action[Unit, A] =
+      Action((), (_: Unit) => action)
 
+    /**
+     * Builds an action from a by-name parameter and input value.
+     *
+     * This is a convenience function where the caller works with a code block
+     * to which it wants to attach a context.
+     * The context is used as input for the action, so that it can be retrieved
+     * in the failed action result.
+     */
+    def apply[A, B](input: A, action: => Future[B]): Action[A, B] =
+      Action(input, _ => action)
+
+  }
+
+  /** An action result. */
+  sealed trait ActionTry[+A, +B] {
+    protected val asTry: Try[B]
+  }
+
+  object ActionTry {
+    /** Bring into context an implicit conversion to a Try instance. */
+    implicit def toTry[A, B](a: ActionTry[A, B]): Try[B] = a.asTry
+  }
+
+  /** A succeeded action result. */
+  case class ActionSuccess[+A, +B](input: A, value: B) extends ActionTry[A, B] {
+    override lazy protected val asTry: Try[B] = Success(value)
+  }
+
+  /** A failed action result. */
+  case class ActionFailure[+A, +B](input: A, exception: Throwable) extends ActionTry[A, B] {
+    override lazy protected val asTry: Try[B] = Failure(exception)
   }
 
   // Note: we need a scheduler, and Java provides some.
@@ -91,19 +128,20 @@ object RichFuture {
    * Provided a sequence of actions (functions returning a Future), execute them
    * sequentially and return a sequence containing the results of each action.
    *
-   * @param fs sequence of actions
+   * @param actions sequence of actions
    * @param ec execution context
-   * @tparam A kind of action result
+   * @tparam A kind of action input
+   * @tparam B kind of action result
    * @return result of actions
    */
-  def executeSequentially[A](fs: Seq[Action[A]])(implicit ec: ExecutionContext): Future[Seq[Try[A]]] =
-    fs.foldLeft(Future.successful(List.empty[Try[A]])) { (acc, f) =>
+  def executeSequentially[A, B](actions: Seq[Action[A, B]])(implicit ec: ExecutionContext): Future[Seq[ActionTry[A, B]]] =
+    actions.foldLeft(Future.successful(List.empty[ActionTry[A, B]])) { (acc, action) =>
       acc.flatMap { r1 =>
         // Combine new result with previous one.
-        f().map { r2 =>
-          r1 :+ Success(r2)
+        action().map { r2 =>
+          r1 :+ ActionSuccess(action.input, r2)
         }.recover {
-          case ex: Exception => r1 :+ Failure(ex)
+          case ex: Exception => r1 :+ ActionFailure(action.input, ex)
         }
       }
     }
@@ -113,8 +151,8 @@ object RichFuture {
    *
    * Vararg variant.
    */
-  def executeSequentially[A](fs: Action[A]*)(implicit ec: ExecutionContext, d: DummyImplicit): Future[Seq[Try[A]]] =
-    executeSequentially(fs)
+  def executeSequentially[A, B](actions: Action[A, B]*)(implicit ec: ExecutionContext, d: DummyImplicit): Future[Seq[ActionTry[A, B]]] =
+    executeSequentially(actions)
 
   /**
    * Executes futures sequentially.
@@ -127,23 +165,23 @@ object RichFuture {
    * once all executions are done.
    *
    * @param stopOnError whether to stop on error
-   * @param fs sequence of actions
+   * @param actions sequence of actions
    * @param ec execution context
    * @tparam A kind of action result
    * @return result of actions
    */
-  def executeAllSequentially[A](stopOnError: Boolean, fs: Seq[Action[A]])(implicit ec: ExecutionContext): Future[Seq[A]] = {
+  def executeAllSequentially[A](stopOnError: Boolean, actions: Seq[Action[Unit, A]])(implicit ec: ExecutionContext): Future[Seq[A]] = {
     // Notes:
     // Since we may wish to keep on triggering futures even if a previous one
     // failed, we need to use a 'Try' as computation result.
     // If stopping on error, we simply combine the result of a previous
     // computation with the next one. If not stopping on error, we need to
     // recover each computation with its own Failure and propagate it.
-    fs.foldLeft(Future.successful(Try(List.empty[A]))) { (acc, f) =>
+    actions.foldLeft(Future.successful(Try(List.empty[A]))) { (acc, action) =>
       acc.flatMap {
         case Success(r1) =>
           // Combine new result with previous one.
-          val f2 = f().map { r2 =>
+          val f2 = action().map { r2 =>
             Success(r1 :+ r2)
           }
           if (stopOnError) {
@@ -159,7 +197,7 @@ object RichFuture {
           // We can only be here if a previous computation failed but we are
           // not stopping on error. So trigger next computation but propagate
           // current Failure.
-          f().map(_ => failure).recover { case _ => failure }
+          action().map(_ => failure).recover { case _ => failure }
       }
     }.flatMap {
       case Success(r)  => Future.successful(r)
@@ -172,7 +210,7 @@ object RichFuture {
    *
    * Vararg variant.
    */
-  def executeAllSequentially[A](stopOnError: Boolean, fs: Action[A]*)(implicit ec: ExecutionContext, d: DummyImplicit): Future[Seq[A]] =
-    executeAllSequentially(stopOnError, fs)
+  def executeAllSequentially[A](stopOnError: Boolean, actions: Action[Unit, A]*)(implicit ec: ExecutionContext, d: DummyImplicit): Future[Seq[A]] =
+    executeAllSequentially(stopOnError, actions)
 
 }
