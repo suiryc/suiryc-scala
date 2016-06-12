@@ -77,8 +77,12 @@ object BoundsEx {
     val hmax = scrollPane.getHmax
     val contentWidth = contentBounds.getWidth
     val viewportWidth = viewportBounds.getWidth
-    if ((contentWidth <= viewportWidth) || (hmax - hmin <= 0)) 0
-    else hmin + hoffset * (hmax - hmin) / (contentWidth - viewportWidth)
+    val hvalue =
+      if ((contentWidth <= viewportWidth) || (hmax - hmin <= 0)) 0
+      else hmin + hoffset * (hmax - hmin) / (contentWidth - viewportWidth)
+    if (hvalue > hmax) hmax
+    else if (hvalue < hmin) hmin
+    else hvalue
   }
 
 }
