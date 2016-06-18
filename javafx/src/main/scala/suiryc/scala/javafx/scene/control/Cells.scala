@@ -69,10 +69,7 @@ trait TableCellEx[A, B] extends TableCell[A, B] with CellEx[B]
  *
  * @tparam A cell data type
  */
-// Note we cannot use a 'trait' due to a compilation restriction:
-// "Implementation restriction: trait ... accesses protected method setDisabled inside a concrete trait method.
-// Add an accessor in a class extending class Node as a workaround."
-abstract class CheckBoxListCellWithInfo[A] extends CheckBoxListCell[A] {
+trait CheckBoxListCellWithInfo[A] extends CheckBoxListCell[A] {
 
   import CheckBoxListCellWithInfo._
 
@@ -128,7 +125,7 @@ abstract class CheckBoxListCellWithInfo[A] extends CheckBoxListCell[A] {
       } else {
         val info = getInfo(item)
         setText(info.text)
-        setDisabled(info.locked)
+        setDisable(info.locked)
         setLocked(info.locked)
       }
     }
