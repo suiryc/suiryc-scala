@@ -193,6 +193,13 @@ object Dialogs {
           }
         )
       }
+      // Note: due to a bug in JavaFX, if there is only one listener and the
+      // stage contains a PopupWindow (e.g. through a DatePicker) which does
+      // trigger the stage closing, then the listener is not notified when the
+      // stage is closed.
+      // As a workaround, add a second no-op listener to prevent it.
+      // See: https://bugs.openjdk.java.net/browse/JDK-8159905
+      showingProperty.listen {}
     }
 
     new ModalNode()
