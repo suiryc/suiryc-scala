@@ -32,7 +32,9 @@ object BigDecimals {
   private val SCALE_DIGITS_DEFAULT = 4
 
   /** Scales value to keep given number of significant digits. */
-  @inline def scale(v: BigDecimal, digits: Int = SCALE_DIGITS_DEFAULT): BigDecimal = {
+  @inline def scale(v: BigDecimal, digits: Int = SCALE_DIGITS_DEFAULT,
+    mode: BigDecimal.RoundingMode.RoundingMode = BigDecimal.RoundingMode.HALF_UP): BigDecimal =
+  {
     // Adapt scale (significant digits) according to value.
     // 'precision' = number of displayed digits
     // 'scale' = number of decimal digits
@@ -45,7 +47,7 @@ object BigDecimals {
     val scale =
       if ((v.scale == 0) || (integralDigits >= digits)) 0
       else digits - integralDigits
-    v.setScale(scale, BigDecimal.RoundingMode.HALF_UP)
+    v.setScale(scale, mode)
   }
 
 }
