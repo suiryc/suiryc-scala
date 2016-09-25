@@ -61,39 +61,4 @@ object BoundsEx {
     new BoundingBox(hoffset, voffset, 0, viewportWidth, viewportHeight, 0)
   }
 
-  /**
-   * Determines the hvalue for which the given hoffset appears at the indicated
-   * scroll pane view position.
-   *
-   * @param scrollPane scroll pane to get hvalue from
-   * @param hoffset the hoffset for which to compute the hvalue
-   * @return the corresponding hvalue
-   */
-  def computeHValue(scrollPane: ScrollPane, hoffset: Double, pos: ScrollOffsetPosition.Value = ScrollOffsetPosition.Begin): Double = {
-    val contentBounds = scrollPane.getContent.getLayoutBounds
-    val viewportBounds = scrollPane.getViewportBounds
-
-    val hmin = scrollPane.getHmin
-    val hmax = scrollPane.getHmax
-    val contentWidth = contentBounds.getWidth
-    val viewportWidth = viewportBounds.getWidth
-    val hoffsetDelta = pos match {
-      case ScrollOffsetPosition.Begin  => 0.0
-      case ScrollOffsetPosition.Middle => viewportWidth / 2
-      case ScrollOffsetPosition.End    => viewportWidth
-    }
-    val hvalue =
-      if ((contentWidth <= viewportWidth) || (hmax - hmin <= 0)) 0
-      else hmin + (hoffset - hoffsetDelta) * (hmax - hmin) / (contentWidth - viewportWidth)
-    if (hvalue > hmax) hmax
-    else if (hvalue < hmin) hmin
-    else hvalue
-  }
-
-}
-
-object ScrollOffsetPosition extends Enumeration {
-  val Begin = Value
-  val Middle = Value
-  val End = Value
 }
