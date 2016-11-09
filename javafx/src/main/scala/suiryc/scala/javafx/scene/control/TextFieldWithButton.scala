@@ -3,10 +3,11 @@ package suiryc.scala.javafx.scene.control
 import javafx.beans.property._
 import javafx.css.PseudoClass
 import javafx.event.{ActionEvent, EventHandler}
-import javafx.geometry.{HPos, VPos}
+import javafx.geometry.{HPos, Pos, VPos}
 import javafx.scene.control.{Control, Skin, SkinBase, TextField}
 import javafx.scene.input.{MouseButton, MouseEvent}
 import javafx.scene.layout.{Region, StackPane}
+import javafx.scene.text.Font
 import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.javafx.event.EventHandler._
 
@@ -90,8 +91,26 @@ class TextFieldWithButton() extends Control {
     TextFieldWithButton.stylesheet
 
   // Helper functions to get/set text directly
+  // Node: having the 'Property' right here is not strictly necessary, but
+  // still useful.
+  def textProperty: StringProperty = textField.textProperty
   def getText: String = textField.getText
   def setText(value: String): Unit = textField.setText(value)
+
+  // Functions to access some useful properties directly in scene builder
+  // Note: the 'font' is currently not useable in scene builder.
+  def promptTextProperty: StringProperty = textField.promptTextProperty
+  def getPromptText: String = textField.getPromptText
+  def setPromptText(value: String): Unit = textField.setPromptText(value)
+  def fontProperty: ObjectProperty[Font] = textField.fontProperty
+  def getFont: Font = textField.getFont
+  def setFont(value: Font): Unit = textField.setFont(value)
+  def editableProperty: BooleanProperty = textField.editableProperty
+  def isEditable: Boolean = textField.isEditable
+  def setEditable(value: Boolean): Unit = textField.setEditable(value)
+  def alignmentProperty: ObjectProperty[Pos] = textField.alignmentProperty
+  def getAlignment: Pos = textField.getAlignment
+  def setAlignment(value: Pos): Unit = textField.setAlignment(value)
 
 }
 
