@@ -2,26 +2,29 @@ package suiryc.scala.javafx.scene.control
 
 import javafx.beans.property._
 import javafx.css.PseudoClass
-import javafx.event.{ActionEvent, EventHandler}
+import javafx.event.EventHandler
 import javafx.geometry.{HPos, Pos, VPos}
 import javafx.scene.control.{Control, Skin, SkinBase, TextField}
-import javafx.scene.input.{MouseButton, MouseEvent}
+import javafx.scene.input.{InputEvent, MouseEvent}
 import javafx.scene.layout.{Region, StackPane}
 import javafx.scene.text.Font
 import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.javafx.event.EventHandler._
 
 /**
- * TextField with button.
+ * TextField with button(s).
  *
  * Heavily based on JavaFX ComboBox, ripped off its actual choice node.<br>
- * This controls uses 'text-field-with-button' style class (based on original
+ * This control uses 'text-field-with-button' style class (based on original
  * 'combo-box-base', which gives a generic look) and the one provided through
  * 'customStyleClass' property (or upon creation) for customization.<br>
  * As for comboboxes, the control contains an 'arrow-button' element which
  * contains an 'arrow' element. Unlike comboboxes 'showing' and 'contains-focus'
  * pseudo-classes are not used. And like buttons the 'armed' pseudo-class is
- * used on 'arrow-button'.
+ * used on 'arrow-button'.<br>
+ * More than one 'arrow-button'/'arrow' can be set through the buttons property,
+ * each one having its own 'arrow-button-n'/'arrow-n' id and style, with 'n'
+ * starting from 0.
  * <p>
  * Minimal customization requires to define the 'arrow' graphic content, e.g.
  * by giving it an SVG path as shape:
@@ -36,10 +39,13 @@ import suiryc.scala.javafx.event.EventHandler._
  *
  * @note This control uses its own style class instead of relying on
  *       'combo-box-base' so that style sheets loading order does not matter.
- * param styleClass style class used for graphic customization
  */
+// scalastyle:off number.of.methods
 class TextFieldWithButton() extends Control {
 
+  /**
+   * @param styleClass style class used for graphic customization
+   */
   def this(styleClass: String) {
     this()
     setCustomStyleClass(styleClass)
@@ -70,17 +76,33 @@ class TextFieldWithButton() extends Control {
     Option(v1).foreach(getStyleClass.add)
   }
 
-  // A property to disable the button.
-  private val buttonDisable = new SimpleBooleanProperty(TextFieldWithButton.this, "buttonDisable")
-  def buttonDisableProperty: BooleanProperty = buttonDisable
-  def isButtonDisable: Boolean = buttonDisableProperty.get
-  def setButtonDisable(value: Boolean): Unit = buttonDisableProperty.set(value)
+  // Helpers to disable the (first and others) button.
+  def buttonDisableProperty(n: Int): BooleanProperty = buttons(n).buttonDisableProperty
+  def isButtonDisable(n: Int): Boolean = buttons(n).buttonDisableProperty.get
+  def setButtonDisable(n: Int, value: Boolean): Unit = buttons(n).buttonDisableProperty.set(value)
+  def buttonDisableProperty: BooleanProperty = buttonDisableProperty(0)
+  def isButtonDisable: Boolean = isButtonDisable(0)
+  def setButtonDisable(value: Boolean): Unit = setButtonDisable(0, value)
 
-  // The event handler that can be set to be notified when the button is triggered.
-  private val onButtonAction = new SimpleObjectProperty[EventHandler[ActionEvent]](TextFieldWithButton.this, "onButtonAction")
-  def onButtonActionProperty: ObjectProperty[EventHandler[ActionEvent]] = onButtonAction
-  def getOnButtonAction: EventHandler[ActionEvent] = onButtonActionProperty.get
-  def setOnButtonAction(value: EventHandler[ActionEvent]): Unit = onButtonActionProperty.set(value)
+  // Helpers to set the event handler to be notified when the (first and others) button is triggered.
+  def onButtonActionProperty(n: Int): ObjectProperty[EventHandler[InputEvent]] = buttons(n).onButtonActionProperty
+  def getOnButtonAction(n: Int): EventHandler[InputEvent] = buttons(n).onButtonActionProperty.get
+  def setOnButtonAction(n: Int)(value: EventHandler[InputEvent]): Unit = buttons(n).onButtonActionProperty.set(value)
+  def onButtonActionProperty: ObjectProperty[EventHandler[InputEvent]] = onButtonActionProperty(0)
+  def getOnButtonAction: EventHandler[InputEvent] = getOnButtonAction(0)
+  def setOnButtonAction(value: EventHandler[InputEvent]): Unit = setOnButtonAction(0)(value)
+
+  // The number of buttons to set (minimum 1)
+  private val buttonsCount = new SimpleIntegerProperty(TextFieldWithButton.this, "buttonsCount", 1)
+  def buttonsCountProperty: IntegerProperty = buttonsCount
+  def getButtonsCount: Int = buttonsCountProperty.get
+  def setButtonsCount(value: Int): Unit = buttonsCountProperty.set(math.max(value, 1))
+
+  // The buttons
+  private var buttons = List.tabulate(getButtonsCount) { idx =>
+    new TextFieldButton(this, idx)
+  }
+  def getButtons: List[TextFieldButton] = buttons
 
   // This is how we define our own skin, in which the actual layout is done.
   override protected def createDefaultSkin: Skin[_] =
@@ -112,7 +134,21 @@ class TextFieldWithButton() extends Control {
   def getAlignment: Pos = textField.getAlignment
   def setAlignment(value: Pos): Unit = textField.setAlignment(value)
 
+  // Add/remove buttons as necessary
+  buttonsCountProperty.listen { (_, v0, v1) =>
+    if (v1.intValue < v0.intValue) {
+      // Removing last buttons
+      buttons = buttons.take(v1.intValue)
+    } else if (v1.intValue > v0.intValue) {
+      // Adding buttons
+      buttons = buttons ::: (v0.intValue until v1.intValue).toList.map { idx =>
+        new TextFieldButton(this, idx)
+      }
+    }
+  }
+
 }
+// scalastyle:on number.of.methods
 
 object TextFieldWithButton {
 
@@ -120,68 +156,72 @@ object TextFieldWithButton {
 
 }
 
-/**
- * TextField skin with button.
- *
- * Heavily based on JavaFX ComboBox, ripped off its actual choice node.<br>
- * Note the code re-uses 'arrow' and 'arrow-button' class and id in order to
- * rely on the same CSS than ComboBox.
- */
-class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField) extends SkinBase[TextFieldWithButton](control) {
+/** Class holding resources for one button set in TextFieldWithButton. */
+class TextFieldButton(control: TextFieldWithButton, idx: Int) {
 
   import TextFieldWithButtonSkin._
 
-  // Note: most of the code (nodes creation, layout handling) comes from
+  // Note: nodes create code comes from
   // com.sun.javafx.scene.control.skin.ComboBoxBaseSkin
 
   // The region containing the graphic 'arrow'
-  protected val arrow = new Region
-  arrow.setFocusTraversable(false)
-  arrow.getStyleClass.setAll("arrow")
-  arrow.setId("arrow")
-  arrow.setMaxWidth(Region.USE_PREF_SIZE)
-  arrow.setMaxHeight(Region.USE_PREF_SIZE)
-  arrow.setMouseTransparent(true)
+  val arrow = {
+    val arrow = new Region
+    val id = s"arrow-$idx"
+    arrow.setFocusTraversable(false)
+    arrow.setId(id)
+    arrow.getStyleClass.setAll("arrow", id)
+    arrow.setMaxWidth(Region.USE_PREF_SIZE)
+    arrow.setMaxHeight(Region.USE_PREF_SIZE)
+    arrow.setMouseTransparent(true)
+    arrow
+  }
 
   // The actual 'arrow-button'
-  protected val arrowButton = new StackPane
-  arrowButton.setFocusTraversable(false)
-  arrowButton.setId("arrow-button")
-  arrowButton.getStyleClass.setAll("arrow-button")
-  arrowButton.getChildren.add(arrow)
+  val arrowButton = {
+    val arrowButton = new StackPane
+    val id = s"arrow-button-$idx"
+    arrowButton.setFocusTraversable(false)
+    arrowButton.setId(id)
+    arrowButton.getStyleClass.setAll("arrow-button", id)
+    arrowButton.getChildren.add(arrow)
 
-  // Bind the control 'buttonDisable' property to disable 'arrow-button'.
-  arrowButton.disableProperty.bind(control.buttonDisableProperty)
+    arrowButton.setUserData(this)
 
-  getChildren.addAll(textField, arrowButton)
-  textField.applyCss()
+    // Listen for some mouse events, in order to detect when the 'arrow-button'
+    // is actually triggered.
+    // Code based on button behavior: we keep an 'armed' property that is set
+    // when button is about to be triggered, and 'fire' is called when trigger
+    // happens. Leaving the button without releasing disarms, and going back
+    // without releasing re-arms.
+    // See: javafx.scene.control.ButtonBase,
+    // com.sun.javafx.scene.control.skin.BehaviorSkinBase and
+    // com.sun.javafx.scene.control.behavior.ButtonBehavior
+    arrowButton.addEventHandler(MouseEvent.MOUSE_ENTERED, mouseEntered _)
+    arrowButton.addEventHandler(MouseEvent.MOUSE_EXITED, mouseExited _)
+    arrowButton.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressed _)
+    arrowButton.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleased _)
 
-  // Note: 'DatePickerSkin' also listens to 'arrow.paddingProperty' changes
-  // in order to apply rounded padding values. This does not seem necessary.
+    arrowButton
+  }
 
-  // Listen for some mouse events, in order to detect when the 'arrow-button'
-  // is actually triggered.
-  // Code based on button behavior: we keep an 'armed' property that is set
-  // when button is about to be triggered, and 'fire' is called when trigger
-  // happens. Leaving the button without releasing disarms, and going back
-  // without releasing re-arms.
-  // See: javafx.scene.control.ButtonBase,
-  // com.sun.javafx.scene.control.skin.BehaviorSkinBase and
-  // com.sun.javafx.scene.control.behavior.ButtonBehavior
-  arrowButton.addEventHandler(MouseEvent.MOUSE_ENTERED, mouseEntered _)
-  arrowButton.addEventHandler(MouseEvent.MOUSE_EXITED, mouseExited _)
-  arrowButton.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressed _)
-  arrowButton.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleased _)
+  // A property to disable the button.
+  private val buttonDisable = new SimpleBooleanProperty(control, s"buttonDisable-$idx")
+  def buttonDisableProperty: BooleanProperty = buttonDisable
+  def isButtonDisable: Boolean = buttonDisableProperty.get
+  def setButtonDisable(value: Boolean): Unit = buttonDisableProperty.set(value)
 
-  // TODO: should we also handle TouchEvents (at least pressed/released)
-  // explicitly ? Or does it triggers 'synthesized' MouseEvents ?
+  // The event handler that can be set to be notified when the button is triggered.
+  private val onButtonAction = new SimpleObjectProperty[EventHandler[InputEvent]](control, s"onButtonAction-$idx")
+  def onButtonActionProperty: ObjectProperty[EventHandler[InputEvent]] = onButtonAction
+  def getOnButtonAction: EventHandler[InputEvent] = onButtonActionProperty.get
+  def setOnButtonAction(value: EventHandler[InputEvent]): Unit = onButtonActionProperty.set(value)
 
-  protected def fire(): Unit =
-    Option(control.getOnButtonAction).foreach { handler =>
-      // scalastyle:off null
-      handler.handle(new ActionEvent(arrowButton, null))
-      // scalastyle:on null
-    }
+  // Bind the 'buttonDisable' property to disable the 'arrow-button'.
+  arrowButton.disableProperty.bind(buttonDisableProperty)
+
+  protected def fire(event: InputEvent): Unit =
+    Option(getOnButtonAction).foreach(_.handle(event))
 
   // The 'armed' property.
   protected val armed = new SimpleBooleanProperty() {
@@ -191,17 +231,14 @@ class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField
   protected def arm() = armed.set(true)
   protected def disarm() = armed.set(false)
 
-  protected def mousePressed(e: MouseEvent) {
-    // Arms button upon actual standard click on the button.
-    val valid = (e.getButton == MouseButton.PRIMARY) && !(e.isMiddleButtonDown ||
-      e.isSecondaryButtonDown || e.isShiftDown || e.isControlDown || e.isAltDown || e.isMetaDown)
-    if (!isArmed && valid) arm()
-  }
+  // Arms button if triggered
+  protected def mousePressed(e: MouseEvent): Unit =
+    if (!isArmed) arm()
 
   // Fires (and disarms button) if triggered.
   protected def mouseReleased(e: MouseEvent): Unit =
     if (isArmed) {
-      fire()
+      fire(e)
       disarm()
     }
 
@@ -213,20 +250,59 @@ class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField
   protected def mouseExited(e: MouseEvent): Unit =
     if (isArmed) disarm()
 
+}
+
+/**
+ * TextField skin with button(s).
+ *
+ * Heavily based on JavaFX ComboBox, ripped off its actual choice node.<br>
+ * Note the code re-uses 'arrow' and 'arrow-button' class and id in order to
+ * rely on the same CSS than ComboBox.
+ */
+class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField) extends SkinBase[TextFieldWithButton](control) {
+
+  //import TextFieldWithButtonSkin._
+
+  // Note: most of the code (nodes creation, layout handling) comes from
+  // com.sun.javafx.scene.control.skin.ComboBoxBaseSkin
+
+  getChildren.setAll(textField :: control.getButtons.map(_.arrowButton) : _*)
+  textField.applyCss()
+
+  // Update control when necessary
+  control.buttonsCountProperty.listen { _ =>
+    getChildren.setAll(textField :: control.getButtons.map(_.arrowButton) : _*)
+    control.requestLayout()
+  }
+
+  // Note: 'DatePickerSkin' also listens to 'arrow.paddingProperty' changes
+  // in order to apply rounded padding values. This does not seem necessary.
+
 
   override protected def layoutChildren(x: Double, y: Double, w: Double, h: Double): Unit = {
-    val arrowWidth = snapSize(arrow.prefWidth(-1))
-    val arrowButtonWidth = arrowButton.snappedLeftInset + arrowWidth + arrowButton.snappedRightInset
-    textField.resizeRelocate(x, y, w - arrowButtonWidth, h)
-    arrowButton.resize(arrowButtonWidth, h)
-    positionInArea(arrowButton, (x + w) - arrowButtonWidth, y, arrowButtonWidth, h, 0, HPos.CENTER, VPos.CENTER)
+    // Buttons are placed relatively to the right side of the control.
+    control.getButtons.reverse.foldLeft(0.0) { (arrowButtonsWidth, button) =>
+      val arrowButton = button.arrowButton
+      val arrow = button.arrow
+      val arrowWidth = snapSize(arrow.prefWidth(-1))
+      val arrowButtonWidth = arrowButton.snappedLeftInset + arrowWidth + arrowButton.snappedRightInset
+      textField.resizeRelocate(x, y, w - arrowButtonsWidth - arrowButtonWidth, h)
+      arrowButton.resize(arrowButtonWidth, h)
+      positionInArea(arrowButton, (x + w) - arrowButtonsWidth - arrowButtonWidth, y, arrowButtonWidth, h, 0, HPos.CENTER, VPos.CENTER)
+      arrowButtonsWidth + arrowButtonWidth
+    }
+    ()
   }
 
   override protected def computePrefWidth(height: Double, topInset: Double, rightInset: Double, bottomInset: Double, leftInset: Double): Double = {
-    val arrowWidth = snapSize(arrow.prefWidth(-1))
-    val arrowButtonWidth = arrowButton.snappedLeftInset + arrowWidth + arrowButton.snappedRightInset
+    val arrowButtonsWidth = control.getButtons.map { button =>
+      val arrowButton = button.arrowButton
+      val arrow = arrowButton.getChildren.get(0)
+      val arrowWidth = snapSize(arrow.prefWidth(-1))
+      arrowButton.snappedLeftInset + arrowWidth + arrowButton.snappedRightInset
+    }.sum
     val displayNodeWidth = textField.prefWidth(height)
-    val totalWidth = displayNodeWidth + arrowButtonWidth
+    val totalWidth = displayNodeWidth + arrowButtonsWidth
     leftInset + totalWidth + rightInset
   }
 

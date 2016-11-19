@@ -79,7 +79,7 @@
 }
 
 /* Compared to default 'combo-box-base' behavior, reset 'hover' color for our
- * control but apply it to its children.
+ * control but apply it to its children (only on the concerned ones).
  * Otherwise, since we can disable the 'arrow-button' alone, changing the
  * parent control color gets in the way.
  */
@@ -87,8 +87,8 @@
   -fx-color: -fx-base;
 }
 
-.text-field-with-button:hover > .text-field,
-.text-field-with-button:hover > .arrow-button {
+.text-field-with-button > .text-field:hover,
+.text-field-with-button > .arrow-button:hover {
   /* This is actually already the default for 'arrow-button' in 'combo-box-base'. */
   -fx-color: -fx-hover-base;
 }
