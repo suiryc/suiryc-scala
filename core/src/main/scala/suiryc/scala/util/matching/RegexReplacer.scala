@@ -18,7 +18,7 @@ object RegexReplacer {
     RegexReplacer(regex.r, replacer)
 
   def apply(regex: String, replacer: String): RegexReplacer =
-    RegexReplacer(regex.r, (m: Regex.Match) => replacer)
+    RegexReplacer(regex.r, (_: Regex.Match) => replacer)
 
   def replace(content: String, rrs: RegexReplacer*): RegexReplacement = {
     val newContent = rrs.foldLeft(content) { (content, rr) =>
@@ -49,6 +49,6 @@ object RegexReplacer {
 
 case class RegexReplacement(content: String, replaced: Boolean) {
 
-  override val toString = content
+  override val toString: String = content
 
 }

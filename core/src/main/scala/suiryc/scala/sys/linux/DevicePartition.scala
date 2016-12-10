@@ -6,17 +6,18 @@ import java.nio.file.{Files, Path, Paths}
 import suiryc.scala.io.SourceEx
 import suiryc.scala.misc
 import suiryc.scala.sys.{Command, CommandResult}
+import suiryc.scala.util.EitherEx
 
 
 class DevicePartition(val device: Device, val partNumber: Int)
   extends Logging
 {
 
-  val block = device.block.resolve(Paths.get(s"${device.block.getFileName}${device.partitionInfix}$partNumber"))
+  val block: Path = device.block.resolve(Paths.get(s"${device.block.getFileName}${device.partitionInfix}$partNumber"))
 
-  val dev = device.dev.getParent.resolve(block.getFileName)
+  val dev: Path = device.dev.getParent.resolve(block.getFileName)
 
-  val size = Device.size(block)
+  val size: EitherEx[Exception, Long] = Device.size(block)
 
   protected def blkid(tag: String): Either[Exception, String] =
     try {

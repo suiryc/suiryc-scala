@@ -144,7 +144,7 @@ object RichFile {
       throw new Error("User home directory is unknown")
     }
 
-  val sep = File.separatorChar
+  val sep: Char = File.separatorChar
 
   /**
    * Creates temporary directory.

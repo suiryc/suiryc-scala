@@ -189,7 +189,7 @@ object Preference {
     }
 
   /** Path preference builder. */
-  implicit val pathBuilder = typeBuilder[Path, String](
+  implicit val pathBuilder: PreferenceBuilder[Path] = typeBuilder[Path, String](
     { p => Option(p).map(_.toString).orNull },
     { s => Option(s).map(Paths.get(_)).orNull }
   )

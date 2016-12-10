@@ -1,13 +1,13 @@
 package suiryc.scala.javafx.concurrent
 
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
+import com.typesafe.config.Config
 import grizzled.slf4j.Logging
 import javafx.application.Platform
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success}
 import suiryc.scala.akka.CoreSystem
-import suiryc.scala.concurrent.Runnable
 
 /**
  * JavaFX concurrent helpers.
@@ -28,7 +28,7 @@ object JFXSystem
   protected case class Action(action: () => Unit)
 
   /** JavaJX configuration ('javafx' path relative to core config). */
-  val config = CoreSystem.config.getConfig("javafx")
+  val config: Config = CoreSystem.config.getConfig("javafx")
   /** Whether to warn if requesting to schedule action while already in JavaFX thread. */
   protected val warnReentrant = config.getBoolean("system.warn-reentrant")
   /** Akka system. */
@@ -63,7 +63,7 @@ object JFXSystem
    * actor.
    */
   def runLater(action: => Unit): Unit =
-    Platform.runLater(Runnable(action))
+    Platform.runLater(() => action)
 
   /** Delegates action to JavaFX using a Future, and waits for result. */
   def await[T](action: => T, logReentrant: Boolean = true): T = {

@@ -12,7 +12,7 @@ object EitherEx {
 
   def apply[A, B](right: Right[A, B]): EitherEx[A, B] =
     new EitherEx(right) {
-      override def apply(): B = right.b
+      override def apply(): B = right.value
     }
 
   def apply[A, B](left: Left[A, B], default : => B): EitherEx[A, B] =

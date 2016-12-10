@@ -493,7 +493,7 @@ object HexDumper {
   object Output {
 
     /** Standard output. */
-    lazy val stdout = apply(System.out)
+    lazy val stdout: AppendableOutput = apply(System.out)
 
     /** Output based on Appendable. */
     def apply(out: Appendable): AppendableOutput = new AppendableOutput(out)

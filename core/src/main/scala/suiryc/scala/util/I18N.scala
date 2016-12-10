@@ -82,9 +82,9 @@ class I18N(baseName: String, defaultLanguage: String = "en") extends I18NBase(ba
         val file = new File(url.openConnection().asInstanceOf[JarURLConnection].getJarFileURL.toURI)
         val zipFile = new ZipFile(file)
         try {
-          import scala.collection.JavaConversions._
+          import scala.collection.JavaConverters._
           // Search for entries
-          zipFile.entries.flatMap { entry =>
+          zipFile.entries.asScala.flatMap { entry =>
             val entryName = entry.getName
             if (entryName.startsWith(resourcePath)) {
               val relativeName = entryName.substring(resourcePath.length)
@@ -110,7 +110,7 @@ class I18N(baseName: String, defaultLanguage: String = "en") extends I18NBase(ba
    * in BCP 47 (e.g. en_US instead of en-US).
    * Split on the separator to get each part and build the corresponding locale.
    */
-  val locales = languages.map { lang =>
+  val locales: List[I18NLocale] = languages.map { lang =>
     val split = lang.split("_", 3)
     val locale =
       if (split.length == 1) new Locale(split(0))

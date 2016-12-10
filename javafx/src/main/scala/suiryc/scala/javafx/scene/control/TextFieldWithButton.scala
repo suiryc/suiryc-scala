@@ -9,7 +9,6 @@ import javafx.scene.input.{InputEvent, MouseEvent}
 import javafx.scene.layout.{Region, StackPane}
 import javafx.scene.text.Font
 import suiryc.scala.javafx.beans.value.RichObservableValue._
-import suiryc.scala.javafx.event.EventHandler._
 
 /**
  * TextField with button(s).
@@ -165,7 +164,7 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
   // com.sun.javafx.scene.control.skin.ComboBoxBaseSkin
 
   // The region containing the graphic 'arrow'
-  val arrow = {
+  val arrow: Region = {
     val arrow = new Region
     val id = s"arrow-$idx"
     arrow.setFocusTraversable(false)
@@ -178,7 +177,7 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
   }
 
   // The actual 'arrow-button'
-  val arrowButton = {
+  val arrowButton: StackPane = {
     val arrowButton = new StackPane
     val id = s"arrow-button-$idx"
     arrowButton.setFocusTraversable(false)
@@ -323,6 +322,6 @@ class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField
 object TextFieldWithButtonSkin {
 
   // Pseudo-class set when 'arrow-button' is armed.
-  val ARMED_PSEUDOCLASS_STATE = PseudoClass.getPseudoClass("armed")
+  val ARMED_PSEUDOCLASS_STATE: PseudoClass = PseudoClass.getPseudoClass("armed")
 
 }

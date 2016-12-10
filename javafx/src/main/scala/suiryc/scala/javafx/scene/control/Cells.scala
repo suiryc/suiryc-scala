@@ -5,7 +5,6 @@ import javafx.scene.control.{Cell, ListCell, Separator, TableCell}
 import javafx.scene.control.cell.CheckBoxListCell
 import suiryc.scala.concurrent.Cancellable
 import suiryc.scala.javafx.beans.value.RichObservableValue._
-import suiryc.scala.javafx.util.Callback
 
 /** Cell extension that knows how to update cell text. */
 trait CellEx[A] extends Cell[A] {
@@ -90,7 +89,7 @@ trait CheckBoxListCellWithInfo[A] extends CheckBoxListCell[A] {
   // Link the checkbox state to the cell info property.
   // Note this must be set before any call to 'updateItem' as it is needed when
   // an item is present. It is called each time item is updated and not empty.
-  setSelectedStateCallback(Callback { item =>
+  setSelectedStateCallback(item => {
     // We are supposed to have an item, but it may not hold actual data, in
     // which case there is no link to create.
     Option(item).filter(hasActualItem).map { _ =>

@@ -2,7 +2,6 @@ package suiryc.scala.javafx.scene.control
 
 import javafx.scene.control.DatePicker
 import suiryc.scala.javafx.beans.value.RichObservableValue._
-import suiryc.scala.javafx.event.EventHandler._
 
 /** DatePicker helpers. */
 object DatePickers {
@@ -34,7 +33,7 @@ object DatePickers {
             try {
               Some(field.getConverter.fromString(edited))
             } catch {
-              case ex: Exception => None
+              case _: Exception => None
             }
 
           case None =>
@@ -56,7 +55,7 @@ object DatePickers {
     field.skinProperty.listen {
       Option(field.lookup("#arrow-button")).foreach { button =>
         if (Option[Any](button.getOnMousePressed).isEmpty) {
-          button.setOnMousePressed { (_: javafx.scene.input.MouseEvent) =>
+          button.setOnMousePressed { _ =>
             checkEdited()
           }
         }

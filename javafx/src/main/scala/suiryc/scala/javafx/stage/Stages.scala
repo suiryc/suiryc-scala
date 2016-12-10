@@ -4,7 +4,7 @@ import javafx.geometry.BoundingBox
 import javafx.scene.control.Dialog
 import javafx.stage.Stage
 import suiryc.scala.javafx.beans.value.RichObservableValue._
-import suiryc.scala.settings.Preference
+import suiryc.scala.settings.{Preference, PreferenceBuilder}
 
 /** JavaFX Stage helpers. */
 object Stages {
@@ -144,7 +144,7 @@ object Stages {
    * Saves x/y/width/height/maximized information in a string using
    * "x=?;y=?;w=?;h=?;m=?" format.
    */
-  implicit val locationBuilder = {
+  implicit val locationBuilder: PreferenceBuilder[StageLocation] = {
 
     import Preference._
 
@@ -161,11 +161,11 @@ object Stages {
 
       def getDoubleParam(key: String): Double =
         try { params.get(key).map(_.toDouble).getOrElse(0.0) }
-        catch { case ex: Exception => 0.0 }
+        catch { case _: Exception => 0.0 }
 
       def getBooleanParam(key: String): Boolean =
         try { params.get(key).exists(_.toBoolean) }
-        catch { case ex: Exception => false }
+        catch { case _: Exception => false }
 
       val x = getDoubleParam("x")
       val y = getDoubleParam("y")

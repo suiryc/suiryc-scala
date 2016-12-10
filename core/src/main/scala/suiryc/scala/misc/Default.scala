@@ -17,13 +17,13 @@ trait LowPriorityImplicitsForDefault { this: Default.type =>
  */
 object Default extends LowPriorityImplicitsForDefault {
   def withValue[A](a: A): Default[A] = new Default[A] {
-    def value = a
+    def value: A = a
   }
 
-  implicit val forBoolean = Default.withValue(false)
-  implicit val forChar = Default.withValue(' ')
+  implicit val forBoolean: Default[Boolean] = Default.withValue(false)
+  implicit val forChar: Default[Char] = Default.withValue(' ')
   implicit def forNumeric[A](implicit n: Numeric[A]): Default[A] = Default.withValue(n.zero)
-  implicit val forString = Default.withValue("")
+  implicit val forString: Default[String] = Default.withValue("")
   implicit def forOption[A]: Default[Option[A]] = Default.withValue(None:Option[A])
   // TODO - default value for a collection would be 'empty'
 

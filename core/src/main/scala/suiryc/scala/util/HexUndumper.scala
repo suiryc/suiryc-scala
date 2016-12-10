@@ -225,7 +225,7 @@ object HexUndumper {
   object Output {
 
     /** Standard output. */
-    lazy val stdout = apply(System.out)
+    lazy val stdout: StreamOutput = apply(System.out)
 
     /** Output based on OutputStream. */
     def apply(out: OutputStream): StreamOutput = new StreamOutput(out)

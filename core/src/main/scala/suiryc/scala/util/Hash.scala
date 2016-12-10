@@ -52,7 +52,7 @@ object Hash {
 class Hash private (val bytes: Array[Byte]) {
 
   /** Hexadecimal representation. */
-  lazy val hex = bytes.map("%02x".format(_)).mkString("")
+  lazy val hex: String = bytes.map("%02x".format(_)).mkString("")
 
   override def toString: String = hex
 

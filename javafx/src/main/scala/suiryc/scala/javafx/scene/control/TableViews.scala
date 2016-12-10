@@ -3,7 +3,7 @@ package suiryc.scala.javafx.scene.control
 import javafx.collections.ObservableList
 import javafx.collections.transformation.SortedList
 import javafx.scene.control._
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.reflect._
 import spray.json._
 
@@ -21,7 +21,7 @@ object TableViews {
     val sortOrder = table.getSortOrder
     val restoreSortOrder =
       if (sortOrder.isEmpty || table.getItems.isInstanceOf[SortedList[A]]) None
-      else Some(sortOrder.toList)
+      else Some(sortOrder)
     table.setItems(items)
     restoreSortOrder.foreach(table.getSortOrder.setAll(_))
   }
@@ -37,7 +37,7 @@ object TableViews {
     val sortOrder = table.getSortOrder
     val restoreSortOrder =
       if (sortOrder.isEmpty) None
-      else Some(sortOrder.toList)
+      else Some(sortOrder)
     table.setRoot(root)
     restoreSortOrder.foreach(table.getSortOrder.setAll(_))
   }
@@ -58,7 +58,7 @@ object TableViews {
         case column :: tail =>
           val children = handler.getColumns(column)
           if (children.size > 0) {
-            processColumns(children.toList ::: tail, acc)
+            processColumns(children.asScala.toList ::: tail, acc)
           } else {
             val key = columnsDesc.find(_._2 eq column).get._1
             val view = handler.getColumnView(column, key)
@@ -68,8 +68,8 @@ object TableViews {
         case Nil => acc
       }
     }
-    val columnViews = processColumns(handler.getColumns.toList, Nil)
-    val sortOrder = handler.getSortOrder.toList.map { column =>
+    val columnViews = processColumns(handler.getColumns.asScala.toList, Nil)
+    val sortOrder = handler.getSortOrder.asScala.toList.map { column =>
       columnsDesc.find(_._2 eq column).get._1
     }
     val columnsView = ColumnsView[handler.SortType](columnViews, sortOrder)
@@ -91,7 +91,7 @@ object TableViews {
     // the (current) end of its parent (either another column, or the table).
     @scala.annotation.tailrec
     def orderColumn(column: ViewHandler[A]#Column): Unit = {
-      val owner = Option(handler.getParentColumn(column)).map(handler.getColumns(_)).getOrElse(handler.getColumns)
+      val owner = Option(handler.getParentColumn(column)).map(handler.getColumns).getOrElse(handler.getColumns)
       owner.remove(column)
       owner.add(column)
       // Order recursively so that parent column is ordered too, unless it has
@@ -114,7 +114,7 @@ object TableViews {
           try {
             handler.columnsViewFormat.read(str.parseJson)
           } catch {
-            case ex: Exception => ColumnsView[handler.SortType](Nil, Nil)
+            case _: Exception => ColumnsView[handler.SortType](Nil, Nil)
           }
         }
         else {
@@ -126,7 +126,7 @@ object TableViews {
                   if (value.startsWith("-")) ColumnView[handler.SortType](key, visible = false, value.substring(1).toDouble, handler.defaultSortType)
                   else ColumnView[handler.SortType](key, visible = true, value.toDouble, handler.defaultSortType)
                 } catch {
-                  case ex: Exception => ColumnView[handler.SortType](key, visible = true, -1, handler.defaultSortType)
+                  case _: Exception => ColumnView[handler.SortType](key, visible = true, -1, handler.defaultSortType)
                 }
                 Some(columnView)
               case _ => None
@@ -213,7 +213,7 @@ object TableViews {
     val defaultSortType = TableColumn.SortType.ASCENDING
     override def getColumns: ObservableList[Column] = table.getColumns
     override def getSortOrder: ObservableList[Column] = table.getSortOrder
-    override def setSortOrder(order: List[Column]): Boolean = table.getSortOrder.setAll(order)
+    override def setSortOrder(order: List[Column]): Boolean = table.getSortOrder.setAll(order.asJava)
     override def getParentColumn(column: Column): Column = column.getParentColumn.asInstanceOf[Column]
     override def getColumns(column: Column): ObservableList[Column] = column.getColumns
     override def getColumnView(column: Column, id: String): ColumnView =
@@ -224,7 +224,7 @@ object TableViews {
       column.setSortType(view.sortType)
     }
     import JsonProtocol._
-    val columnsViewFormat = JsonProtocol.columnsViewFormat[SortType]
+    val columnsViewFormat: RootJsonFormat[ColumnsView] = JsonProtocol.columnsViewFormat[SortType]
   }
 
   /** TreeTableView handler. */
@@ -233,7 +233,7 @@ object TableViews {
     val defaultSortType = TreeTableColumn.SortType.ASCENDING
     override def getColumns: ObservableList[Column] = table.getColumns
     override def getSortOrder: ObservableList[Column] = table.getSortOrder
-    override def setSortOrder(order: List[Column]): Boolean = table.getSortOrder.setAll(order)
+    override def setSortOrder(order: List[Column]): Boolean = table.getSortOrder.setAll(order.asJava)
     override def getParentColumn(column: Column): Column = column.getParentColumn.asInstanceOf[Column]
     override def getColumns(column: Column): ObservableList[Column] = column.getColumns
     override def getColumnView(column: Column, id: String): ColumnView =
@@ -244,7 +244,7 @@ object TableViews {
       column.setSortType(view.sortType)
     }
     import JsonProtocol._
-    val columnsViewFormat = JsonProtocol.columnsViewFormat[SortType]
+    val columnsViewFormat: RootJsonFormat[ColumnsView] = JsonProtocol.columnsViewFormat[SortType]
   }
 
 }

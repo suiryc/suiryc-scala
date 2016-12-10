@@ -27,7 +27,7 @@ class LineSplitterOutputStream(
   protected var closed = false
   protected val decoder = charset.newDecoder
   protected val charBuffer = CharBuffer.allocate(defaultBufferSize)
-  protected var line = new StringBuilder()
+  protected val line = new StringBuilder()
 
   override def write(b: Int) {
     if (!closed)

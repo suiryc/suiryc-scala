@@ -181,7 +181,7 @@ object PersistentSetting {
     }
 
   /** Path persistent setting builder. */
-  implicit val pathBuilder = typeBuilder[Path, String](
+  implicit val pathBuilder: PersistentSettingBuilder[Path] = typeBuilder[Path, String](
     { p => Option(p).map(_.toString).orNull },
     { s => Option(s).map(Paths.get(_)).orNull }
   )

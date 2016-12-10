@@ -14,18 +14,18 @@ class Device(val block: Path) {
   import PathFinder._
   import NameFilter._
 
-  val dev = Paths.get("/dev").resolve(block.getFileName)
+  val dev: Path = Paths.get("/dev").resolve(block.getFileName)
 
   protected def defaultName = "<unknown>"
 
-  val nameOption = propertyContent(block, "device", "name")
-  val name = nameOption.getOrElse(defaultName)
+  val nameOption: Option[String] = propertyContent(block, "device", "name")
+  val name: String = nameOption.getOrElse(defaultName)
 
-  val vendorOption = propertyContent(block, "device", "vendor")
-  val vendor = vendorOption.getOrElse(defaultName)
+  val vendorOption: Option[String] = propertyContent(block, "device", "vendor")
+  val vendor: String = vendorOption.getOrElse(defaultName)
 
-  val modelOption = propertyContent(block, "device", "model")
-  val model = modelOption.getOrElse(defaultName)
+  val modelOption: Option[String] = propertyContent(block, "device", "model")
+  val model: String = modelOption.getOrElse(defaultName)
 
   val ueventProps: Map[String, String] = {
     val uevent = Paths.get(block.toString, "device", "uevent").toFile
@@ -47,14 +47,14 @@ class Device(val block: Path) {
     else props
   }
 
-  val size = Device.size(block)
+  val size: EitherEx[Exception, Long] = Device.size(block)
 
-  val readOnly =
+  val readOnly: Boolean =
     propertyContent(block, "ro").exists { v =>
       v.toInt != 0
     }
 
-  val removable =
+  val removable: Boolean =
     propertyContent(block, "removable").exists { v =>
       v.toInt != 0
     }
@@ -65,7 +65,7 @@ class Device(val block: Path) {
     else ""
   }
 
-  val partitions = {
+  val partitions: Set[DevicePartition] = {
     val devName = dev.getFileName.toString
     (block * s"""$devName$partitionInfix[0-9]+""".r).get map { path =>
       DevicePartition(this, path.getName.substring(devName.length() + partitionInfix.length()).toInt)

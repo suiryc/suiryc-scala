@@ -21,7 +21,7 @@ class RichFuture[A](val underlying: Future[A]) extends AnyVal {
     if (underlying.isCompleted) underlying
     else {
       val promise = Promise[A]()
-      val cbTimeout = Runnable {
+      val cbTimeout: Runnable = () => {
         // Nothing to do if given Future is already completed
         if (!promise.isCompleted) {
           promise.tryFailure(new TimeoutException(s"Future timeout ($delay $unit)"))

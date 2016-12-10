@@ -10,12 +10,11 @@ object Comparators {
    *
    * See: http://stackoverflow.com/a/7602389
    */
-  def optionComparator[A: Ordering]: Comparator[Option[A]] = new Comparator[Option[A]] {
+  def optionComparator[A: Ordering]: Comparator[Option[A]] = (o1: Option[A], o2: Option[A]) => {
     import scala.math.Ordering.Implicits._
-    override def compare(o1: Option[A], o2: Option[A]): Int =
-      if (o1 == o2) 0
-      else if (o1 < o2) -1
-      else 1
+    if (o1 == o2) 0
+    else if (o1 < o2) -1
+    else 1
   }
 
 }

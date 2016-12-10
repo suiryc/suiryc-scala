@@ -12,14 +12,12 @@ object Ordering {
     * A class 'A' may subclass 'B' while 'B' is a 'Comparable[B]', in which case
     * default Ordering implicits don't kick in for 'A'.
     */
-  def comparableOrdering[A <: Comparable[B], B >: A]: Ordering[A] = new Ordering[A] {
-    def compare(a1: A, a2: A): Int = a1.compareTo(a2)
-  }
+  def comparableOrdering[A <: Comparable[B], B >: A]: Ordering[A] = (a1: A, a2: A) => a1.compareTo(a2)
 
   // Note: to get an 'Ordering[A]' when 'A <: Comparable[A]',
   // simply 'import scala.math.Ordering._'.
 
   /** Ordering for LocalDate. */
-  implicit val localDateOrdering = comparableOrdering[LocalDate, ChronoLocalDate]
+  implicit val localDateOrdering: Ordering[LocalDate] = comparableOrdering[LocalDate, ChronoLocalDate]
 
 }

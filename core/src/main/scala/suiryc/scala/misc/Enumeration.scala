@@ -20,7 +20,7 @@ abstract class Enumeration {
     extends Ordered[BaseValue]
   { this: Value =>
 
-    val id = nextId
+    val id: Int = nextId
 
     val name: String
 

@@ -225,7 +225,7 @@ class RichFutureSpec extends WordSpec with Matchers {
   class Wrapper(val success: Boolean = true, delay: FiniteDuration = Duration.Zero) {
 
     // Identifies this wrapper
-    val id = UUID.randomUUID()
+    val id: UUID = UUID.randomUUID()
 
     // The underlying promise used to build the Future response
     private val promise = Promise[UUID]()
