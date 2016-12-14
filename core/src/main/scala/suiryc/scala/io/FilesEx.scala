@@ -1,6 +1,6 @@
 package suiryc.scala.io
 
-import grizzled.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 import java.io.{File, FileInputStream}
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
@@ -9,7 +9,7 @@ import java.nio.file.attribute.BasicFileAttributeView
 
 
 object FilesEx
-  extends Logging
+  extends StrictLogging
 {
 
   case class Owner(user: Option[String], group: Option[String])
@@ -45,7 +45,7 @@ object FilesEx
             if (followLinks) sourcePath.getParent.toRealPath().resolve(sourcePath.toFile.getName)
             else sourcePath
           if (followLinks && !sourceRealPath.startsWith(sourceRoot))
-            warn(s"Real path[$sourceRealPath] is outside root path[$sourceRoot], skipping")
+            logger.warn(s"Real path[$sourceRealPath] is outside root path[$sourceRoot], skipping")
           else {
             val sourceReal = sourceRoot.relativize(sourceRealPath)
             val pathTarget = targetRoot.resolve(sourceReal)
@@ -55,11 +55,11 @@ object FilesEx
               if (followLinks) copy(sourceRoot, Option(sourceReal.getParent), targetRoot)
               // then copy source to target
               if (Files.isRegularFile(sourceRealPath) || Files.isSymbolicLink(sourceRealPath) || Files.isDirectory(sourceRealPath)) {
-                trace(s"Copying source[$sourceRealPath] to[$pathTarget]")
+                logger.trace(s"Copying source[$sourceRealPath] to[$pathTarget]")
                 Files.copy(sourceRealPath, pathTarget,
                   options:_*)
               } else {
-                warn(s"Real path[$sourceRealPath] is not a regular file/directory, skipping")
+                logger.warn(s"Real path[$sourceRealPath] is not a regular file/directory, skipping")
               }
               ()
             }
@@ -70,7 +70,7 @@ object FilesEx
             // first make sure parent exists
             copy(sourceRoot, None, targetRoot.getParent)
             // then create target (directory) with user/group if necessary
-            trace(s"Creating target[$targetRoot]")
+            logger.trace(s"Creating target[$targetRoot]")
             targetRoot.mkdir
             owner.foreach { owner =>
               targetRoot.changeOwner(owner.user, owner.group)
@@ -79,7 +79,7 @@ object FilesEx
       }
     }
 
-    debug(s"Copying source[$source] root[$sourceRoot] to[$targetRoot]")
+    logger.debug(s"Copying source[$source] root[$sourceRoot] to[$targetRoot]")
 
     copy(sourceRoot, Some(source), targetRoot)
   }

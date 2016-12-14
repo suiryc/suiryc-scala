@@ -1,14 +1,7 @@
 package suiryc.scala.sys
 
-import grizzled.slf4j.Logging
-import java.io.{
-  ByteArrayInputStream,
-  ByteArrayOutputStream,
-  File,
-  InputStream,
-  IOException,
-  OutputStream
-}
+import com.typesafe.scalalogging.StrictLogging
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, IOException, InputStream, OutputStream}
 import scala.collection.mutable
 import scala.sys.process
 import scala.sys.process.{BasicIO, Process, ProcessIO}
@@ -43,7 +36,7 @@ case class CommandResult(
 
 
 object Command
-  extends Logging
+  extends StrictLogging
 {
 
   val bufferSize = 1024
@@ -258,14 +251,14 @@ object Command
       stderrBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
 
     if (!skipResult && (result != 0)) {
-      error(s"Command[$cmd] failed: code[$result]"
+      logger.error(s"Command[$cmd] failed: code[$result]"
         + stdoutBuffer.fold("")(_ => s" stdout[$stdoutResult]")
         + stderrBuffer.fold("")(_ => s" stderr[$stderrResult]")
       )
       throw new RuntimeException("Nonzero exit value: " + result)
     }
     else {
-      trace(s"Command[$cmd] result: code[$result]"
+      logger.trace(s"Command[$cmd] result: code[$result]"
         + stdoutBuffer.fold("")(_ => s" stdout[$stdoutResult]")
         + stderrBuffer.fold("")(_ => s" stderr[$stderrResult]")
       )

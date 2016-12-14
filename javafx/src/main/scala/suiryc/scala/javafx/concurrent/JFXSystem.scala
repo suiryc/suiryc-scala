@@ -2,7 +2,7 @@ package suiryc.scala.javafx.concurrent
 
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import com.typesafe.config.Config
-import grizzled.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 import javafx.application.Platform
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -16,7 +16,7 @@ import suiryc.scala.akka.CoreSystem
  * thread.
  */
 object JFXSystem
-  extends Logging
+  extends StrictLogging
 {
 
   // Note: Akka intercepts thrown exception inside JavaFX actor, thus no need to
@@ -49,7 +49,7 @@ object JFXSystem
   @inline protected def reentrant() {
     if (warnReentrant) {
       val throwable = new Exception("Already using JavaFX thread")
-      warn("Caller delegating action to JavaFX thread while already using it",
+      logger.warn("Caller delegating action to JavaFX thread while already using it",
         throwable)
     }
   }

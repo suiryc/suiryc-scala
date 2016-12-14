@@ -1,7 +1,7 @@
 package suiryc.scala.akka
 
 import akka.actor.{Actor, ActorRef, Terminated}
-import grizzled.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -24,7 +24,7 @@ object Reaper {
  */
 abstract class Reaper
   extends Actor
-  with Logging
+  with StrictLogging
 {
   import Reaper._
 
@@ -40,16 +40,16 @@ abstract class Reaper
   /** Watch and check for termination. */
   final override def receive: Receive = {
     case WatchMe(ref) =>
-      trace(s"Watching $ref")
+      logger.trace(s"Watching $ref")
       context.watch(ref)
       watched += ref
       ()
 
     case Terminated(ref) =>
-      trace(s"$ref terminated")
+      logger.trace(s"$ref terminated")
       watched -= ref
       if (watched.isEmpty) {
-        debug("All souls reaped")
+        logger.debug("All souls reaped")
         allSoulsReaped()
       }
   }

@@ -1,6 +1,6 @@
 package suiryc.scala.sys.linux
 
-import grizzled.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 import java.io.File
 import java.nio.file.{Path, Paths}
 import suiryc.scala.io.{AllPassFileFilter, NameFilter, PathFinder, SourceEx}
@@ -91,7 +91,7 @@ class NetworkBlockDevice(override val block: Path)
 
 
 object Device
-  extends Logging
+  extends StrictLogging
 {
 
   private val KeyValueRegexp = """^([^=]*)=(.*)$""".r
@@ -123,7 +123,7 @@ object Device
         }
         else {
           val msg = s"Cannot get device size: $stderr"
-          error(msg)
+          logger.error(msg)
           EitherEx(Left(new Exception(msg)), -1L)
         }
       }

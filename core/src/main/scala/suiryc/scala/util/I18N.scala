@@ -1,6 +1,6 @@
 package suiryc.scala.util
 
-import grizzled.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 import java.nio.file.Paths
 import java.io.File
 import java.net.JarURLConnection
@@ -32,7 +32,7 @@ class I18NBase(baseName: String) {
  * @param baseName resource base name
  * @param defaultLanguage the language (code) of the default resource bundle
  */
-class I18N(baseName: String, defaultLanguage: String = "en") extends I18NBase(baseName) with Logging {
+class I18N(baseName: String, defaultLanguage: String = "en") extends I18NBase(baseName) with StrictLogging {
 
   import I18N._
 
@@ -97,7 +97,7 @@ class I18N(baseName: String, defaultLanguage: String = "en") extends I18NBase(ba
         }
 
       case protocol =>
-        warn(s"Unhandled resource protocol: $protocol")
+        logger.warn(s"Unhandled resource protocol: $protocol")
         Set.empty[String]
     }
   }.getOrElse(Set.empty) + defaultLanguage

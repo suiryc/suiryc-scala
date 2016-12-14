@@ -1,6 +1,6 @@
 package suiryc.scala.sys.linux
 
-import grizzled.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import suiryc.scala.io.SourceEx
@@ -10,7 +10,7 @@ import suiryc.scala.util.EitherEx
 
 
 class DevicePartition(val device: Device, val partNumber: Int)
-  extends Logging
+  extends StrictLogging
 {
 
   val block: Path = device.block.resolve(Paths.get(s"${device.block.getFileName}${device.partitionInfix}$partNumber"))
@@ -42,7 +42,7 @@ class DevicePartition(val device: Device, val partNumber: Int)
             val msg =
               if (stderr != "") s"Cannot get partition[$dev] ${tag.toLowerCase}: $stderr"
               else s"Cannot get partition[$dev] ${tag.toLowerCase}"
-            error(msg)
+            logger.error(msg)
             Left(new Exception(msg))
         }
       }
