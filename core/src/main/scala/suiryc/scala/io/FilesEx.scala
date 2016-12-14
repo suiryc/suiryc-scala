@@ -54,9 +54,13 @@ object FilesEx
               copy(sourceRoot, Option(source.getParent), targetRoot)
               if (followLinks) copy(sourceRoot, Option(sourceReal.getParent), targetRoot)
               // then copy source to target
-              trace(s"Copying source[$sourceRealPath] to[$pathTarget]")
-              Files.copy(sourceRealPath, pathTarget,
-                options:_*)
+              if (Files.isRegularFile(sourceRealPath) || Files.isSymbolicLink(sourceRealPath) || Files.isDirectory(sourceRealPath)) {
+                trace(s"Copying source[$sourceRealPath] to[$pathTarget]")
+                Files.copy(sourceRealPath, pathTarget,
+                  options:_*)
+              } else {
+                warn(s"Real path[$sourceRealPath] is not a regular file/directory, skipping")
+              }
               ()
             }
           }
