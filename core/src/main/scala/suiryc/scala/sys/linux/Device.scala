@@ -67,7 +67,7 @@ class Device(val block: Path) {
 
   val partitions: Set[DevicePartition] = {
     val devName = dev.getFileName.toString
-    (block * s"""$devName$partitionInfix[0-9]+""".r).get map { path =>
+    (block * s"""$devName$partitionInfix[0-9]+""".r).get.map { path =>
       DevicePartition(this, path.getName.substring(devName.length() + partitionInfix.length()).toInt)
     }
   }
@@ -86,6 +86,14 @@ class NetworkBlockDevice(override val block: Path)
 {
 
   override protected def defaultName = "Network Block Device"
+
+}
+
+class LoopbackDevice(override val block: Path)
+  extends Device(block)
+{
+
+  override protected def defaultName = "Loopback Device"
 
 }
 
@@ -112,9 +120,9 @@ object Device
   }
 
   def size(block: Path): EitherEx[Exception, Long] = {
-    propertyContent(block, "size") map { size =>
+    propertyContent(block, "size").map { size =>
       EitherEx(Right(size.toLong * 512))
-    } getOrElse {
+    }.getOrElse {
       try {
         val dev = Paths.get("/dev").resolve(block.getFileName)
         val CommandResult(result, stdout, stderr) = Command.execute(Seq("blockdev", "--getsz", dev.toString))
@@ -148,6 +156,8 @@ object Device
   def apply(block: Path): Device =
     if (block.getFileName.toString.startsWith("nbd"))
       new NetworkBlockDevice(block)
+    else if (block.getFileName.toString.startsWith("loop"))
+      new LoopbackDevice(block)
     else
       new Device(block)
 
