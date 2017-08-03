@@ -22,7 +22,7 @@ class RichFutureSpec extends WordSpec with Matchers {
 
     "not kick-in if future succeeds before timeout" in {
       val wrapper = new Wrapper(delay = 10.millis)
-      val f = wrapper.action().withTimeout(50.millis)
+      val f = wrapper.action().withTimeout(500.millis)
       Await.ready(f, 2.seconds)
       wrapper.executed shouldBe 1
       f.value shouldBe Some(Success(wrapper.id))
@@ -30,7 +30,7 @@ class RichFutureSpec extends WordSpec with Matchers {
 
     "not kick-in if future fails before timeout" in {
       val wrapper = new Wrapper(success = false, delay = 10.millis)
-      val f = wrapper.action().withTimeout(50.millis)
+      val f = wrapper.action().withTimeout(500.millis)
       Await.ready(f, 2.seconds)
       wrapper.executed shouldBe 1
       val value = f.value
@@ -40,8 +40,8 @@ class RichFutureSpec extends WordSpec with Matchers {
     }
 
     "kick-in if future succeeds after timeout" in {
-      val wrapper = new Wrapper(delay = 100.millis)
-      val f = wrapper.action().withTimeout(50.millis)
+      val wrapper = new Wrapper(delay = 500.millis)
+      val f = wrapper.action().withTimeout(10.millis)
       Await.ready(f, 2.seconds)
       // Note future will be executed even if timeout was reached.
       val value = f.value
@@ -51,8 +51,8 @@ class RichFutureSpec extends WordSpec with Matchers {
     }
 
     "kick-in if future fails after timeout" in {
-      val wrapper = new Wrapper(success = false, delay = 100.millis)
-      val f = wrapper.action().withTimeout(50.millis)
+      val wrapper = new Wrapper(success = false, delay = 500.millis)
+      val f = wrapper.action().withTimeout(10.millis)
       Await.ready(f, 2.seconds)
       // Note future will be executed even if timeout was reached.
       val value = f.value
