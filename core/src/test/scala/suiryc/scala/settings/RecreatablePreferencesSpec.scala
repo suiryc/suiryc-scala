@@ -24,12 +24,9 @@ class RecreatablePreferencesSpec extends WordSpec with Matchers with BeforeAndAf
     prefs.putLong(KEY_LONG, VALUE_LONG)
   }
 
-  // scalastyle:off null
   override def afterEach(): Unit = {
     Option(prefs).filter(_.nodeExists("")).foreach(_.removeNode())
-    prefs = null
   }
-  // scalastyle:on null
 
   "RecreatablePreferences" should {
 
