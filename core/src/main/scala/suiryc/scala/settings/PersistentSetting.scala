@@ -133,25 +133,25 @@ object PersistentSetting {
     new PersistentSEnumerationSetting[T](path, default)
 
   /** Boolean persistent setting builder. */
-  implicit val booleanBuilder = new PersistentSettingBuilder[Boolean] {
+  implicit val booleanBuilder: PersistentSettingBuilder[Boolean] = new PersistentSettingBuilder[Boolean] {
     def build(path: String, default: Boolean)(implicit settings: BaseSettings): PersistentSetting[Boolean] =
       new PersistentBooleanSetting(path, default)
   }
 
   /** Int persistent setting builder. */
-  implicit val intBuilder = new PersistentSettingBuilder[Int] {
+  implicit val intBuilder: PersistentSettingBuilder[Int] = new PersistentSettingBuilder[Int] {
     def build(path: String, default: Int)(implicit settings: BaseSettings): PersistentSetting[Int] =
       new PersistentIntSetting(path, default)
   }
 
   /** Long persistent setting builder. */
-  implicit val longBuilder = new PersistentSettingBuilder[Long] {
+  implicit val longBuilder: PersistentSettingBuilder[Long] = new PersistentSettingBuilder[Long] {
     def build(path: String, default: Long)(implicit settings: BaseSettings): PersistentSetting[Long] =
       new PersistentLongSetting(path, default)
   }
 
   /** String persistent setting builder. */
-  implicit val stringBuilder = new PersistentSettingBuilder[String] {
+  implicit val stringBuilder: PersistentSettingBuilder[String] = new PersistentSettingBuilder[String] {
     def build(path: String, default: String)(implicit settings: BaseSettings): PersistentSetting[String] =
       new PersistentStringSetting(path, default)
   }
