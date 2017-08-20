@@ -25,7 +25,7 @@ class RecreatablePreferences(_prefs: Preferences) {
   }
 
   /** Re-creates parent hierarchy nodes. */
-  private def recreate() = {
+  private def recreate(): Unit = {
     val (root, ancestors) = hierarchy
 
     node = ancestors.foldLeft(root) { (root, name) =>
