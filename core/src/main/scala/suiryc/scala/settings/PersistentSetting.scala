@@ -2,9 +2,9 @@ package suiryc.scala.settings
 
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.prefs.Preferences
 import suiryc.scala.RichEnumeration
 import suiryc.scala.misc.{Enumeration => sEnumeration}
+import suiryc.scala.settings.Preference._
 
 /**
  * Persistent setting value.
@@ -14,8 +14,7 @@ import suiryc.scala.misc.{Enumeration => sEnumeration}
  *
  * Persistence is done through Preferences node.
  */
-trait PersistentSetting[T] extends Preference[T]
-{
+trait PersistentSetting[T] extends Preference[T] {
 
   // Note: re-defining protected functions from Preference is necessary to make
   // them accessible inside the typeBuilder generated builder.
@@ -24,6 +23,8 @@ trait PersistentSetting[T] extends Preference[T]
 
   /** Base settings. */
   protected val settings: BaseSettings
+
+  override val prefsGetter: PreferencesGetter = settings
 
   /**
    * Gets the config value.
@@ -47,6 +48,7 @@ trait PersistentSetting[T] extends Preference[T]
    * Gets the optional value.
    *
    * First search in preference, then config.
+   *
    * @return value or None if not present
    */
   override def option: Option[T] =
@@ -67,50 +69,48 @@ trait PersistentSetting[T] extends Preference[T]
 }
 
 /** Boolean persistent setting. */
-class PersistentBooleanSetting(override protected val path: String, override val default: Boolean)
-  (implicit val settings: BaseSettings)
-  extends BooleanPreference(path, default)(settings.prefs) with PersistentSetting[Boolean] {
+class PersistentBooleanSetting(protected val settings: BaseSettings, override protected val path: String, override val default: Boolean)
+  extends BooleanPreference(settings, path, default) with PersistentSetting[Boolean] {
   override protected def configValue: Boolean = settings.config.getBoolean(path)
 }
 
 /** Int persistent setting. */
-class PersistentIntSetting(override protected val path: String, override val default: Int)
-  (implicit val settings: BaseSettings)
-  extends IntPreference(path, default)(settings.prefs) with PersistentSetting[Int] {
+class PersistentIntSetting(protected val settings: BaseSettings, override protected val path: String, override val default: Int)
+  extends IntPreference(settings, path, default) with PersistentSetting[Int] {
   override protected def configValue: Int = settings.config.getInt(path)
 }
 
 /** Long persistent setting. */
-class PersistentLongSetting(override protected val path: String, override val default: Long)
-  (implicit val settings: BaseSettings)
-  extends LongPreference(path, default)(settings.prefs) with PersistentSetting[Long] {
+class PersistentLongSetting(protected val settings: BaseSettings, override protected val path: String, override val default: Long)
+  extends LongPreference(settings, path, default) with PersistentSetting[Long] {
   override protected def configValue: Long = settings.config.getLong(path)
 }
 
 /** String persistent setting. */
-class PersistentStringSetting(override protected val path: String, override val default: String)
-  (implicit val settings: BaseSettings)
-  extends StringPreference(path, default)(settings.prefs) with PersistentSetting[String] {
+class PersistentStringSetting(protected val settings: BaseSettings, override protected val path: String, override val default: String)
+  extends StringPreference(settings, path, default) with PersistentSetting[String] {
   override protected def configValue: String = settings.config.getString(path)
 }
 
 /** Enumeration persistent setting. */
-class PersistentEnumerationSetting[T <: Enumeration](override protected val path: String, override val default: T#Value)
-  (implicit val settings: BaseSettings, enum: T)
-  extends EnumerationPreference[T](path, default)(settings.prefs, enum) with PersistentSetting[T#Value] {
+class PersistentEnumerationSetting[T <: Enumeration](protected val settings: BaseSettings, override protected val path: String,
+  enum: T, override val default: T#Value)
+  extends EnumerationPreference[T](settings, path, enum, default) with PersistentSetting[T#Value]
+{
   override protected def configValue: T#Value = enum.byName(settings.config.getString(path))
 }
 
 /** Special Enumeration persistent setting. */
-class PersistentSEnumerationSetting[T <: sEnumeration](override protected val path: String, override val default: T#Value)
-  (implicit val settings: BaseSettings, enum: T)
-  extends SEnumerationPreference[T](path, default)(settings.prefs, enum) with PersistentSetting[T#Value] {
+class PersistentSEnumerationSetting[T <: sEnumeration](protected val settings: BaseSettings, override protected val path: String,
+  enum: T, override val default: T#Value)
+  extends SEnumerationPreference[T](settings, path, enum, default) with PersistentSetting[T#Value]
+{
   override protected def configValue: T#Value = enum.withName(settings.config.getString(path))
 }
 
 /** Persistent setting builder. */
 trait PersistentSettingBuilder[T] {
-  def build(path: String, default: T)(implicit settings: BaseSettings): PersistentSetting[T]
+  def build(settings: BaseSettings, path: String, default: T): PersistentSetting[T]
 }
 
 object PersistentSetting {
@@ -121,40 +121,35 @@ object PersistentSetting {
   implicit def toValue[T](p: PersistentSetting[T]): T = p()
 
   /** Builds a persistent setting for a type with implicit builder. */
-  def from[T](path: String, default: T)(implicit settings: BaseSettings, builder: PersistentSettingBuilder[T]): PersistentSetting[T] =
-    builder.build(path, default)
+  def from[T](settings: BaseSettings, path: String, default: T)(implicit builder: PersistentSettingBuilder[T]): PersistentSetting[T] =
+    builder.build(settings, path, default)
 
   /** Builds an Enumeration persistent setting. */
-  def from[T <: Enumeration](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T): PersistentSetting[T#Value] =
-    new PersistentEnumerationSetting[T](path, default)
+  def from[T <: Enumeration](settings: BaseSettings, path: String, enum: T, default: T#Value): PersistentSetting[T#Value] =
+    new PersistentEnumerationSetting[T](settings, path, enum, default)
 
   /** Builds a special Enumeration persistent setting. */
-  def from[T <: sEnumeration](path: String, default: T#Value)(implicit settings: BaseSettings, enum: T): PersistentSetting[T#Value] =
-    new PersistentSEnumerationSetting[T](path, default)
+  // Note: even though scala compiler works fine when the function definition
+  // is similar to the Enumeration one, IntelliJ editor shows an error - which
+  // is annoying - unless we use the dummy implicit parameter trick.
+  def from[T <: sEnumeration](settings: BaseSettings, path: String, enum: T, default: T#Value)(implicit d: DummyImplicit): PersistentSetting[T#Value] =
+    new PersistentSEnumerationSetting[T](settings, path, enum, default)
 
   /** Boolean persistent setting builder. */
-  implicit val booleanBuilder: PersistentSettingBuilder[Boolean] = new PersistentSettingBuilder[Boolean] {
-    def build(path: String, default: Boolean)(implicit settings: BaseSettings): PersistentSetting[Boolean] =
-      new PersistentBooleanSetting(path, default)
-  }
+  implicit val booleanBuilder: PersistentSettingBuilder[Boolean] =
+    (settings: BaseSettings, path: String, default: Boolean) => new PersistentBooleanSetting(settings, path, default)
 
   /** Int persistent setting builder. */
-  implicit val intBuilder: PersistentSettingBuilder[Int] = new PersistentSettingBuilder[Int] {
-    def build(path: String, default: Int)(implicit settings: BaseSettings): PersistentSetting[Int] =
-      new PersistentIntSetting(path, default)
-  }
+  implicit val intBuilder: PersistentSettingBuilder[Int] =
+    (settings: BaseSettings, path: String, default: Int) => new PersistentIntSetting(settings, path, default)
 
   /** Long persistent setting builder. */
-  implicit val longBuilder: PersistentSettingBuilder[Long] = new PersistentSettingBuilder[Long] {
-    def build(path: String, default: Long)(implicit settings: BaseSettings): PersistentSetting[Long] =
-      new PersistentLongSetting(path, default)
-  }
+  implicit val longBuilder: PersistentSettingBuilder[Long] =
+    (settings: BaseSettings, path: String, default: Long) => new PersistentLongSetting(settings, path, default)
 
   /** String persistent setting builder. */
-  implicit val stringBuilder: PersistentSettingBuilder[String] = new PersistentSettingBuilder[String] {
-    def build(path: String, default: String)(implicit settings: BaseSettings): PersistentSetting[String] =
-      new PersistentStringSetting(path, default)
-  }
+  implicit val stringBuilder: PersistentSettingBuilder[String] =
+    (settings: BaseSettings, path: String, default: String) => new PersistentStringSetting(settings, path, default)
 
   /**
    * Gets a persistent setting builder mapping between Outer and Inner types.
@@ -167,17 +162,14 @@ object PersistentSetting {
    */
   def typeBuilder[Outer, Inner](toInner: Outer => Inner, toOuter: Inner => Outer)
     (implicit innerBuilder: PersistentSettingBuilder[Inner]): PersistentSettingBuilder[Outer] =
-    new PersistentSettingBuilder[Outer] {
-      def build(bpath: String, bdefault: Outer)(implicit bsettings: BaseSettings): PersistentSetting[Outer] = new PersistentSetting[Outer] {
-        private val settingInner = innerBuilder.build(bpath, toInner(bdefault))
-        override protected val path: String = bpath
-        override val default: Outer = bdefault
-        override val prefs: Preferences = bsettings.prefs
-        override val settings: BaseSettings = bsettings
-        override protected def prefsValue(default: Outer): Outer = settingInner.option.map(toOuter).getOrElse(default)
-        override protected def updateValue(v: Outer): Unit = settingInner.updateValue(toInner(v))
-        override protected def configValue: Outer = settingInner.configOption.map(toOuter).getOrElse(default)
-      }
+    (bsettings: BaseSettings, bpath: String, bdefault: Outer) => new PersistentSetting[Outer] {
+      private val settingInner = innerBuilder.build(bsettings, bpath, toInner(bdefault))
+      override protected val path: String = bpath
+      override val default: Outer = bdefault
+      override val settings: BaseSettings = bsettings
+      override protected def prefsValue(default: Outer): Outer = settingInner.option.map(toOuter).getOrElse(default)
+      override protected def updateValue(v: Outer): Unit = settingInner.updateValue(toInner(v))
+      override protected def configValue: Outer = settingInner.configOption.map(toOuter).getOrElse(default)
     }
 
   /** Path persistent setting builder. */

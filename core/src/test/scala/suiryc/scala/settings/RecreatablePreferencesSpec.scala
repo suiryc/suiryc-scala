@@ -19,7 +19,8 @@ class RecreatablePreferencesSpec extends WordSpec with Matchers with BeforeAndAf
   private val KEY_UNUSED = "key.unused"
 
   override def beforeEach(): Unit = {
-    prefs = Preferences.userRoot.node("suiryc.test")
+    // Use unique node name to prevent interfering with other parallel tests.
+    prefs = Preferences.userRoot.node(s"suiryc.test.${getClass.getName}")
     prefs.putBoolean(KEY_BOOLEAN, VALUE_BOOLEAN)
     prefs.putLong(KEY_LONG, VALUE_LONG)
   }
