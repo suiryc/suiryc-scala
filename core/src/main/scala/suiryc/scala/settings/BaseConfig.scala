@@ -21,24 +21,31 @@ class BaseConfig(val config: Config) {
 
 object BaseConfig {
 
+  // Note: implicit functions don't work when chosen name is used in imported
+  // context (e.g. as variable name).
+
+  /** Implicit function to get Config config value. */
+  implicit def configGetConfig(config: Config, path: String): Config =
+    config.getConfig(path)
+
   /** Implicit function to get String config value. */
-  implicit def string(config: Config, path: String): String =
+  implicit def configGetString(config: Config, path: String): String =
     config.getString(path)
 
   /** Implicit function to get Boolean config value. */
-  implicit def boolean(config: Config, path: String): Boolean =
+  implicit def configGetBoolean(config: Config, path: String): Boolean =
     config.getBoolean(path)
 
   /** Implicit function to get Int config value. */
-  implicit def int(config: Config, path: String): Int =
+  implicit def configGetInt(config: Config, path: String): Int =
     config.getInt(path)
 
   /** Implicit function to get Long config value. */
-  implicit def long(config: Config, path: String): Long =
+  implicit def configGetLong(config: Config, path: String): Long =
     config.getLong(path)
 
   /** Implicit function to get Double config value. */
-  implicit def double(config: Config, path: String): Double =
+  implicit def configGetDouble(config: Config, path: String): Double =
     config.getDouble(path)
 
 }
