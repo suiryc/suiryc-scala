@@ -16,7 +16,7 @@ abstract class Enumeration {
 
   type Value <: BaseValue
 
-  protected[misc] trait BaseValue
+  protected trait BaseValue
     extends Ordered[BaseValue]
   { this: Value =>
 
