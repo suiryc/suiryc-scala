@@ -45,6 +45,8 @@ final class RichFile(val asFile: File) extends AnyVal
 
   def mkdir: Boolean = asFile.mkdir
 
+  def mkdirs: Boolean = asFile.mkdirs
+
   def changeOwner(user: Option[String], group: Option[String]): Unit = {
     if (user.isDefined || group.isDefined) {
       val lookupService = FileSystems.getDefault.getUserPrincipalLookupService
