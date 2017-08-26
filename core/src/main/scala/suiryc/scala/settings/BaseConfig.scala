@@ -1,6 +1,7 @@
 package suiryc.scala.settings
 
 import com.typesafe.config.Config
+import scala.collection.JavaConverters._
 
 /**
  * Base config helper.
@@ -28,24 +29,48 @@ object BaseConfig {
   implicit def configGetConfig(config: Config, path: String): Config =
     config.getConfig(path)
 
+  /** Implicit function to get Config List config value. */
+  implicit def configGetConfigList(config: Config, path: String): List[Config] =
+    config.getConfigList(path).asScala.toList
+
   /** Implicit function to get String config value. */
   implicit def configGetString(config: Config, path: String): String =
     config.getString(path)
+
+  /** Implicit function to get String List config value. */
+  implicit def configGetStringList(config: Config, path: String): List[String] =
+    config.getStringList(path).asScala.toList
 
   /** Implicit function to get Boolean config value. */
   implicit def configGetBoolean(config: Config, path: String): Boolean =
     config.getBoolean(path)
 
+  /** Implicit function to get Boolean List config value. */
+  implicit def configGetBooleanList(config: Config, path: String): List[Boolean] =
+    config.getBooleanList(path).asScala.toList.map(Boolean.unbox)
+
   /** Implicit function to get Int config value. */
   implicit def configGetInt(config: Config, path: String): Int =
     config.getInt(path)
+
+  /** Implicit function to get Int List config value. */
+  implicit def configGetIntList(config: Config, path: String): List[Int] =
+    config.getIntList(path).asScala.toList.map(Int.unbox)
 
   /** Implicit function to get Long config value. */
   implicit def configGetLong(config: Config, path: String): Long =
     config.getLong(path)
 
+  /** Implicit function to get Long List config value. */
+  implicit def configGetLongList(config: Config, path: String): List[Long] =
+    config.getLongList(path).asScala.toList.map(Long.unbox)
+
   /** Implicit function to get Double config value. */
   implicit def configGetDouble(config: Config, path: String): Double =
     config.getDouble(path)
+
+  /** Implicit function to get Double List config value. */
+  implicit def configGetDoubleList(config: Config, path: String): List[Double] =
+    config.getDoubleList(path).asScala.toList.map(Double.unbox)
 
 }
