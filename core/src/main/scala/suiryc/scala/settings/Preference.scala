@@ -3,6 +3,7 @@ package suiryc.scala.settings
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.prefs.Preferences
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import suiryc.scala.RichEnumeration
 import suiryc.scala.misc.{Enumeration => sEnumeration}
 import Preference._
@@ -204,6 +205,18 @@ object Preference {
   implicit val pathBuilder: PreferenceBuilder[Path] = typeBuilder[Path, String](
     { p => Option(p).map(_.toString).orNull },
     { s => Option(s).map(Paths.get(_)).orNull }
+  )
+
+  /** Duration preference builder. */
+  implicit val durationBuilder: PreferenceBuilder[Duration] = typeBuilder[Duration, String](
+    { p => Option(p).map(_.toString).orNull },
+    { s => Option(s).map(Duration.apply).orNull }
+  )
+
+  /** FiniteDuration preference builder. */
+  implicit val finiteDurationBuilder: PreferenceBuilder[FiniteDuration] = typeBuilder[FiniteDuration, String](
+    { p => Option(p).map(_.toString).orNull },
+    { s => Option(s).map(Duration.apply(_).asInstanceOf[FiniteDuration]).orNull }
   )
 
 }
