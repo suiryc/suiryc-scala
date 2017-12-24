@@ -2,15 +2,15 @@ import sbt._
 import Keys._
 
 lazy val versions = Map[String, String](
-  "akka"          -> "2.4.14",
-  "config"        -> "1.3.1",
+  "akka"          -> "2.5.8",
+  "config"        -> "1.3.2",
   "junit"         -> "4.12",
-  "logback"       -> "1.1.8",
-  "scala"         -> "2.12.1",
-  "scala-logging" -> "3.5.0",
-  "scalatest"     -> "3.0.1",
-  "scopt"         -> "3.5.0",
-  "spray-json"    -> "1.3.2",
+  "logback"       -> "1.2.3",
+  "scala"         -> "2.12.4",
+  "scala-logging" -> "3.7.2",
+  "scalatest"     -> "3.0.4",
+  "scopt"         -> "3.7.0",
+  "spray-json"    -> "1.3.4",
   "suiryc-scala"  -> "0.0.2-SNAPSHOT"
 )
 

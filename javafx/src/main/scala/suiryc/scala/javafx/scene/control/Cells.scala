@@ -75,7 +75,7 @@ trait CheckBoxListCellWithInfo[A] extends CheckBoxListCell[A] {
   protected var propertyListener: Option[Cancellable] = None
 
   /** Whether there is an actual item. */
-  protected def hasActualItem(item: A): Boolean = true
+  protected def hasActualItem(@deprecated("unused","") item: A): Boolean = true
 
   /** Gets cell info for a given item. */
   protected def getInfo(item: A): CellInfo

@@ -223,15 +223,15 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
     Option(getOnButtonAction).foreach(_.handle(event))
 
   // The 'armed' property.
-  protected val armed = new SimpleBooleanProperty() {
+  protected val armed: SimpleBooleanProperty = new SimpleBooleanProperty() {
     override protected def invalidated(): Unit = arrowButton.pseudoClassStateChanged(ARMED_PSEUDOCLASS_STATE, get())
   }
-  protected def isArmed = armed.get()
-  protected def arm() = armed.set(true)
-  protected def disarm() = armed.set(false)
+  protected def isArmed: Boolean = armed.get()
+  protected def arm(): Unit = armed.set(true)
+  protected def disarm(): Unit = armed.set(false)
 
   // Arms button if triggered
-  protected def mousePressed(e: MouseEvent): Unit =
+  protected def mousePressed(@deprecated("unused","") e: MouseEvent): Unit =
     if (!isArmed) arm()
 
   // Fires (and disarms button) if triggered.
@@ -242,11 +242,11 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
     }
 
   // Re-arms button if we get back to the button while still pressing.
-  protected def mouseEntered(e: MouseEvent): Unit =
+  protected def mouseEntered(@deprecated("unused","") e: MouseEvent): Unit =
     if (arrowButton.isPressed) arm()
 
   // Disarms button if we leave the button (when armed, that is while still pressing).
-  protected def mouseExited(e: MouseEvent): Unit =
+  protected def mouseExited(@deprecated("unused","") e: MouseEvent): Unit =
     if (isArmed) disarm()
 
 }
