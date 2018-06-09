@@ -2,13 +2,14 @@ package suiryc.scala.settings
 
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**
  * Base config helper.
  *
  * Get typed value (optional or not) from config using implicit functions.
  */
-class BaseConfig(val config: Config) {
+class BaseConfig(val config: Config) extends BaseConfigImplicits {
 
   /** Get typed config value. */
   def value[T](path: String, config: Config = config)(implicit t: (Config, String) => T): T =
@@ -20,7 +21,7 @@ class BaseConfig(val config: Config) {
 
 }
 
-object BaseConfig {
+trait BaseConfigImplicits {
 
   // Note: implicit functions don't work when chosen name is used in imported
   // context (e.g. as variable name).
@@ -72,5 +73,15 @@ object BaseConfig {
   /** Implicit function to get Double List config value. */
   implicit def configGetDoubleList(config: Config, path: String): List[Double] =
     config.getDoubleList(path).asScala.toList.map(Double.unbox)
+
+  /** Implicit function to get Duration config value. */
+  implicit def configGetDuration(config: Config, path: String): FiniteDuration =
+    toDuration(config.getDuration(path))
+
+  /** Implicit function to get Duration List config value. */
+  implicit def configGetDurationList(config: Config, path: String): List[FiniteDuration] =
+    config.getDurationList(path).asScala.toList.map(toDuration)
+
+  private def toDuration(v: java.time.Duration): FiniteDuration = Duration.fromNanos(v.toNanos)
 
 }
