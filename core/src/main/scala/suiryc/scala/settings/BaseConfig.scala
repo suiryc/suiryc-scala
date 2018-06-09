@@ -74,11 +74,11 @@ trait BaseConfigImplicits {
   implicit def configGetDoubleList(config: Config, path: String): List[Double] =
     config.getDoubleList(path).asScala.toList.map(Double.unbox)
 
-  /** Implicit function to get Duration config value. */
+  /** Implicit function to get Duration (as scala) config value. */
   implicit def configGetDuration(config: Config, path: String): FiniteDuration =
     toDuration(config.getDuration(path))
 
-  /** Implicit function to get Duration List config value. */
+  /** Implicit function to get Duration (as scala) List config value. */
   implicit def configGetDurationList(config: Config, path: String): List[FiniteDuration] =
     config.getDurationList(path).asScala.toList.map(toDuration)
 

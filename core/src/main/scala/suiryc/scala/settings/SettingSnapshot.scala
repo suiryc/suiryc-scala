@@ -1,5 +1,6 @@
 package suiryc.scala.settings
 
+import com.typesafe.config.ConfigValue
 import javafx.beans.property.Property
 
 /**
@@ -10,7 +11,7 @@ import javafx.beans.property.Property
 trait SettingSnapshot[T] {
 
   /** Original value. */
-  protected val originalValue =
+  protected val originalValue: T =
     getValue
 
   /** Gets current value. */
@@ -35,40 +36,45 @@ object SettingSnapshot {
   /** Builds a snapshot from a Preference. */
   def apply[T](preference: Preference[T]): SettingSnapshot[T] =
     new SettingSnapshot[T] {
-
-      override protected def getValue =
-        preference()
-
-      override protected def setValue(v: T) {
-        preference() = v
-      }
-
+      override protected def getValue: T = preference()
+      override protected def setValue(v: T): Unit = preference() = v
     }
 
   /** Builds a snapshot from a property. */
   def apply[T](property: Property[T]): SettingSnapshot[T] =
     new SettingSnapshot[T] {
-
-      override protected def getValue =
-        property.getValue
-
-      override protected def setValue(v: T) {
-        property.setValue(v)
-      }
-
+      override protected def getValue: T = property.getValue
+      override protected def setValue(v: T): Unit = property.setValue(v)
     }
 
   /** Builds a snapshot from a persistent setting. */
   def apply[T](setting: PersistentSetting[T]): SettingSnapshot[T] =
     new SettingSnapshot[T] {
+      override protected def getValue: T = setting()
+      override protected def setValue(v: T): Unit = setting() = v
+    }
 
-      override protected def getValue =
-        setting()
-
-      override protected def setValue(v: T) {
-        setting() = v
+  /** Builds a snapshot from a (portable setting) config entry. */
+  // Note: unlike other kinds of settings, Config does not use null values, so
+  // handle actual values as Options. Also use actual ConfigValue for easier
+  // handling.
+  def apply[A](setting: ConfigEntry[A]): SettingSnapshot[Option[ConfigValue]] =
+    new SettingSnapshot[Option[ConfigValue]] {
+      override protected def getValue: Option[ConfigValue] = {
+        val config = setting.settings.config
+        if (config.hasPath(setting.path)) {
+          Some(config.getValue(setting.path))
+        } else {
+          None
+        }
       }
-
+      override protected def setValue(v: Option[ConfigValue]): Unit = {
+        v match {
+          case Some(value) => setting.settings.withValue(setting.path, value)
+          case None => setting.settings.withoutPath(setting.path)
+        }
+        ()
+      }
     }
 
 }
