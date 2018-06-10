@@ -12,22 +12,40 @@ import suiryc.scala.misc.Units
  *
  * Relies on portable settings to get/update config.
  */
-class ConfigEntry[A](
+trait ConfigEntry[A] {
   // The portable settings (to track updated config)
-  protected[settings] val settings: PortableSettings,
+  protected[settings] val settings: PortableSettings
   // The actual value handler
-  handler: ConfigEntry.Handler[A],
+  protected val handler: ConfigEntry.Handler[A]
   // The setting path
-  protected[settings] val path: String)
-{
+  protected[settings] val path: String
+
+  /** Gets whether entry exists. */
+  def exists: Boolean = settings.config.hasPath(path)
   /** Gets the entry as a single value. */
   def get: A = handler.get(settings.config, path)
+  /** Gets the entry as a single optional value. */
+  def opt: Option[A] = if (exists) Some(get) else None
   /** Gets the entry as a list of values. */
   def getList: List[A] = handler.getList(settings.config, path)
+  /** Gets the entry as a list of values (empty if entry is missing). */
+  def optList: List[A] = if (exists) getList else Nil
   /** Sets the entry as a single value. */
   def set(v: A): Config = settings.withValue(path, ConfigValueFactory.fromAnyRef(handler.toInner(v)))
-  /** Sets the entry as a list of values */
+  /** Sets the entry as a list of values. */
   def setList(v: List[A]): Config = settings.withValue(path, ConfigValueFactory.fromIterable(v.map(handler.toInner).asJava))
+  /** Removes entry. */
+  def remove: Config = settings.withoutPath(path)
+
+  /** Adds default value for 'get' (if entry is missing) */
+  def withDefault(v: A): ConfigEntry[A] = new ConfigEntry.Wrapped[A](this) with ConfigEntry.WithDefault[A] {
+    override protected val default: A = v
+  }
+  /** Adds default value for 'getList' (if entry is missing) */
+  def withDefault(v: List[A]): ConfigEntry[A] = new ConfigEntry.Wrapped[A](this) with ConfigEntry.WithDefaultList[A] {
+    override protected val defaultList: List[A] = v
+  }
+
 }
 
 object ConfigEntry extends BaseConfigImplicits {
@@ -54,13 +72,51 @@ object ConfigEntry extends BaseConfigImplicits {
     def toInner(v: A): Any = v
   }
 
+  /** Basic (default implementation) ConfigEntry. */
+  class Basic[A](
+    override protected[settings] val settings: PortableSettings,
+    override protected val handler: ConfigEntry.Handler[A],
+    override protected[settings] val path: String
+  ) extends ConfigEntry[A]
+
+  /**
+   * Wrapped ConfigEntry.
+   *
+   * Used to override get or getList with default value.
+   */
+  class Wrapped[A](wrapped: ConfigEntry[A]) extends ConfigEntry[A] {
+    override protected[settings] val settings: PortableSettings = wrapped.settings
+    override protected val handler: ConfigEntry.Handler[A] = wrapped.handler
+    override protected[settings] val path: String = wrapped.path
+    override def get: A = wrapped.get
+    override def getList: List[A] = wrapped.getList
+  }
+
+  /** Handles default value for config entry. */
+  trait WithDefault[A] { self: ConfigEntry[A] =>
+    protected val default: A
+    override def get: A = {
+      if (exists) handler.get(settings.config, path)
+      else default
+    }
+  }
+
+  /** Handles default list value for config entry. */
+  trait WithDefaultList[A] { self: ConfigEntry[A] =>
+    protected val defaultList: List[A]
+    override def getList: List[A] = {
+      if (exists) handler.getList(settings.config, path)
+      else defaultList
+    }
+  }
+
   /** Builds a config entry for a type with implicit handler. */
   def from[A](settings: PortableSettings, path: String*)(implicit handler: Handler[A]): ConfigEntry[A] =
-    new ConfigEntry(settings, handler, path.mkString("."))
+    new Basic(settings, handler, path.mkString("."))
 
   /** Builds a config entry for a given Enumeration. */
   def from[A <: Enumeration](settings: PortableSettings, enum: A, path: String*): ConfigEntry[A#Value] =
-    new ConfigEntry(settings, enumerationHandler(enum), path.mkString("."))
+    new Basic(settings, enumerationHandler(enum), path.mkString("."))
 
   /** Boolean entry handler. */
   implicit val booleanHandler: Handler[Boolean] = baseHandler[Boolean]
