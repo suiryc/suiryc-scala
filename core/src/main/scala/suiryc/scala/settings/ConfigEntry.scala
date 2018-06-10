@@ -5,6 +5,7 @@ import java.nio.file.{Path, Paths}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 import suiryc.scala.RichEnumeration
+import suiryc.scala.misc.Units
 
 /**
  * Config entry value.
@@ -78,6 +79,17 @@ object ConfigEntry extends BaseConfigImplicits {
     // However it handles the same formatted values than scala Duration, so
     // use the formatted representation.
     override def toInner(v: FiniteDuration): String = v.toString
+  }
+  /**
+   * Bytes entry handler.
+   *
+   * Since we actually get Long values, this handler cannot be implicit and
+   * must be explicitly used when applicable.
+   */
+  val bytesHandler: Handler[Long] = new BaseHandler[Long] {
+    override def get(config: Config, path: String): Long = config.getBytes(path)
+    override def getList(config: Config, path: String): List[Long] = config.getBytesList(path).asScala.toList.map(Long.unbox)
+    override def toInner(v: Long): String = Units.storage.format(v)
   }
 
   // Basic handler implementation (relying on getters from BaseConfigImplicits)

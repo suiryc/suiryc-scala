@@ -19,20 +19,20 @@ object Units {
     def units: List[List[Unit]] = Nil
 
     def fromHumanReadable(value: String): Long = value match {
-      case ValueRegexp(value, valueUnit) =>
+      case ValueRegexp(valueAmount, valueUnit) =>
         val lcunit = valueUnit.toLowerCase
         def get(units: List[Unit]): Option[Long] =
           units find { unit =>
             unit.label.toLowerCase == lcunit
           } map { unit =>
-            value.toLong * unit.factor
+            valueAmount.toLong * unit.factor
           }
 
-        if ((lcunit == "") || (lcunit == unityLabel.toLowerCase)) value.toLong
+        if ((lcunit == "") || (lcunit == unityLabel.toLowerCase)) valueAmount.toLong
         else units.foldLeft(None:Option[Long]) { (result, units) =>
           result orElse get(units)
         } getOrElse(
-          throw new IllegalArgumentException(s"Invalid value[$value]")
+          throw new IllegalArgumentException(s"Invalid value[$valueAmount]")
         )
 
       case _ =>
@@ -52,6 +52,25 @@ object Units {
 
       val (hr, unit) = loop(runits.reverse)
       s"${hr / unit.factor} ${unit.label}"
+    }
+
+    def format(value: Long): String = {
+      def format(value: Long, units: List[Unit]): String = {
+        @scala.annotation.tailrec
+        def loop(units: List[Unit], unit: Unit): (Long, Unit) = units match {
+          case head :: tail =>
+            if ((value % head.factor) == 0) loop(tail, head)
+            else (value, unit)
+
+          case Nil =>
+            (value, unity)
+        }
+
+        val (hr, unit) = loop(units, unity)
+        s"${hr / unit.factor}${unit.label}"
+      }
+
+      units.map(units => format(value, units)).minBy(_.length)
     }
 
   }
