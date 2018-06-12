@@ -5,11 +5,10 @@ import javafx.scene.control.Dialog
 import javafx.stage.Stage
 import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.settings.{Preference, PreferenceBuilder}
+import suiryc.scala.sys.OS
 
 /** JavaFX Stage helpers. */
 object Stages {
-
-  import suiryc.scala.javafx.isLinux
 
   /**
    * Tracks minimum stage dimensions.
@@ -43,7 +42,7 @@ object Stages {
     // until user interacts with it ...
     // There does not seem to be a viable way to do it in Linux, so don't.
 
-    if (!isLinux) {
+    if (!OS.isLinux) {
       // The actual tracking code
       def track(): Unit = {
         import suiryc.scala.javafx.concurrent.JFXSystem
