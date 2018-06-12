@@ -25,21 +25,27 @@ class PortableSettings(filepath: Path, var _config: Config, ref: Config) {
 
   /** Changes a path value. */
   def withValue(path: String, value: ConfigValue): Config = {
-    backup()
-    // Keep origin when applicable
-    val actual =
-      if (ref.hasPath(path)) value.withOrigin(ref.getValue(path).origin)
-      else value
-    _config = _config.withValue(path, actual)
-    save()
+    // Do nothing if value did not change
+    if (!_config.hasPath(path) || (_config.getValue(path) != value)) {
+      backup()
+      // Keep origin when applicable
+      val actual =
+        if (ref.hasPath(path)) value.withOrigin(ref.getValue(path).origin)
+        else value
+      _config = _config.withValue(path, actual)
+      save()
+    }
     _config
   }
 
   /** Removes a path. */
   def withoutPath(path: String): Config = {
-    backup()
-    _config = _config.withoutPath(path)
-    save()
+    // Do nothing if path was already absent
+    if (_config.hasPath(path)) {
+      backup()
+      _config = _config.withoutPath(path)
+      save()
+    }
     _config
   }
 
