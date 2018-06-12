@@ -15,7 +15,7 @@ import java.nio.file.{Files, Path}
  * First change triggers a backup of the original config.
  * After each change the file is updated.
  */
-class PortableSettings(filepath: Path, var _config: Config) {
+class PortableSettings(filepath: Path, var _config: Config, ref: Config) {
 
   /** Whether config was already backuped. */
   private var backupDone = false
@@ -26,7 +26,11 @@ class PortableSettings(filepath: Path, var _config: Config) {
   /** Changes a path value. */
   def withValue(path: String, value: ConfigValue): Config = {
     backup()
-    _config = _config.withValue(path, value)
+    // Keep origin when applicable
+    val actual =
+      if (ref.hasPath(path)) value.withOrigin(ref.getValue(path).origin)
+      else value
+    _config = _config.withValue(path, actual)
     save()
     _config
   }
@@ -90,8 +94,9 @@ object PortableSettings extends StrictLogging {
             throw ex
         }
     }
-    val config = appConfig.withFallback(defaultReference(confpath:_*))
-    new PortableSettings(filepath, config)
+    val ref = defaultReference(confpath:_*)
+    val config = appConfig.withFallback(ref)
+    new PortableSettings(filepath, config, ref)
   }
 
   private def backupPath(filepath: Path): Path = {
