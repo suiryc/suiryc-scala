@@ -31,11 +31,11 @@ trait ConfigEntry[A] {
   /** Gets the entry as a list of values (empty if entry is missing). */
   def optList: List[A] = if (exists) getList else Nil
   /** Sets the entry as a single value. */
-  def set(v: A): Config = settings.withValue(path, ConfigValueFactory.fromAnyRef(handler.toInner(v)))
+  def set(v: A): Unit = settings.withValue(path, ConfigValueFactory.fromAnyRef(handler.toInner(v)))
   /** Sets the entry as a list of values. */
-  def setList(v: List[A]): Config = settings.withValue(path, ConfigValueFactory.fromIterable(v.map(handler.toInner).asJava))
+  def setList(v: List[A]): Unit = settings.withValue(path, ConfigValueFactory.fromIterable(v.map(handler.toInner).asJava))
   /** Removes entry. */
-  def remove: Config = settings.withoutPath(path)
+  def remove(): Unit = settings.withoutPath(path)
 
   /** Adds default value for 'get' (if entry is missing) */
   def withDefault(v: A): ConfigEntry[A] = new ConfigEntry.Wrapped[A](this) with ConfigEntry.WithDefault[A] {
