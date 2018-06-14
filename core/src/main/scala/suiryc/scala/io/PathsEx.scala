@@ -42,4 +42,94 @@ object PathsEx {
   def extension(path: Path): String =
     extension(path.getFileName.toString)
 
+  // Linux has no real restrictions on characters that can be used in
+  // filenames. At most reserved characters can be used as long as they are
+  // quoted or escaped.
+  //
+  // Windows have reserved characters that cannot be used:
+  //   < (less than)
+  //   > (greater than)
+  //   : (colon)
+  //   " (double quote)
+  //   / (forward slash)
+  //   \ (backslash)
+  //   | (vertical bar or pipe)
+  //   ? (question mark)
+  //   * (asterisk)
+  // See: https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx#naming_conventions
+  // It is then best to not use them (even on Linux, in case the file may be
+  // copied/moved to Windows).
+  //
+  // A simple solution would be to replace them with _ (underscore):
+  // str.replaceAll("""[<>:"/\\|?*]""", "_")
+  //
+  // Another solution is to replace them with Unicode alternatives.
+  // See (search): https://unicode-search.net/unicode-namesearch.pl
+  // Note: halfwidth/fullwidth variants may appear a little worse on Linux
+  // (small blank space on the right of each letter/symbol)
+  // Alternatives, listed in (subjective) preferred order:
+  //
+  // a<b a＜b
+  // < (U+003C less than sign)
+  // ＜ (U+FF1C fullwidth variant)
+  //
+  // a>b a＞b
+  // > (U+003E greater than sign)
+  // ＞ (U+FF1E fullwidth variant)
+  //
+  // a:b a꞉b a᎓b a：b
+  // : (U+003A colon)
+  // ꞉ (U+A789 modifier letter colon)
+  // ᎓ (U+1393 ethopic tonal mark short rikrik; may not appear good on Linux)
+  // ： (U+FF1A fullwidth variant)
+  //
+  // a"b a＂b
+  // " (U+0022 quotation mark)
+  // ＂ (U+FF02 fullwidth variant)
+  //
+  // a/b a⧸b a∕b a／b
+  // / (U+002F solidus)
+  // ⧸ (U+29F8 big solidus)
+  // ∕ (U+2215 division mark; may appear better on Linux, but has almost no space between letters in Windows explorer)
+  // ／ (U+FF0F fullwidth variant)
+  //
+  // a\b a⧹b a⧵b a＼b
+  // \ (U+005C reverse solidus)
+  // ⧹ (U+29F9 big reverse solidus)
+  // ⧵ (U+29F5 reverse solidus operator)
+  // ＼ (U+FF3C fullwidth variant)
+  //
+  // a|b aǀb a￨b a｜b
+  // | (U+007C vertical line)
+  // ǀ (U+01C0 latin letter dental click)
+  // ￨ (U+FFE8 halfwidth variant)
+  // ｜ (U+FF5C fullwidth variant)
+  //
+  // a?b a？b
+  // ? (U+003F question mark)
+  // ？ (U+FF1F fullwidth variant)
+  //
+  // a*b a∗b a⁎b a＊b
+  // * (U+002A asterisk)
+  // ∗ (U+2217 asterisk operator)
+  // ⁎ (U+204E low asterisk)
+  // ＊ (U+FF0A fullwidth variant)
+  private val sanitizedChars = Map[Char, Char](
+    '<' -> '＜', '>' -> '＞',
+    ':' -> '꞉',
+    '"' -> '＂',
+    '/' -> '⧸',
+    '\\' -> '⧹',
+    '|' -> 'ǀ',
+    '?' -> '？',
+    '*' -> '∗'
+  )
+
+  /** Sanitizes filename (replaces reserved characters). */
+  def sanitizeFilename(str: String): String = {
+    sanitizedChars.foldLeft(str) { (str, entry) =>
+      str.replace(entry._1, entry._2)
+    }
+  }
+
 }
