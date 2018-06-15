@@ -51,6 +51,7 @@ lazy val core = project.in(file("core")).
       "com.github.scopt"           %% "scopt"          % versions("scopt"),
       "com.typesafe"               %  "config"         % versions("config")        % "provided",
       "com.typesafe.akka"          %% "akka-actor"     % versions("akka")          % "provided",
+      "com.typesafe.akka"          %% "akka-slf4j"     % versions("akka")          % "provided",
       "com.typesafe.akka"          %% "akka-testkit"   % versions("akka")          % "test",
       "com.typesafe.scala-logging" %% "scala-logging"  % versions("scala-logging"),
       "junit"                      %  "junit"          % versions("junit")         % "test",
