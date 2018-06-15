@@ -2,13 +2,13 @@ import sbt._
 import Keys._
 
 lazy val versions = Map[String, String](
-  "akka"          -> "2.5.8",
-  "config"        -> "1.3.2",
+  "akka"          -> "2.5.13",
+  "config"        -> "1.3.3",
   "junit"         -> "4.12",
   "logback"       -> "1.2.3",
-  "scala"         -> "2.12.4",
-  "scala-logging" -> "3.7.2",
-  "scalatest"     -> "3.0.4",
+  "scala"         -> "2.12.6",
+  "scala-logging" -> "3.9.0",
+  "scalatest"     -> "3.0.5",
   "scopt"         -> "3.7.0",
   "spray-json"    -> "1.3.4",
   "suiryc-scala"  -> "0.0.2-SNAPSHOT"
@@ -37,7 +37,6 @@ lazy val commonSettings = Seq(
     "-Ywarn-unused",
     "-Ywarn-unused-import"
   ),
-  scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-implicits"),
   resolvers += Resolver.mavenLocal,
   publishMavenStyle := true,
   publishTo := Some(Resolver.mavenLocal)
