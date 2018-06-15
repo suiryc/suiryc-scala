@@ -1,8 +1,9 @@
 package suiryc.scala.javafx.concurrent
 
-import akka.actor.{Actor, ActorRef, Cancellable, Props}
+import akka.actor.{Actor, ActorRef, Cancellable, Props, Terminated}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
+import java.util.concurrent.TimeUnit
 import javafx.application.Platform
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -19,10 +20,27 @@ object JFXSystem
   extends StrictLogging
 {
 
-  // Note: Akka intercepts thrown exception inside JavaFX actor, thus no need to
+  // Notes:
+  // We don't want the (core) system to prevent the JVM from exiting. Thus its
+  // threads are (configuration) made daemonic so that the application don't
+  // have to explicitly terminate it.
+  // But there is an additional issue when dealing with JavaFX: when its thread
+  // is stopped (exit) actors assigned to the special dispatcher won't work
+  // anymore; in particular they cannot be properly stopped anymore.
+  // By default, akka systems are automatically terminated upon JVM exit through
+  // a shutdown hook (with a 10s timeout).
+  // See: https://doc.akka.io/docs/akka/current/actors.html#coordinated-shutdown
+  // So in this case the actual JVM exit is delayed until timeout.
+  // There are two ways to prevent this:
+  // 1. Explicitly stop those actors (or more generally terminate the system)
+  //   before exiting JavaFX; see 'gracefulStop' and 'terminate'
+  // 2. Disable the automatic system termination for the (core) system
+  // As for daemon threads, 2. is done through configuration by default. The
+  // application can still override this behaviour and/or explicitly terminate
+  // the actors and system before exiting JavaFX when needed.
+  //
+  // Akka intercepts thrown exception inside JavaFX actor, thus no need to
   // try/catch when doing 'action'.
-
-  // TODO - try/catch when doing 'action' inside JavaFX thread ?
 
   /** Message to delegate action. */
   protected case class Action(action: () => Unit)
@@ -30,11 +48,11 @@ object JFXSystem
   /** JavaJX configuration ('javafx' path relative to core config). */
   val config: Config = CoreSystem.config.getConfig("javafx")
   /** Whether to warn if requesting to schedule action while already in JavaFX thread. */
-  protected val warnReentrant = config.getBoolean("system.warn-reentrant")
+  private val warnReentrant = config.getBoolean("system.warn-reentrant")
   /** Akka system. */
-  protected val system = CoreSystem.system
+  private val system = CoreSystem.system
   /** JavaFX actor to which actions are delegated. */
-  protected val jfxActor = newJFXActor(Props[JFXActor], "JavaFX-dispatcher")
+  private val jfxActor = newJFXActor(Props[JFXActor], "JavaFX-dispatcher")
 
   import system.dispatcher
 
@@ -114,6 +132,23 @@ object JFXSystem
   /** Delegates delayed action to JavaFX using dedicated actor. */
   def scheduleOnce(delay: FiniteDuration)(action: => Unit): Cancellable =
     system.scheduler.scheduleOnce(delay, jfxActor, Action { () => action })
+
+  /** The default (configured) graceful stop timeout. */
+  lazy val gracefulStopTimeout: FiniteDuration =
+    FiniteDuration(config.getDuration("system.graceful-stop.timeout").toMillis, TimeUnit.MILLISECONDS)
+
+  /** Gracefully stops the internal "JavaFX actor". */
+  def gracefulStop(timeout: FiniteDuration): Future[Boolean] = {
+    akka.pattern.gracefulStop(jfxActor, timeout)
+  }
+
+  /** Terminates the (core) system with JavaFX actors, then JavaFX. */
+  def terminate(): Future[Terminated] = {
+    system.terminate().map { v =>
+      Platform.exit()
+      v
+    }
+  }
 
   private class JFXActor extends Actor {
 
