@@ -9,7 +9,7 @@ import java.util.zip.ZipFile
 import suiryc.scala.io.NameFilter._
 import suiryc.scala.io.PathFinder
 import suiryc.scala.io.PathFinder._
-import suiryc.scala.settings.Preference
+import suiryc.scala.settings.{ConfigEntry, Preference}
 
 /** I18N base class. */
 class I18NBase(baseName: String) {
@@ -167,6 +167,21 @@ class I18N(baseName: String, defaultLanguage: String = "en") extends I18NBase(ba
 
 }
 
+/** I18N trait with ConfigEntry persistence. */
+trait I18NWithConfigEntry { this: I18N =>
+
+  val setting: ConfigEntry[String]
+
+  /** Reads locale code from Preference. */
+  override protected def readLocale(): String =
+    setting.get
+
+  /** Writes locale code to Preference. */
+  override protected def writeLocale(code: String): Unit =
+    setting.set(code)
+
+}
+
 /** I18N trait with Preference persistence. */
 trait I18NWithPreference { this: I18N =>
 
@@ -185,7 +200,7 @@ trait I18NWithPreference { this: I18N =>
 /**  I18N trait with cache for retrieved keys. */
 trait I18NWithCache { this: I18N =>
 
-  protected var cache = Map[String, String]()
+  protected var cache: Map[String, String] = Map.empty
 
   /** Gets string from cache, or from resources (and cache it). */
   def getString(key: String): String =
