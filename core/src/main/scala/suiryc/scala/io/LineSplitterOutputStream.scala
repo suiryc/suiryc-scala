@@ -51,7 +51,7 @@ class LineSplitterOutputStream(
     def loop(f: => CoderResult) {
       val result = f
 
-      if (charBuffer.position > 0)
+      if (charBuffer.position() > 0)
         process(flush)
       if (result.isOverflow) loop(f)
     }
@@ -74,11 +74,11 @@ class LineSplitterOutputStream(
 
     @scala.annotation.tailrec
     def loop(offset: Int) {
-      if (offset < charBuffer.position) {
+      if (offset < charBuffer.position()) {
         val nextOffset = {
           val v = array.indexOf('\n', offset)
           if ((v >= 0) || !flush) v
-          else charBuffer.position
+          else charBuffer.position()
         }
 
         if (nextOffset >= 0) {
@@ -87,7 +87,7 @@ class LineSplitterOutputStream(
           loop(nextOffset + 1)
         }
         else {
-          line.appendAll(array, offset, charBuffer.position - offset)
+          line.appendAll(array, offset, charBuffer.position() - offset)
           ()
         }
       }

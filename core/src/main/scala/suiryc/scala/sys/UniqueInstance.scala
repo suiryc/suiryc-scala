@@ -153,7 +153,7 @@ object UniqueInstance extends LazyLogging {
     val bb = ByteBuffer.allocate(INT_SIZE)
     bb.putInt(server.getLocalPort)
     bb.rewind()
-    if (channel.write(bb, 0) != bb.limit) {
+    if (channel.write(bb, 0) != bb.limit()) {
       throw new Exception(s"Failed to write local port in lock file")
     }
     channel.force(false)
@@ -171,7 +171,7 @@ object UniqueInstance extends LazyLogging {
     dataLock.release()
     val bb1 = ByteBuffer.wrap(new Array[Byte](INT_SIZE))
     val port = {
-      if (channel.read(bb1, 0) != bb1.limit) {
+      if (channel.read(bb1, 0) != bb1.limit()) {
         throw new Exception("Failed to read socket port to connect to unique instance")
       }
       bb1.getInt(0)

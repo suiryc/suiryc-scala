@@ -401,7 +401,7 @@ object HexDumper {
     val buffer = new Array[Byte](16 * 1024)
     val actualLength =
       if (settings.length >= 0) settings.length
-      else data.limit - settings.offset
+      else data.limit() - settings.offset
     val actualSettings = guessOffsetSize(settings.copy(length = actualLength))
     val dumper = new HexDumper(actualSettings)
 
