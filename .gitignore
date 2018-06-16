@@ -1,8 +1,3 @@
 .idea/
 target/
-.cache
-.cache-main
-.classpath
-.project
-.settings
-*.iml
+project/build.properties
