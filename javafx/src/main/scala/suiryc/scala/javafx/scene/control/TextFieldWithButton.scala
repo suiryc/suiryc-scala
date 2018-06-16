@@ -283,7 +283,7 @@ class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField
     control.getButtons.reverse.foldLeft(0.0) { (arrowButtonsWidth, button) =>
       val arrowButton = button.arrowButton
       val arrow = button.arrow
-      val arrowWidth = snapSize(arrow.prefWidth(-1))
+      val arrowWidth = snapSizeX(arrow.prefWidth(-1))
       val arrowButtonWidth = arrowButton.snappedLeftInset + arrowWidth + arrowButton.snappedRightInset
       textField.resizeRelocate(x, y, w - arrowButtonsWidth - arrowButtonWidth, h)
       arrowButton.resize(arrowButtonWidth, h)
@@ -297,7 +297,7 @@ class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField
     val arrowButtonsWidth = control.getButtons.map { button =>
       val arrowButton = button.arrowButton
       val arrow = arrowButton.getChildren.get(0)
-      val arrowWidth = snapSize(arrow.prefWidth(-1))
+      val arrowWidth = snapSizeX(arrow.prefWidth(-1))
       arrowButton.snappedLeftInset + arrowWidth + arrowButton.snappedRightInset
     }.sum
     val displayNodeWidth = textField.prefWidth(height)

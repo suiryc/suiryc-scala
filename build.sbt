@@ -11,7 +11,7 @@ lazy val versions = Map[String, String](
   "scalatest"     -> "3.0.5",
   "scopt"         -> "3.7.0",
   "spray-json"    -> "1.3.4",
-  "suiryc-scala"  -> "0.0.2-SNAPSHOT"
+  "suiryc-scala"  -> "0.0.3-SNAPSHOT"
 )
 
 lazy val commonSettings = Seq(
