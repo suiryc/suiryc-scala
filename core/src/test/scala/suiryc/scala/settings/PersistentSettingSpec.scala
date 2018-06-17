@@ -2,12 +2,9 @@ package suiryc.scala.settings
 
 import com.typesafe.config.ConfigFactory
 import java.util.prefs.Preferences
-import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import org.scalatest.junit.JUnitRunner
 import suiryc.scala.misc.{Enumeration => sEnumeration}
 
-@RunWith(classOf[JUnitRunner])
 class PersistentSettingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
 
   import PersistentSetting._

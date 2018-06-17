@@ -1,11 +1,8 @@
 package suiryc.scala.util
 
-import org.junit.runner.RunWith
 import org.scalatest.FunSuite
-import org.scalatest.junit.JUnitRunner
 
 // scalastyle:off magic.number
-@RunWith(classOf[JUnitRunner])
 class HashSuite extends FunSuite {
 
   private val hex = "0123456789abcdef"

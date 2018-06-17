@@ -4,7 +4,6 @@ import Keys._
 lazy val versions = Map[String, String](
   "akka"          -> "2.5.13",
   "config"        -> "1.3.3",
-  "junit"         -> "4.12",
   "logback"       -> "1.2.3",
   "scala"         -> "2.12.6",
   "scala-logging" -> "3.9.0",
@@ -54,7 +53,6 @@ lazy val core = project.in(file("core")).
       "com.typesafe.akka"          %% "akka-slf4j"     % versions("akka")          % "provided",
       "com.typesafe.akka"          %% "akka-testkit"   % versions("akka")          % "test",
       "com.typesafe.scala-logging" %% "scala-logging"  % versions("scala-logging"),
-      "junit"                      %  "junit"          % versions("junit")         % "test",
       "io.spray"                   %% "spray-json"     % versions("spray-json"),
       "org.scalatest"              %% "scalatest"      % versions("scalatest")     % "test"
     )

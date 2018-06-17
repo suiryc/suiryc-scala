@@ -1,12 +1,9 @@
 package suiryc.scala.akka
 
-import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterAll, FunSuiteLike}
-import org.scalatest.junit.JUnitRunner
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 
-@RunWith(classOf[JUnitRunner])
 class ReaperSuite
   extends TestKit(ActorSystem("ReaperSuite"))
   with ImplicitSender

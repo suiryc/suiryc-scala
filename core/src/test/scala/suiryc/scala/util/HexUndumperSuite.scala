@@ -1,12 +1,9 @@
 package suiryc.scala.util
 
 import java.io.ByteArrayOutputStream
-import org.junit.runner.RunWith
 import org.scalatest.FunSuite
-import org.scalatest.junit.JUnitRunner
 
 // scalastyle:off magic.number
-@RunWith(classOf[JUnitRunner])
 class HexUndumperSuite extends FunSuite {
 
   import HexUndumper._

@@ -2,15 +2,12 @@ package suiryc.scala.concurrent
 
 import akka.actor.ActorSystem
 import java.util.UUID
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{Matchers, WordSpec}
 import scala.concurrent.{Await, Promise, TimeoutException}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 // scalastyle:off magic.number
-@RunWith(classOf[JUnitRunner])
 class RichFutureSpec extends WordSpec with Matchers {
 
   import RichFuture._

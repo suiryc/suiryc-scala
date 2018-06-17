@@ -1,11 +1,8 @@
 package suiryc.scala.settings
 
 import java.util.prefs.Preferences
-import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import org.scalatest.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class RecreatablePreferencesSpec extends WordSpec with Matchers with BeforeAndAfterEach {
 
   private var prefs: Preferences = _
