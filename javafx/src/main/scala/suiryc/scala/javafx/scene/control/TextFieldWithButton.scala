@@ -169,7 +169,7 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
   import TextFieldWithButtonSkin._
 
   // Note: nodes create code comes from
-  // com.sun.javafx.scene.control.skin.ComboBoxBaseSkin
+  // javafx.scene.control.skin.ComboBoxBaseSkin
 
   // The region containing the graphic 'arrow'
   val arrow: Region = {
@@ -201,8 +201,7 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
     // when button is about to be triggered, and 'fire' is called when trigger
     // happens. Leaving the button without releasing disarms, and going back
     // without releasing re-arms.
-    // See: javafx.scene.control.ButtonBase,
-    // com.sun.javafx.scene.control.skin.BehaviorSkinBase and
+    // See: javafx.scene.control.ButtonBase and
     // com.sun.javafx.scene.control.behavior.ButtonBehavior
     arrowButton.addEventHandler(MouseEvent.MOUSE_ENTERED, mouseEntered _)
     arrowButton.addEventHandler(MouseEvent.MOUSE_EXITED, mouseExited _)
@@ -281,10 +280,11 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
  */
 class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField) extends SkinBase[TextFieldWithButton](control) {
 
-  //import TextFieldWithButtonSkin._
+  import TextFieldWithButtonSkin._
 
   // Note: most of the code (nodes creation, layout handling) comes from
-  // com.sun.javafx.scene.control.skin.ComboBoxBaseSkin
+  // javafx.scene.control.skin.ComboBoxBaseSkin, and a little bit from
+  // javafx.scene.control.skin.ComboBoxListViewSkin
 
   getChildren.setAll(textField :: control.getButtons.map(_.arrowButton) : _*)
   textField.applyCss()
@@ -313,6 +313,12 @@ class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField
     }
     ()
   }
+
+  // Note: not setting a minimum width prevents the control to be properly
+  // resized: can grow (when setting max width to max value) but cannot shrink
+  // back afterwards.
+  override protected def computeMinWidth(height: Double, topInset: Double, rightInset: Double, bottomInset: Double, leftInset: Double): Double =
+    MIN_WIDTH
 
   override protected def computePrefWidth(height: Double, topInset: Double, rightInset: Double, bottomInset: Double, leftInset: Double): Double = {
     val arrowButtonsWidth = control.getButtons.map { button =>
@@ -344,5 +350,9 @@ object TextFieldWithButtonSkin {
 
   // Pseudo-class set when 'arrow-button' is armed.
   val ARMED_PSEUDOCLASS_STATE: PseudoClass = PseudoClass.getPseudoClass("armed")
+
+  // Minimum width.
+  // See: javafx.scene.control.skin.ComboBoxListViewSkin
+  val MIN_WIDTH: Double = 50
 
 }
