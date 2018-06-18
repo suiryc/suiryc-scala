@@ -4,7 +4,7 @@ import javafx.beans.property._
 import javafx.css.PseudoClass
 import javafx.event.EventHandler
 import javafx.geometry.{HPos, Pos, VPos}
-import javafx.scene.control.{Control, Skin, SkinBase, TextField}
+import javafx.scene.control._
 import javafx.scene.input.{InputEvent, MouseEvent}
 import javafx.scene.layout.{Region, StackPane}
 import javafx.scene.text.Font
@@ -77,16 +77,24 @@ class TextFieldWithButton() extends Control {
 
   // Helpers to disable the (first and others) button.
   def buttonDisableProperty(n: Int): BooleanProperty = buttons(n).buttonDisableProperty
-  def isButtonDisable(n: Int): Boolean = buttons(n).buttonDisableProperty.get
-  def setButtonDisable(n: Int, value: Boolean): Unit = buttons(n).buttonDisableProperty.set(value)
+  def isButtonDisable(n: Int): Boolean = buttons(n).isButtonDisable
+  def setButtonDisable(n: Int, value: Boolean): Unit = buttons(n).setButtonDisable(value)
   def buttonDisableProperty: BooleanProperty = buttonDisableProperty(0)
   def isButtonDisable: Boolean = isButtonDisable(0)
   def setButtonDisable(value: Boolean): Unit = setButtonDisable(0, value)
 
+  // Helpers to set the (first and others) button tooltip.
+  def buttonTooltipProperty(n: Int): StringProperty = buttons(n).buttonTooltipProperty
+  def getButtonTooltip(n: Int): String = buttons(n).getButtonTooltip
+  def setButtonTooltip(n: Int, value: String): Unit = buttons(n).setButtonTooltip(value)
+  def buttonTooltipProperty: StringProperty = buttonTooltipProperty(0)
+  def getButtonTooltip: String = getButtonTooltip(0)
+  def setButtonTooltip(value: String): Unit = setButtonTooltip(0, value)
+
   // Helpers to set the event handler to be notified when the (first and others) button is triggered.
   def onButtonActionProperty(n: Int): ObjectProperty[EventHandler[InputEvent]] = buttons(n).onButtonActionProperty
-  def getOnButtonAction(n: Int): EventHandler[InputEvent] = buttons(n).onButtonActionProperty.get
-  def setOnButtonAction(n: Int)(value: EventHandler[InputEvent]): Unit = buttons(n).onButtonActionProperty.set(value)
+  def getOnButtonAction(n: Int): EventHandler[InputEvent] = buttons(n).getOnButtonAction
+  def setOnButtonAction(n: Int)(value: EventHandler[InputEvent]): Unit = buttons(n).setOnButtonAction(value)
   def onButtonActionProperty: ObjectProperty[EventHandler[InputEvent]] = onButtonActionProperty(0)
   def getOnButtonAction: EventHandler[InputEvent] = getOnButtonAction(0)
   def setOnButtonAction(value: EventHandler[InputEvent]): Unit = setOnButtonAction(0)(value)
@@ -210,6 +218,13 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
   def isButtonDisable: Boolean = buttonDisableProperty.get
   def setButtonDisable(value: Boolean): Unit = buttonDisableProperty.set(value)
 
+  // A property to set a tooltip.
+  private var tooltip: Option[Tooltip] = None
+  private val buttonTooltip = new SimpleStringProperty(control, s"buttonTooltip-$idx")
+  def buttonTooltipProperty: StringProperty = buttonTooltip
+  def getButtonTooltip: String = buttonTooltip.get
+  def setButtonTooltip(value: String): Unit = buttonTooltip.set(value)
+
   // The event handler that can be set to be notified when the button is triggered.
   private val onButtonAction = new SimpleObjectProperty[EventHandler[InputEvent]](control, s"onButtonAction-$idx")
   def onButtonActionProperty: ObjectProperty[EventHandler[InputEvent]] = onButtonAction
@@ -218,6 +233,12 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
 
   // Bind the 'buttonDisable' property to disable the 'arrow-button'.
   arrowButton.disableProperty.bind(buttonDisableProperty)
+  // Update tooltip upon change.
+  buttonTooltipProperty.listen { value =>
+    tooltip.foreach(Tooltip.uninstall(arrowButton, _))
+    tooltip = Option(value).filterNot(_.trim.isEmpty).map(new Tooltip(_))
+    tooltip.foreach(Tooltip.install(arrowButton, _))
+  }
 
   protected def fire(event: InputEvent): Unit =
     Option(getOnButtonAction).foreach(_.handle(event))
