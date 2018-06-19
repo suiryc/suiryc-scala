@@ -2,11 +2,12 @@ package suiryc.scala.javafx.scene.control
 
 import java.io.{PrintWriter, StringWriter}
 import javafx.scene.{Node, Scene}
-import javafx.scene.control.{Alert, ButtonType, Label, TextArea}
+import javafx.scene.control._
 import javafx.scene.effect.BoxBlur
 import javafx.scene.layout.{GridPane, Priority, StackPane}
 import javafx.scene.paint.Color
 import javafx.stage.{Modality, Stage, StageStyle, Window}
+import scala.collection.JavaConverters._
 import suiryc.scala.RichOption._
 import suiryc.scala.javafx.I18NBase
 import suiryc.scala.javafx.beans.value.RichObservableValue
@@ -43,7 +44,8 @@ object Dialogs {
       headerText: Option[String],
       contentText: Option[String],
       ex: Option[Throwable],
-      buttons: List[ButtonType]): Option[ButtonType] =
+      buttons: List[ButtonType],
+      defaultButton: Option[ButtonType]): Option[ButtonType] =
   {
     // Note: it is mandatory to create the 'Alert' inside JavaFX thread.
     JFXSystem.await({
@@ -60,6 +62,9 @@ object Dialogs {
 
       if (buttons.nonEmpty) {
         alert.getButtonTypes.setAll(buttons: _*)
+      }
+      defaultButton.foreach { buttonType =>
+        setDefaultButton(alert, buttonType)
       }
 
       ex.foreach { ex =>
@@ -100,8 +105,9 @@ object Dialogs {
       headerText: Option[String] = None,
       contentText: Option[String] = None,
       ex: Option[Throwable] = None,
-      buttons: List[ButtonType] = Nil): Option[ButtonType] =
-    buildAlert(Alert.AlertType.CONFIRMATION, owner, title, headerText, contentText, ex, buttons)
+      buttons: List[ButtonType] = Nil,
+      defaultButton: Option[ButtonType] = None): Option[ButtonType] =
+    buildAlert(Alert.AlertType.CONFIRMATION, owner, title, headerText, contentText, ex, buttons, defaultButton)
 
   /** Builds and shows Alert information dialog. */
   def information(
@@ -110,8 +116,9 @@ object Dialogs {
       headerText: Option[String] = None,
       contentText: Option[String] = None,
       ex: Option[Throwable] = None,
-      buttons: List[ButtonType] = Nil): Option[ButtonType] =
-    buildAlert(Alert.AlertType.INFORMATION, owner, title, headerText, contentText, ex, buttons)
+      buttons: List[ButtonType] = Nil,
+      defaultButton: Option[ButtonType] = None): Option[ButtonType] =
+    buildAlert(Alert.AlertType.INFORMATION, owner, title, headerText, contentText, ex, buttons, defaultButton)
 
   /** Builds and shows Alert warning dialog. */
   def warning(
@@ -120,8 +127,9 @@ object Dialogs {
       headerText: Option[String] = None,
       contentText: Option[String] = None,
       ex: Option[Throwable] = None,
-      buttons: List[ButtonType] = Nil): Option[ButtonType] =
-    buildAlert(Alert.AlertType.WARNING, owner, title, headerText, contentText, ex, buttons)
+      buttons: List[ButtonType] = Nil,
+     defaultButton: Option[ButtonType] = None): Option[ButtonType] =
+    buildAlert(Alert.AlertType.WARNING, owner, title, headerText, contentText, ex, buttons, defaultButton)
 
   /** Builds and shows Alert error dialog. */
   def error(
@@ -130,8 +138,9 @@ object Dialogs {
       headerText: Option[String] = None,
       contentText: Option[String] = None,
       ex: Option[Throwable] = None,
-      buttons: List[ButtonType] = Nil): Option[ButtonType] =
-    buildAlert(Alert.AlertType.ERROR, owner, title, headerText, contentText, ex, buttons)
+      buttons: List[ButtonType] = Nil,
+      defaultButton: Option[ButtonType] = None): Option[ButtonType] =
+    buildAlert(Alert.AlertType.ERROR, owner, title, headerText, contentText, ex, buttons, defaultButton)
 
   /**
    * Helps to display a Node the modal way.
@@ -212,5 +221,15 @@ object Dialogs {
     new ModalNode()
   }
   // scalastyle:on method.length null
+
+  /** Sets dialog default button. */
+  def setDefaultButton(dialog: Dialog[_], buttonType: ButtonType): Unit = {
+    val pane = dialog.getDialogPane
+    if (Option(pane.lookupButton(buttonType).asInstanceOf[Button]).exists(!_.isDefaultButton)) {
+      pane.getButtonTypes.asScala.foreach { t =>
+        pane.lookupButton(t).asInstanceOf[Button].setDefaultButton(t == buttonType)
+      }
+    }
+  }
 
 }
