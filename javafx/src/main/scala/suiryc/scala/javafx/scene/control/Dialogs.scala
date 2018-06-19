@@ -16,6 +16,13 @@ import suiryc.scala.javafx.concurrent.JFXSystem
 /** Dialog/Alert helpers. */
 object Dialogs {
 
+  // Notes:
+  // See: http://code.makery.ch/blog/javafx-dialogs-official/
+  // Alert is based on Dialog.
+  // Its 'header' and 'content' are visually separated. To only show a simple
+  // message (with corresponding alert type icon), the 'header' must not be set
+  // (None value). Also works with 'expandable content' (e.g. Exception).
+
   /**
    * Builds ands shows Alert dialog.
    *
@@ -90,7 +97,7 @@ object Dialogs {
   def confirmation(
       owner: Option[Window],
       title: Option[String],
-      headerText: Option[String],
+      headerText: Option[String] = None,
       contentText: Option[String] = None,
       ex: Option[Throwable] = None,
       buttons: List[ButtonType] = Nil): Option[ButtonType] =
@@ -100,7 +107,7 @@ object Dialogs {
   def information(
       owner: Option[Window],
       title: Option[String],
-      headerText: Option[String],
+      headerText: Option[String] = None,
       contentText: Option[String] = None,
       ex: Option[Throwable] = None,
       buttons: List[ButtonType] = Nil): Option[ButtonType] =
@@ -110,7 +117,7 @@ object Dialogs {
   def warning(
       owner: Option[Window],
       title: Option[String],
-      headerText: Option[String],
+      headerText: Option[String] = None,
       contentText: Option[String] = None,
       ex: Option[Throwable] = None,
       buttons: List[ButtonType] = Nil): Option[ButtonType] =
@@ -120,7 +127,7 @@ object Dialogs {
   def error(
       owner: Option[Window],
       title: Option[String],
-      headerText: Option[String],
+      headerText: Option[String] = None,
       contentText: Option[String] = None,
       ex: Option[Throwable] = None,
       buttons: List[ButtonType] = Nil): Option[ButtonType] =
@@ -138,7 +145,7 @@ object Dialogs {
    * @return modal stage
    */
   // scalastyle:off method.length null
-  def modalNode(parent: Window, builder: (Stage) => Node): Stage = {
+  def modalNode(parent: Window, builder: Stage => Node): Stage = {
     // Notes:
     // We wish to display a Node, centered on parent window, in a modal way
     // (parent cannot be interacted with until we are done).
