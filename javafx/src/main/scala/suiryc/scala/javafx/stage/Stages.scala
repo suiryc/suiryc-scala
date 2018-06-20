@@ -1,10 +1,11 @@
 package suiryc.scala.javafx.stage
 
+import com.typesafe.config.Config
 import javafx.geometry.BoundingBox
 import javafx.scene.control.Dialog
 import javafx.stage.Stage
 import suiryc.scala.javafx.beans.value.RichObservableValue._
-import suiryc.scala.settings.{Preference, PreferenceBuilder}
+import suiryc.scala.settings.{BaseConfigImplicits, ConfigEntry, Preference, PreferenceBuilder}
 import suiryc.scala.sys.OS
 
 /** JavaFX Stage helpers. */
@@ -144,41 +145,45 @@ object Stages {
    * "x=?;y=?;w=?;h=?;m=?" format.
    */
   implicit val locationBuilder: PreferenceBuilder[StageLocation] = {
-
     import Preference._
-
-    def fromLocation(loc: StageLocation): String =
-      s"x=${loc.x};y=${loc.y};w=${loc.width};h=${loc.height};m=${loc.maximized}"
-
-    def toLocation(str: String): StageLocation = {
-      val params = str.split(';').flatMap { param =>
-        param.split('=').toList match {
-          case key :: value :: Nil => Some(key -> value)
-          case _                   => None
-        }
-      }.toMap
-
-      def getDoubleParam(key: String): Double =
-        try { params.get(key).map(_.toDouble).getOrElse(0.0) }
-        catch { case _: Exception => 0.0 }
-
-      def getBooleanParam(key: String): Boolean =
-        try { params.get(key).exists(_.toBoolean) }
-        catch { case _: Exception => false }
-
-      val x = getDoubleParam("x")
-      val y = getDoubleParam("y")
-      val width = getDoubleParam("w")
-      val height = getDoubleParam("h")
-      val maximized = getBooleanParam("m")
-
-      StageLocation(x, y, width, height, maximized)
-    }
-
     Preference.typeBuilder[StageLocation, String](
       { l => Option(l).map(fromLocation).orNull },
       { s => Option(s).map(toLocation).orNull }
     )
+  }
+
+  implicit val locationHandler: ConfigEntry.Handler[StageLocation] = new ConfigEntry.Handler[StageLocation] with BaseConfigImplicits {
+    override def get(config: Config, path: String): StageLocation = toLocation(configGetString(config, path))
+    override def getList(config: Config, path: String): List[StageLocation] = configGetStringList(config, path).map(toLocation)
+    override def toInner(v: StageLocation): String = fromLocation(v)
+  }
+
+  private def fromLocation(loc: StageLocation): String =
+    s"x=${loc.x};y=${loc.y};w=${loc.width};h=${loc.height};m=${loc.maximized}"
+
+  private def toLocation(str: String): StageLocation = {
+    val params = str.split(';').flatMap { param =>
+      param.split('=').toList match {
+        case key :: value :: Nil => Some(key -> value)
+        case _                   => None
+      }
+    }.toMap
+
+    def getDoubleParam(key: String): Double =
+      try { params.get(key).map(_.toDouble).getOrElse(0.0) }
+      catch { case _: Exception => 0.0 }
+
+    def getBooleanParam(key: String): Boolean =
+      try { params.get(key).exists(_.toBoolean) }
+      catch { case _: Exception => false }
+
+    val x = getDoubleParam("x")
+    val y = getDoubleParam("y")
+    val width = getDoubleParam("w")
+    val height = getDoubleParam("h")
+    val maximized = getBooleanParam("m")
+
+    StageLocation(x, y, width, height, maximized)
   }
 
 }
