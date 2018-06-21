@@ -5,7 +5,7 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import java.util.concurrent.TimeUnit
 import javafx.application.Platform
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success}
 import suiryc.scala.akka.CoreSystem
@@ -54,7 +54,8 @@ object JFXSystem
   /** JavaFX actor to which actions are delegated. */
   private val jfxActor = newJFXActor(Props[JFXActor], "JavaFX-dispatcher")
 
-  import system.dispatcher
+  /** The dedicated JavaFX dispatcher. */
+  val dispatcher: ExecutionContextExecutor = system.dispatchers.lookup("javafx.dispatcher")
 
   /** Creates an actor using the JavaFX thread backed dispatcher. */
   def newJFXActor(props: Props): ActorRef =
@@ -126,11 +127,11 @@ object JFXSystem
   }
 
   /** Delegates periodic action to JavaFX using dedicated actor. */
-  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(action: => Unit): Cancellable =
+  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(action: => Unit)(implicit ec: ExecutionContext): Cancellable =
     system.scheduler.schedule(initialDelay, interval, jfxActor, Action { () => action })
 
   /** Delegates delayed action to JavaFX using dedicated actor. */
-  def scheduleOnce(delay: FiniteDuration)(action: => Unit): Cancellable =
+  def scheduleOnce(delay: FiniteDuration)(action: => Unit)(implicit ec: ExecutionContext): Cancellable =
     system.scheduler.scheduleOnce(delay, jfxActor, Action { () => action })
 
   /** The default (configured) graceful stop timeout. */
@@ -143,7 +144,7 @@ object JFXSystem
   }
 
   /** Terminates the (core) system with JavaFX actors, then JavaFX. */
-  def terminate(): Future[Terminated] = {
+  def terminate(implicit ec: ExecutionContext): Future[Terminated] = {
     system.terminate().map { v =>
       Platform.exit()
       v
