@@ -96,9 +96,9 @@ object RichFuture {
   // so create a simple factory - based on Java default one - and set created
   // thread as daemon.
 
-  protected val defaultThreadFactory = Executors.defaultThreadFactory()
+  private val defaultThreadFactory = Executors.defaultThreadFactory()
 
-  protected class DaemonThreadFactory extends ThreadFactory {
+  private class DaemonThreadFactory extends ThreadFactory {
 
     override def newThread(r: Runnable): Thread = {
       val thread = defaultThreadFactory.newThread(r)
@@ -108,13 +108,16 @@ object RichFuture {
 
   }
 
-  protected val daemonThreadFactory = new DaemonThreadFactory()
+  private val daemonThreadFactory = new DaemonThreadFactory()
 
-  protected val scheduler = Executors.newScheduledThreadPool(1, daemonThreadFactory)
+  private val scheduler = Executors.newScheduledThreadPool(1, daemonThreadFactory)
 
   /** Converts a Future to RichFuture. */
   implicit def futureToRichFuture[A](future: Future[A]): RichFuture[A] =
     new RichFuture[A](future)
+
+  def timeout(delay: FiniteDuration): Future[Unit] =
+    Promise[Unit]().future.withTimeout(delay)
 
   def withTimeout[A](future: Future[A], delay: Long, unit: TimeUnit): Future[A] =
     future.withTimeout(delay, unit)
