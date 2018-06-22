@@ -1,11 +1,14 @@
 package suiryc.scala.javafx.stage
 
 import com.typesafe.config.Config
+import javafx.beans.property.ReadOnlyDoubleProperty
 import javafx.geometry.BoundingBox
 import javafx.scene.control.Dialog
 import javafx.stage.Stage
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.concurrent.duration._
+import suiryc.scala.akka.CoreSystem
+import suiryc.scala.concurrent.RichFuture
 import suiryc.scala.concurrent.RichFuture._
 import suiryc.scala.javafx.beans.value.RichObservableValue
 import suiryc.scala.javafx.beans.value.RichObservableValue._
@@ -22,12 +25,13 @@ object Stages {
   // Then, upon 'show',
   //
   // On Windows 10 build 1803:
-  //  1. Scene dimension changes (minimum possible)
+  //  1. Scene dimension changes (preferred)
   //  2. Stage dimension changes (final, with decorations)
   //  3. Stage 'showing' property changes to 'true'
+  // (scene dimension changes to 'minimum' if 'preferred' is smaller)
   //
   // On Gnome 3.28, for the first stage to be shown:
-  //  1. Scene dimension changes two times (1x1 then minimum possible)
+  //  1. Scene dimension changes two times (1x1 then preferred)
   //  2. Stage dimension changes a first time (not final)
   //  3. Stage 'showing' property changes to 'true'
   //  4. Stage dimension changes again (final, with decorations)
@@ -52,6 +56,13 @@ object Stages {
   // delaying for a fixed duration like 200ms), it is better to prevent doing
   // stuff relying on stage dimension at the same time (e.g. checking stage
   // minimum dimension).
+  //
+  // Setting minimum stage dimensions also result in a different behaviour
+  // depending on the OS:
+  // On Windows 10 build 1803: nothing happens (unless if current size is
+  // smaller).
+  // On Gnome 3.28: the stage dimension changes to the minimum dimension
+  // even if smaller than the current one.
 
   /**
    * Executes code once stage is "ready".
@@ -222,8 +233,26 @@ object Stages {
     stage.setX(loc.x)
     stage.setY(loc.y)
     if (setSize) {
-      stage.setWidth(loc.width)
-      stage.setHeight(loc.height)
+      if (OS.isLinux) {
+        // On Gnome 3.28, many things can change the stage dimension (see Notes
+        // above). There does not seem to be a sure way to know when this is the
+        // right moment to set the dimension. The easiest way is to force the
+        // dimension to remain the same for a little while.
+        def reset(v: Double, prop: ReadOnlyDoubleProperty, set: Double ⇒ Unit): Unit = {
+          set(v)
+          val cancellable = prop.listen { changed ⇒
+            if (changed.doubleValue() != v) set(v)
+          }
+          RichFuture.timeout(500.millis).onComplete { _ ⇒
+            cancellable.cancel()
+          }(CoreSystem.system.dispatcher)
+        }
+        reset(loc.width, stage.widthProperty, stage.setWidth)
+        reset(loc.height, stage.heightProperty, stage.setHeight)
+      } else {
+        stage.setWidth(loc.width)
+        stage.setHeight(loc.height)
+      }
     }
     stage.setMaximized(loc.maximized)
   }
