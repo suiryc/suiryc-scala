@@ -1,0 +1,4 @@
+/* Override the default (hard-coded) SplitPane skin with ours. */
+.split-pane {
+  -fx-skin: "suiryc.scala.javafx.scene.control.skin.SplitPaneSkinEx"
+}
