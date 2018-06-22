@@ -4,12 +4,138 @@ import com.typesafe.config.Config
 import javafx.geometry.BoundingBox
 import javafx.scene.control.Dialog
 import javafx.stage.Stage
+import scala.concurrent.{ExecutionContext, Promise}
+import scala.concurrent.duration._
+import suiryc.scala.concurrent.RichFuture._
+import suiryc.scala.javafx.beans.value.RichObservableValue
 import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.settings.{BaseConfigImplicits, ConfigEntry, Preference, PreferenceBuilder}
 import suiryc.scala.sys.OS
 
 /** JavaFX Stage helpers. */
 object Stages {
+
+  // Notes (Java 10):
+  // Steps to display a stage depends on the OS, and also whether this is the
+  // first stage to be displayed (for the running application).
+  // Before showing, stage has NaN dimensions and scene has 0 dimensions.
+  // Then, upon 'show',
+  //
+  // On Windows 10 build 1803:
+  //  1. Scene dimension changes (minimum possible)
+  //  2. Stage dimension changes (final, with decorations)
+  //  3. Stage 'showing' property changes to 'true'
+  //
+  // On Gnome 3.28, for the first stage to be shown:
+  //  1. Scene dimension changes two times (1x1 then minimum possible)
+  //  2. Stage dimension changes a first time (not final)
+  //  3. Stage 'showing' property changes to 'true'
+  //  4. Stage dimension changes again (final, with decorations)
+  // The second change (4.) appears to be queued sometime after 3.: any action
+  // queued through JFXSystem.schedule or Platform.runLater after 3. may be
+  // executed before 4. happens.
+  // For a second showing (same stage or new one), the first change of stage
+  // dimension is the final one; the second change appears to still be there,
+  // only setting the final dimension a second time.
+  //
+  // In any case, the stage 'showing' property changes to 'true' at the same
+  // time than 'show' call returns.
+  //
+  // When the application modifies the stage size, first the stage size is
+  // changed then the scene one.
+  // On Gnome 3.28 if the application modifies the dimension before the second
+  // stage change (4.), the stage dimension changes three times: once to
+  // the wanted dimension, then to the dimension it would have been changed to
+  // (step 4. above), then again to the wanted dimension. The scene still
+  // changes only once, but it happens before the last stage dimension change.
+  // Since using JFXSystem.schedule or Platform.runLater does not help (unless
+  // delaying for a fixed duration like 200ms), it is better to prevent doing
+  // stuff relying on stage dimension at the same time (e.g. checking stage
+  // minimum dimension).
+
+  /**
+   * Executes code once stage is "ready".
+   *
+   * Stage is considered ready when shown and in its final dimension (along
+   * with its scene). How and when this happens depends on the OS. Caller
+   * must not be setting the stage dimension in parallel as it may interfere;
+   * instead it should e.g. do this inside the code to execute.
+   *
+   * If stage is already ready, execution is done right away (in the current
+   * thread), otherwise execution is performed when applicable using the given
+   * execution context.
+   *
+   * @param stage stage to check
+   * @param first whether this is the first (ever) stage to be shown
+   * @param timeout time limit before executing the code
+   * @param f code to execute
+   * @param ec execution context
+   */
+  def onStageReady(stage: Stage, first: Boolean, timeout: FiniteDuration = 1.second)(f: ⇒ Unit)(implicit ec: ExecutionContext): Unit = {
+    def call(): Unit = {
+      if (first && OS.isLinux) {
+        val promise = Promise[Unit]()
+        val width = stage.getWidth
+        val height = stage.getHeight
+        val cancellable = RichObservableValue.listen(Seq(stage.widthProperty, stage.heightProperty), {
+          if ((stage.getWidth != width) && (stage.getHeight != height)) promise.trySuccess(())
+          ()
+        })
+        val future = promise.future.withTimeout(timeout)
+        future.onComplete { _ =>
+          cancellable.cancel()
+          f
+        }
+      } else {
+        f
+      }
+    }
+
+    if (stage.isShowing) call()
+    else {
+      stage.showingProperty.listen2 { (cancellable, showing) ⇒
+        if (showing) {
+          cancellable.cancel()
+          call()
+        }
+      }
+    }
+    ()
+  }
+
+  /**
+   * Sets minimum stage dimensions.
+   *
+   * Sets stage minimum width and height according to its content.
+   * Caller is expected to have waited for the stage dimension to be final; if
+   * stage (and scene) dimensions are currently being changed, the minimum
+   * dimension computation may be wrong.
+   *
+   * Minimum dimension is not changed if already set, unless requested.
+   *
+   * @param stage stage to set minimum dimensions on
+   * @param reset whether to reset minimum dimension (if already set)
+   */
+  def setMinimumDimensions(stage: Stage, reset: Boolean = false): Unit = {
+    val setMinWidth = reset || (stage.getMinWidth <= 0)
+    val setMinHeight = reset || (stage.getMinHeight <= 0)
+    if (setMinWidth ||setMinHeight) {
+      // To get the stage minimum dimensions we need to:
+      // 1. Wait for the stage to be ready (precondition)
+      val scene = stage.getScene
+      // 2. Get the decoration size: difference between the stage and the scene
+      val decorationWidth = stage.getWidth - scene.getWidth
+      val decorationHeight = stage.getHeight - scene.getHeight
+      // 3. Ask JavaFX for the scene content minimum width and height
+      // Note: '-1' is a special value to retrieve the current value
+      val minWidth = scene.getRoot.minWidth(-1) + decorationWidth
+      val minHeight = scene.getRoot.minHeight(-1) + decorationHeight
+
+      // Now we can set the stage minimum dimensions.
+      if (setMinWidth) stage.setMinWidth(minWidth)
+      if (setMinHeight) stage.setMinHeight(minHeight)
+    }
+  }
 
   /**
    * Tracks minimum stage dimensions.
@@ -20,53 +146,18 @@ object Stages {
    * @param stage stage to set minimum dimensions on
    * @param size initial stage size to set, or None
    */
-  // scalastyle:off method.length
   def trackMinimumDimensions(stage: Stage, size: Option[(Double, Double)] = None): Unit = {
-    // Notes:
-    // The main problem is to determine the window decoration size: difference
-    // between the stage and scene sizes.
-    //
-    // On Windows, letting JavaFX handle changes (by running the code with
-    // Platform.runLater) before getting minimal scene root size and setting
-    // stage minimal size (taking into account decoration size) works.
-    //
-    // But it does often not work on Linux (Ubuntu at least). Depending on the
-    // situation (primary stage, modal window, stage scene root replacing, ...)
-    // stage/scene dimensions may be unknown (NaN) and being changed more than
-    // once while the stage is being built/displayed (0.0, 1.0, or the
-    // decoration size).
-    // Simply waiting on some properties like bounds does not always work:
-    // sometimes it stays NaN until user interacts with the window.
-    // Waiting on the scene/stage dimensions is not good either: sometimes it
-    // changes in multiple steps (different values, only width or height, etc),
-    // and sometimes the stage size does not include the window decoration
-    // until user interacts with it ...
-    // There does not seem to be a viable way to do it in Linux, so don't.
-
     if (!OS.isLinux) {
       // The actual tracking code
       def track(): Unit = {
         import suiryc.scala.javafx.concurrent.JFXSystem
 
-        // To get the stage minimum dimensions we need to:
-        // 1. Let JavaFX handle the changes: do our stuff with Platform.runLater
         JFXSystem.runLater {
-          val scene = stage.getScene
-          // 2. Get the decoration size: difference between the stage and the scene
-          val decorationWidth = stage.getWidth - scene.getWidth
-          val decorationHeight = stage.getHeight - scene.getHeight
-          // 3. Ask JavaFX for the scene content minimum width and height
-          // Note: '-1' is a special value to retrieve the current value
-          val minWidth = scene.getRoot.minWidth(-1) + decorationWidth
-          val minHeight = scene.getRoot.minHeight(-1) + decorationHeight
-
-          // Now we can set the stage minimum dimensions.
-          stage.setMinWidth(minWidth)
-          stage.setMinHeight(minHeight)
+          setMinimumDimensions(stage)
           size match {
             case Some((width, height)) =>
-              if (width > minWidth) stage.setWidth(width)
-              if (height > minHeight) stage.setHeight(height)
+              if (width > stage.getMinWidth) stage.setWidth(width)
+              if (height > stage.getMinHeight) stage.setHeight(height)
 
             case None =>
           }
@@ -84,7 +175,6 @@ object Stages {
       ()
     }
   }
-  // scalastyle:on method.length
 
   /** Keeps stage bounds (x, y, width, height) upon hiding/showing. */
   def keepBounds(stage: Stage): Unit = {
