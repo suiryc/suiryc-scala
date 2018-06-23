@@ -13,6 +13,7 @@ import suiryc.scala.javafx.I18NBase
 import suiryc.scala.javafx.beans.value.RichObservableValue
 import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.javafx.concurrent.JFXSystem
+import suiryc.scala.javafx.stage.StagePersistentView
 
 /** Dialog/Alert helpers. */
 object Dialogs {
@@ -230,6 +231,18 @@ object Dialogs {
         pane.lookupButton(t).asInstanceOf[Button].setDefaultButton(t == buttonType)
       }
     }
+  }
+
+  /**
+   * Adds persistence to a Dialog.
+   *
+   * @param dialog the dialog to add persistence to
+   * @param view the persistence handler (usually the controller)
+   * @param persist whether to persist
+   * @param restore whether to restore
+   */
+  def addPersistence(dialog: Dialog[_], view: StagePersistentView, persist: Boolean = true, restore: Boolean = true): Unit = {
+    StagePersistentView.hookup(dialog.onCloseRequestProperty, dialog.showingProperty, view, persist, restore)
   }
 
 }

@@ -257,6 +257,18 @@ object Stages {
   }
 
   /**
+   * Adds persistence to a Stage.
+   *
+   * @param stage the stage to add persistence to
+   * @param view the persistence handler (usually the controller)
+   * @param persist whether to persist
+   * @param restore whether to restore
+   */
+  def addPersistence(stage: Stage, view: StagePersistentView, persist: Boolean = true, restore: Boolean = true): Unit = {
+    StagePersistentView.hookup(stage.onCloseRequestProperty, stage.showingProperty, view, persist, restore)
+  }
+
+  /**
    * Stage location preference builder.
    *
    * Saves x/y/width/height/maximized information in a string using
