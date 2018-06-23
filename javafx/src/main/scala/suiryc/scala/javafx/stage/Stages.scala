@@ -147,45 +147,6 @@ object Stages {
     }
   }
 
-  /**
-   * Tracks minimum stage dimensions.
-   *
-   * Sets stage minimum width and height according to its content.
-   * If given, also sets stage size once done.
-   *
-   * @param stage stage to set minimum dimensions on
-   * @param size initial stage size to set, or None
-   */
-  def trackMinimumDimensions(stage: Stage, size: Option[(Double, Double)] = None): Unit = {
-    if (!OS.isLinux) {
-      // The actual tracking code
-      def track(): Unit = {
-        import suiryc.scala.javafx.concurrent.JFXSystem
-
-        JFXSystem.runLater {
-          setMinimumDimensions(stage)
-          size match {
-            case Some((width, height)) =>
-              if (width > stage.getMinWidth) stage.setWidth(width)
-              if (height > stage.getMinHeight) stage.setHeight(height)
-
-            case None =>
-          }
-        }
-      }
-
-      // Track now if stage is showing, or wait for it
-      if (stage.isShowing) track()
-      else stage.showingProperty.listen2 { (cancellable, showing) =>
-        if (showing) {
-          cancellable.cancel()
-          track()
-        }
-      }
-      ()
-    }
-  }
-
   /** Keeps stage bounds (x, y, width, height) upon hiding/showing. */
   def keepBounds(stage: Stage): Unit = {
     var box: Option[BoundingBox] = None
