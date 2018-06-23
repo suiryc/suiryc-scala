@@ -41,6 +41,26 @@ object JFXSystem
   //
   // Akka intercepts thrown exception inside JavaFX actor, thus no need to
   // try/catch when doing 'action'.
+  //
+  // Some delays related to JavaFX (Java 10; upon showing a stage):
+  //  1. queuing a message to process in the JavaFX actor (JFXSystem.schedule)
+  //  2. Future.onComplete with JavaFX execution context
+  //  3. queuing a Platform.runLater
+  // (all triggered at the same time, before or after showing stage)
+  //
+  // On Windows 10 build 1803:
+  //  - 2. and 3. are executed ~50ms after 1.
+  //  - ~400ms to 'show' the stage
+  //  - if actions are triggered before 'show', 1. is executed right after
+  //    (at the same time 'show' returns and 'showing' changes to 'true')
+  //  - if actions are triggered after 'show', 1. is executed ~100ms later
+  //
+  // On Gnome 3.28:
+  //  - 1., 2. and 3. are executed at the same time
+  //  - ~300ms to 'show' the stage
+  //  - if actions are triggered before 'show', 1. is executed right after
+  //    (at the same time 'show' returns and 'showing' changes to 'true')
+  //  - if actions are triggered after 'show', 1. is executed ~50ms later
 
   /** Message to delegate action. */
   protected case class Action(action: () => Unit)
