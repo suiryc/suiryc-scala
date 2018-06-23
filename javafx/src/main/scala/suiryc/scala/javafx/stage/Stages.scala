@@ -59,8 +59,7 @@ object Stages {
   //
   // Setting minimum stage dimensions also result in a different behaviour
   // depending on the OS:
-  // On Windows 10 build 1803: nothing happens (unless if current size is
-  // smaller).
+  // On Windows 10 build 1803: nothing happens unless current size is smaller.
   // On Gnome 3.28: the stage dimension changes to the minimum dimension
   // even if smaller than the current one.
 
