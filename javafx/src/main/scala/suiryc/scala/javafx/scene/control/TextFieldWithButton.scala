@@ -32,6 +32,14 @@ import suiryc.scala.javafx.beans.value.RichObservableValue._
  *   -fx-shape: "M 0 0 h 7 l -3.5 4 z";
  * }
  * </pre>
+ * Alternatively a background image can be set on the 'arrow-button':
+ * <pre>
+ * .styleClass > .arrow-button {
+ *   -fx-background-image: url("/path/to/image");
+ *   -fx-background-repeat: no-repeat;
+ *   -fx-background-position: center;
+ * }
+ * </pre>
  * <p>
  * It is possible to disable the button alone through the 'buttonDisable'
  * property.
