@@ -24,9 +24,9 @@ class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal 
    * Listening code is given its subscription and can auto-cancel itself.
    *
    * @param fn listening function
-   * @return new subscription chained with given ones
+   * @return subscription of listening code
    */
-  def listen2(fn: (Cancellable, ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
+  def listen2(fn: (Cancellable, ObservableValue[_ <: A], A, A) ⇒ Unit): Cancellable = {
     // We need to create a subscription to give to the listening code. To do so
     // we need to create a listener, which is based on the listening code and
     // thus needs the subscription.
@@ -50,20 +50,20 @@ class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal 
   }
 
   /** Listens change with auto subscription. */
-  def listen2(fn: (Cancellable, A) => Unit): Cancellable =
-    listen2((s, _, _, v) => fn(s, v))
+  def listen2(fn: (Cancellable, A) ⇒ Unit): Cancellable =
+    listen2((s, _, _, v) ⇒ fn(s, v))
 
   /** Listens change with auto subscription. */
-  def listen2(fn: Cancellable => Unit): Cancellable =
-    listen2((s, _, _, _) => fn(s))
+  def listen2(fn: Cancellable ⇒ Unit): Cancellable =
+    listen2((s, _, _, _) ⇒ fn(s))
 
   /**
    * Listens change.
    *
    * @param fn listening function
-   * @return new subscription chained with given ones
+   * @return subscription of listening code
    */
-  def listen(fn: (ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
+  def listen(fn: (ObservableValue[_ <: A], A, A) ⇒ Unit): Cancellable = {
     val listener = ChangeListener[A](fn)
     underlying.addListener(listener)
 
@@ -76,12 +76,12 @@ class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal 
   }
 
   /** Listens change. */
-  def listen(fn: A => Unit): Cancellable =
-    listen((_, _, v) => fn(v))
+  def listen(fn: A ⇒ Unit): Cancellable =
+    listen((_, _, v) ⇒ fn(v))
 
   /** Listens change. */
-  def listen(fn: => Unit): Cancellable =
-    listen((_, _, _) => fn)
+  def listen(fn: ⇒ Unit): Cancellable =
+    listen((_, _, _) ⇒ fn)
 
 }
 
@@ -102,23 +102,17 @@ object RichObservableValue {
    * @param fn listening code
    * @return subscription
    */
-  def listen2[A](observables: Seq[ObservableValue[_ <: A]], fn: Cancellable => Unit): Cancellable = {
-    val subscription = new CancellableListeners[A] {
+  def listen2[A](observables: Seq[ObservableValue[_ <: A]], fn: Cancellable ⇒ Unit): Cancellable = {
+    val subscription = new CancellableListener[A] {
       override def cancel() {
-        listeners.foreach { case (observable, listener) =>
-          observable.removeListener(listener)
-        }
+        observables.foreach(_.removeListener(listener))
         super.cancel()
       }
     }
-    val listeners = observables.map { observable =>
-      observable -> ChangeListener[A]((_, _, _) => fn(subscription))
-    }
+    val listener = ChangeListener[A]((_, _, _) ⇒ fn(subscription))
 
-    subscription.listeners = listeners
-    listeners.foreach { case (observable, listener) =>
-      observable.addListener(listener)
-    }
+    subscription.listener = listener
+    observables.foreach(_.addListener(listener))
 
     subscription
   }
@@ -132,19 +126,13 @@ object RichObservableValue {
    * @param fn listening code
    * @return subscription
    */
-  def listen[A](observables: Seq[ObservableValue[_ <: A]], fn: => Unit): Cancellable = {
-    val listeners = observables.map { observable =>
-      observable -> ChangeListener[A]((_, _, _) => fn)
-    }
-    listeners.foreach { case (observable, listener) =>
-      observable.addListener(listener)
-    }
+  def listen[A](observables: Seq[ObservableValue[_ <: A]], fn: ⇒ Unit): Cancellable = {
+    val listener = ChangeListener[A]((_, _, _) ⇒ fn)
+    observables.foreach(_.addListener(listener))
 
     new Cancellable {
       override def cancel() {
-        listeners.foreach { case (observable, listener) =>
-          observable.removeListener(listener)
-        }
+        observables.foreach(_.removeListener(listener))
         super.cancel()
       }
     }
@@ -153,11 +141,6 @@ object RichObservableValue {
   /** Dummy subscription used for auto subscription. */
   trait CancellableListener[A] extends Cancellable {
     var listener: ChangeListener[A] = _
-  }
-
-  /** Dummy subscription used for auto subscription. */
-  trait CancellableListeners[A] extends Cancellable {
-    var listeners: Seq[(ObservableValue[_ <: A], ChangeListener[A])] = Nil
   }
 
 }
