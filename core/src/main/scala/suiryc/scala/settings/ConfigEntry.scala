@@ -20,25 +20,49 @@ trait ConfigEntry[A] {
   // The setting path
   protected[settings] val path: String
 
+  // Cached value (to prevent re-parsing)
+  private var cached: Option[Option[A]] = None
+  private var cachedList: Option[Option[List[A]]] = None
+
   /** Gets whether entry exists. */
-  def exists: Boolean = settings.config.hasPath(path)
+  def exists: Boolean = cached.map(_.isDefined).orElse(cachedList.map(_.isDefined)).getOrElse(settings.config.hasPath(path))
   /** Gets the entry as a single value. */
-  def get: A = handler.get(settings.config, path)
+  def get: A = cached.flatten.getOrElse {
+    val v = handler.get(settings.config, path)
+    cached = Some(Some(v))
+    v
+  }
   /** Gets the entry as a single optional value. */
-  def opt: Option[A] = if (exists) Some(get) else None
+  def opt: Option[A] = cached.getOrElse(if (exists) Some(get) else None)
   /** Gets the entry as a list of values. */
-  def getList: List[A] = handler.getList(settings.config, path)
+  def getList: List[A] = {
+    val v = cachedList.flatten.getOrElse(handler.getList(settings.config, path))
+    cachedList = Some(Some(v))
+    v
+  }
   /** Gets the entry as a list of values (empty if entry is missing). */
-  def optList: List[A] = if (exists) getList else Nil
+  def optList: List[A] = cachedList.map(_.getOrElse(Nil)).getOrElse(if (exists) getList else Nil)
   /** Sets the entry as a single value. */
   def set(v: A): Unit = {
     if (v == null) remove()
-    else settings.withValue(path, ConfigValueFactory.fromAnyRef(handler.toInner(v)))
+    else {
+      settings.withValue(path, ConfigValueFactory.fromAnyRef(handler.toInner(v)))
+      cached = Some(Some(v))
+      cachedList = None
+    }
   }
   /** Sets the entry as a list of values. */
-  def setList(v: List[A]): Unit = settings.withValue(path, ConfigValueFactory.fromIterable(v.map(handler.toInner).asJava))
+  def setList(v: List[A]): Unit = {
+    settings.withValue(path, ConfigValueFactory.fromIterable(v.map(handler.toInner).asJava))
+    cached = None
+    cachedList = Some(Some(v))
+  }
   /** Removes entry. */
-  def remove(): Unit = settings.withoutPath(path)
+  def remove(): Unit = {
+    settings.withoutPath(path)
+    cached = Some(None)
+    cachedList = Some(None)
+  }
 
   /** Adds default value for 'get' (if entry is missing) */
   def withDefault(v: A): ConfigEntry[A] = new ConfigEntry.Wrapped[A](this) with ConfigEntry.WithDefault[A] {
