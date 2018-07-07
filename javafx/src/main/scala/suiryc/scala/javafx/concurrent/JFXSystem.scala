@@ -1,10 +1,11 @@
 package suiryc.scala.javafx.concurrent
 
-import akka.actor.{Actor, ActorRef, Cancellable, Props, Terminated}
+import akka.actor.{Actor, ActorRef, Props, Terminated}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import java.util.concurrent.TimeUnit
 import javafx.application.Platform
+import monix.execution.{Cancelable, Scheduler}
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success}
@@ -76,6 +77,8 @@ object JFXSystem
 
   /** The dedicated JavaFX dispatcher. */
   val dispatcher: ExecutionContextExecutor = system.dispatchers.lookup("javafx.dispatcher")
+  /** Scheduler running with JavaFX execution context. */
+  lazy val scheduler = Scheduler(dispatcher)
 
   /** Creates an actor using the JavaFX thread backed dispatcher. */
   def newJFXActor(props: Props): ActorRef =
@@ -116,7 +119,7 @@ object JFXSystem
     else {
       val f = Future {
         action
-      } (JFXExecutor.executor)
+      } (dispatcher)
 
       Await.ready(f, Duration.Inf).value match {
         case None =>
@@ -147,12 +150,12 @@ object JFXSystem
   }
 
   /** Delegates periodic action to JavaFX using dedicated actor. */
-  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(action: => Unit)(implicit ec: ExecutionContext): Cancellable =
-    system.scheduler.schedule(initialDelay, interval, jfxActor, Action { () => action })
+  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(action: => Unit): Cancelable =
+    scheduler.scheduleWithFixedDelay(initialDelay, interval)(jfxActor ! Action { () => action })
 
   /** Delegates delayed action to JavaFX using dedicated actor. */
-  def scheduleOnce(delay: FiniteDuration)(action: => Unit)(implicit ec: ExecutionContext): Cancellable =
-    system.scheduler.scheduleOnce(delay, jfxActor, Action { () => action })
+  def scheduleOnce(delay: FiniteDuration)(action: => Unit): Cancelable =
+    scheduler.scheduleOnce(delay)(jfxActor ! Action { () => action })
 
   /** The default (configured) graceful stop timeout. */
   lazy val gracefulStopTimeout: FiniteDuration =

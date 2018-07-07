@@ -24,6 +24,10 @@ import scala.concurrent.{ExecutionContextExecutor, ExecutionContext}
 
 object JFXExecutor {
 
+  /* Execution context based on JavaFX, but not tied to any akka system.
+   * May be used when the whole JFXSystem (akka system with dedicated dispatcher
+   * and scheduler) is not needed.
+   */
   implicit lazy val executor: ExecutionContextExecutor =
     ExecutionContext.fromExecutorService(JFXExecutorService)
 

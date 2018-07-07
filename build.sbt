@@ -5,6 +5,7 @@ lazy val versions = Map[String, String](
   "akka"          -> "2.5.13",
   "config"        -> "1.3.3",
   "logback"       -> "1.2.3",
+  "monix"         -> "3.0.0-RC1",
   "scala"         -> "2.12.6",
   "scala-logging" -> "3.9.0",
   "scalatest"     -> "3.0.5",
@@ -53,6 +54,7 @@ lazy val core = project.in(file("core")).
       "com.typesafe.akka"          %% "akka-slf4j"     % versions("akka")          % "provided",
       "com.typesafe.akka"          %% "akka-testkit"   % versions("akka")          % "test",
       "com.typesafe.scala-logging" %% "scala-logging"  % versions("scala-logging"),
+      "io.monix"                   %% "monix"          % versions("monix")         % "provided",
       "io.spray"                   %% "spray-json"     % versions("spray-json"),
       "org.scalatest"              %% "scalatest"      % versions("scalatest")     % "test"
     )
@@ -65,9 +67,9 @@ lazy val log = project.in(file("log")).
   settings(
     name := "suiryc-scala-log",
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor"      % versions("akka")    % "provided",
       "ch.qos.logback"    %  "logback-classic" % versions("logback") % "provided",
-      "ch.qos.logback"    %  "logback-core"    % versions("logback") % "provided"
+      "ch.qos.logback"    %  "logback-core"    % versions("logback") % "provided",
+      "com.typesafe.akka" %% "akka-actor"      % versions("akka")    % "provided"
     )
   )
 
@@ -78,9 +80,10 @@ lazy val javaFX = project.in(file("javafx")).
   settings(
     name := "suiryc-scala-javafx",
     libraryDependencies ++= Seq(
-      "ch.qos.logback"             %  "logback-classic" % versions("logback")       % "provided",
-      "ch.qos.logback"             %  "logback-core"    % versions("logback")       % "provided",
-      "com.typesafe.akka"          %% "akka-actor"      % versions("akka")          % "provided"
+      "ch.qos.logback"    %  "logback-classic" % versions("logback") % "provided",
+      "ch.qos.logback"    %  "logback-core"    % versions("logback") % "provided",
+      "com.typesafe.akka" %% "akka-actor"      % versions("akka")    % "provided",
+      "io.monix"          %% "monix"           % versions("monix")   % "provided"
     )
   )
 
