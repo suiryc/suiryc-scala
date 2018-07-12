@@ -7,6 +7,8 @@ import java.nio.ByteBuffer
 import java.nio.channels.{FileChannel, FileLock}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, StandardOpenOption}
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 import suiryc.scala.io.{PathsEx, RichFile}
 
 /**
@@ -85,16 +87,26 @@ object UniqueInstance extends LazyLogging {
   @volatile private var _server = Option.empty[ServerSocket]
 
   /**
-   * Starts the unique instance.
+   * Starts the instance.
+   *
+   * If this is the first (unique) instance to start, the command arguments are
+   * processed once the given Future is ready (and successful). Thus the
+   * function usually returns before those arguments are processed. Any command
+   * arguments received from other instances are guaranteed to be processed
+   * after those of this first instance, and in dedicated threads.
+   *
+   * If another (first unique) instance is running, this function does pass the
+   * command arguments to it, waits for the return code and exits with it: this
+   * function thus never returns for these instances.
    *
    * @param appId the application (unique) id
    * @param f the function used to handle command arguments
    * @param args the command arguments
-   * @return the return code for handling the command arguments if this is the
-   *         unique instance; other instances never return from this function
-   *         but exits with the return code received from the first instance
+   * @param ready for the first instance, a Future completed (sucess) when the
+   *              caller is ready to have the command arguments processed; this
+   *              Future may already be completed before calling this function
    */
-  def start(appId: String, f: Array[String] => Int, args: Array[String]): Int = {
+  def start(appId: String, f: Array[String] ⇒ Int, args: Array[String], ready: Future[Unit]): Unit = {
     try {
       val lockPath = RichFile.userHome.toPath.resolve(s".${PathsEx.sanitizeFilename(appId)}")
       val channel = FileChannel.open(lockPath, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE)
@@ -104,22 +116,22 @@ object UniqueInstance extends LazyLogging {
       val instanceLockOpt = try {
         Option(channel.tryLock(INT_SIZE.toLong, 1, false))
       } catch {
-        case _: Exception => None
+        case _: Exception ⇒ None
       }
 
       instanceLockOpt match {
-        case Some(instanceLock) =>
+        case Some(instanceLock) ⇒
           // We are the first instance to run, holding the lock
           logger.debug(s"Unique instance starting")
-          startUniqueInstance(lockPath, channel, dataLock, instanceLock, f, args)
+          startUniqueInstance(lockPath, channel, dataLock, instanceLock, f, args, ready)
 
-        case None =>
+        case None ⇒
           // Another instance is supposedly running
           logger.debug(s"Unique instance already running, delegating command execution")
           startOtherInstance(channel, dataLock, args)
       }
     } catch {
-      case ex: Exception =>
+      case ex: Exception ⇒
         logger.error(s"Failed to start instance: ${ex.getMessage}", ex)
         sys.exit(-1)
     }
@@ -134,7 +146,8 @@ object UniqueInstance extends LazyLogging {
   /** Starts the (first) unique instance. */
   private def startUniqueInstance(lockPath: Path, channel: FileChannel,
     dataLock: FileLock, instanceLock: FileLock,
-    f: Array[String] => Int, args: Array[String]): Int =
+    f: Array[String] ⇒ Int, args: Array[String],
+    ready: Future[Unit]): Unit =
   {
     // Add shutdown hook to clean resources before exiting
     sys.addShutdownHook {
@@ -159,10 +172,19 @@ object UniqueInstance extends LazyLogging {
     channel.force(false)
     dataLock.release()
 
-    // Then run our command before starting serving other instances
-    val r = f(args)
-    new ServerHandler(server, f).start()
-    r
+    // Wait for caller to be ready
+    ready.onComplete {
+      case Success(_) ⇒
+        // Then run our command before starting serving other instances
+        try {
+          f(args)
+        } finally {
+          new ServerHandler(server, f).start()
+        }
+
+      case Failure(_) ⇒
+        // Do nothing (application is responsible for exiting when applicable)
+    }(suiryc.scala.akka.CoreSystem.system.dispatcher)
   }
 
   /** Starts a second instance. */
@@ -204,7 +226,7 @@ object UniqueInstance extends LazyLogging {
       val r = bb1.getInt(0)
       sys.exit(r)
     } catch {
-      case ex: Exception =>
+      case ex: Exception ⇒
         logger.error(s"Failed to execute command on unique instance: ${ex.getMessage}", ex)
         sys.exit(-1)
     }
@@ -219,7 +241,7 @@ object UniqueInstance extends LazyLogging {
   }
 
   /** Local server socket handler. */
-  private class ServerHandler(server: ServerSocket, f: Array[String] => Int) extends Thread {
+  private class ServerHandler(server: ServerSocket, f: Array[String] ⇒ Int) extends Thread {
 
     setDaemon(true)
 
@@ -230,15 +252,15 @@ object UniqueInstance extends LazyLogging {
           if (!_stopping) Some(server.accept())
           else None
         } catch {
-          case _: Exception => None
+          case _: Exception ⇒ None
         }
 
         socketOpt match {
-          case Some(socket) =>
+          case Some(socket) ⇒
             new SocketHandler(socket, f).start()
             loop()
 
-          case None =>
+          case None ⇒
             if (!_stopping) loop()
         }
       }
@@ -249,7 +271,7 @@ object UniqueInstance extends LazyLogging {
   }
 
   /** Local server socket connection handler. */
-  private class SocketHandler(socket: Socket, f: Array[String] => Int) extends Thread {
+  private class SocketHandler(socket: Socket, f: Array[String] ⇒ Int) extends Thread {
 
     setDaemon(true)
 
@@ -276,7 +298,7 @@ object UniqueInstance extends LazyLogging {
         val args = loop(nargs, Nil)
         done(execute(args))
       } catch {
-        case ex: Exception =>
+        case ex: Exception ⇒
           logger.error(s"Failed to read arguments from socket: ${ex.getMessage}")
           done(-1)
       }
@@ -286,7 +308,7 @@ object UniqueInstance extends LazyLogging {
       try {
         if (!_stopping) f(args) else -1
       } catch {
-        case ex: Exception =>
+        case ex: Exception ⇒
           logger.error(s"Failed to process arguments: ${ex.getMessage}", ex)
           -1
       }
@@ -300,13 +322,13 @@ object UniqueInstance extends LazyLogging {
         bb.putInt(code)
         os.write(bb.array)
       } catch {
-        case ex: Exception =>
+        case ex: Exception ⇒
           logger.warn(s"Failed to return response code through socket: ${ex.getMessage}")
       }
       try {
         socket.close()
       } catch {
-        case ex: Exception =>
+        case ex: Exception ⇒
           logger.warn(s"Failed to close socket: ${ex.getMessage}")
       }
     }
