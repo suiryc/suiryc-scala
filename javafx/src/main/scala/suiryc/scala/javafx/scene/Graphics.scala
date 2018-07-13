@@ -156,12 +156,19 @@ object Graphics {
     // ratio between width and height, then use the minimum one (to stay in
     // target size).
     private val ratio =
-    if (params.ratio > 0) Some(params.ratio)
-    else if (!params.keepRatio || widthRatio.orElse(heightRatio).isEmpty) None
-    else Some(math.min(widthRatio.orElse(heightRatio).get, heightRatio.orElse(widthRatio).get))
+      if (params.ratio > 0) Some(params.ratio)
+      else if (!params.keepRatio || widthRatio.orElse(heightRatio).isEmpty) None
+      else Some(math.min(widthRatio.orElse(heightRatio).get, heightRatio.orElse(widthRatio).get))
     // Scale to apply for target SVG size: based on target SVG size or ratio
-    private val scaleX = targetSvgWidth.map(_ / svgWidth).orElse(ratio).orElse(widthRatio)
-    private val scaleY = targetSvgHeight.map(_ / svgHeight).orElse(ratio).orElse(heightRatio)
+    private val scaleSvgWidth = targetSvgWidth.map(_ / svgWidth)
+    private val scaleSvgHeight = targetSvgHeight.map(_ / svgHeight)
+    private val scale = if (params.keepRatio) {
+      val scales = scaleSvgWidth.toList ::: scaleSvgHeight.toList
+      if (scales.nonEmpty) Some(scales.min)
+      else None
+    } else None
+    private val scaleX = scale.orElse(targetSvgWidth.map(_ / svgWidth)).orElse(ratio).orElse(widthRatio)
+    private val scaleY = scale.orElse(targetSvgHeight.map(_ / svgHeight)).orElse(ratio).orElse(heightRatio)
     // The actual scaled SVG size
     private val scaledWidth = svgWidth * scaleX.getOrElse(1.0)
     private val scaledHeight = svgHeight * scaleY.getOrElse(1.0)
