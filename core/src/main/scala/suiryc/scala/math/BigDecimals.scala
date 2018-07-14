@@ -29,7 +29,7 @@ object BigDecimals {
   def roundUp(v: BigDecimal): Long =
     v.setScale(0, RoundingMode.UP).longValue
 
-  private val SCALE_DIGITS_DEFAULT = 4
+  private[scala] val SCALE_DIGITS_DEFAULT = 4
 
   /** Scales value to keep given number of significant digits. */
   @inline def scale(v: BigDecimal, digits: Int = SCALE_DIGITS_DEFAULT,

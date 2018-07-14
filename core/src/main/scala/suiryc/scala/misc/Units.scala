@@ -1,8 +1,10 @@
 package suiryc.scala.misc
 
+import suiryc.scala.math.BigDecimals
+
 
 // TODO - handle time system (separate for human readable form, or introduce 'cumulative' notion ?)
-// TODO - handle floating points in human representation ?
+// TODO - handle floating points in human representation parsing ?
 object Units {
 
   val scaleSI = 1000L
@@ -39,19 +41,19 @@ object Units {
         throw new IllegalArgumentException(s"Invalid value[$value]")
     }
 
-    def toHumanReadable(value: Long, runits: List[Unit] = units.head): String = {
+    def toHumanReadable(value: Long, runits: List[Unit] = units.head, digits: Int = BigDecimals.SCALE_DIGITS_DEFAULT): String = {
       @scala.annotation.tailrec
-      def loop(units: List[Unit]): (Long, Unit) = units match {
+      def loop(units: List[Unit]): Unit = units match {
         case head :: tail =>
           if (value < 2 * head.factor) loop(tail)
-          else (value, head)
+          else head
 
         case Nil =>
-          (value, unity)
+          unity
       }
 
-      val (hr, unit) = loop(runits.reverse)
-      s"${hr / unit.factor} ${unit.label}"
+      val unit = loop(runits.reverse)
+      s"${BigDecimals.scale(BigDecimal(value) / unit.factor, digits)} ${unit.label}"
     }
 
     def format(value: Long): String = {
