@@ -318,4 +318,33 @@ object Graphics {
     img
   }
 
+  /** Simple function to build an SVGGroup */
+  protected type BuilderFunc = (List[String], Double) ⇒ SVGGroup
+
+  /**
+   * Simple SVGGroup builder with default parameters.
+   * See: https://stackoverflow.com/a/25235029
+   */
+  trait Builder extends BuilderFunc {
+    protected val defaultStyleClass: String
+    protected val defaultTargetSvgSize: Double
+    def apply(styleClass: List[String] = Nil, targetSvgSize: Double = defaultTargetSvgSize): SVGGroup
+  }
+
+  /**
+   * Helper for icon builders.
+   * Gives builders with standard icon size as default.
+   */
+  trait IconBuilders {
+
+    def iconBuilder(styleClass: String, targetSvgSize: Double = iconSize)(f: BuilderFunc): Builder = {
+      new Builder {
+        override protected val defaultStyleClass: String = styleClass
+        override protected val defaultTargetSvgSize: Double = targetSvgSize
+        override def apply(styleClass: List[String], targetSvgSize: Double): SVGGroup = f(defaultStyleClass :: styleClass, targetSvgSize)
+      }
+    }
+
+  }
+
 }
