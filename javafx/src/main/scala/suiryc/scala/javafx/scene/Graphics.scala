@@ -15,8 +15,15 @@ object Graphics {
   /** Standard icon size. */
   val iconSize = 16.0
 
-  /** Builds a SVG path. */
-  def svgPath(content: String, styleClass: Option[String] = None, fill: Option[Paint] = None, style: Option[String] = None): SVGPath = {
+  /**
+   * Builds a SVG path.
+   *
+   * @param content the SVG path itself
+   * @param styleClass optional style classes to add
+   * @param fill optional filling (can still be overridden by CSS)
+   * @param style optional style
+   */
+  def svgPath(content: String, styleClass: List[String] = Nil, fill: Option[Paint] = None, style: Option[String] = None): SVGPath = {
     val path = new SVGPath
     path.getStyleClass.add("svg-path")
     styleClass.foreach(path.getStyleClass.add)
@@ -66,20 +73,30 @@ object Graphics {
     // shape
     hpos: HPos = HPos.CENTER,
     vpos: VPos = VPos.CENTER,
-    // Pane style class
-    styleClass: Option[String] = None,
+    // Pane additional style classes
+    styleClass: List[String] = Nil,
     // Pane background fill
     backgroundFill: BackgroundFill = new BackgroundFill(Color.TRANSPARENT, CornerRadii.EMPTY, Insets.EMPTY),
+    // Pane style
+    style: Option[String] = None,
     // SVG group style
-    style: Option[String] = None
+    groupStyle: Option[String] = None
   )
 
-  /** SVG 'group'. */
+  /**
+   * SVG 'group'.
+   *
+   * Creates a Group containing SVG paths (and with Transforms applied), placed
+   * inside a FlowPane.
+   * "svg-pane" style is added to the Pane.
+   * "svg-group" style is added to the Group.
+   * "svg-path" style is added to each SVG path.
+   */
   case class SVGGroup(params: SVGGroupParams, path: SVGPath*) {
 
     val group = new Group
     group.getStyleClass.add("svg-group")
-    params.style.foreach(group.setStyle)
+    params.groupStyle.foreach(group.setStyle)
     group.getChildren.addAll(path:_*)
     private val groupBounds = group.getBoundsInLocal
 
@@ -239,6 +256,7 @@ object Graphics {
       val pane = new FlowPane
       pane.getStyleClass.add("svg-pane")
       params.styleClass.foreach(pane.getStyleClass.add)
+      params.style.foreach(pane.setStyle)
       if (paneWidth > 0) {
         pane.setMinWidth(paneWidth)
         pane.setPrefWidth(paneWidth)
@@ -259,7 +277,7 @@ object Graphics {
       val c = path.map { path ⇒
         svgPath(
           content = path.getContent,
-          styleClass = path.getStyleClass.asScala.filterNot(_ == "svg-path").headOption,
+          styleClass = path.getStyleClass.asScala.toList.filterNot(_ == "svg-path"),
           fill = Option(path.getFill),
           style = Option(path.getStyle)
         )
