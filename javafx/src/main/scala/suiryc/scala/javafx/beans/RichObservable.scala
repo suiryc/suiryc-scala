@@ -9,8 +9,14 @@ import suiryc.scala.concurrent.Cancellable
  * Allows to attach listening code (adds a new listener) and returns a
  * subscription that can be cancelled (removes the listener).
  *
- * Note: subscription does not have its own class name and is simply a
+ * Notes:
+ * Subscription does not have its own class name and is simply a
  * 'Cancellable'.
+ * Listeners do not change invalidation, which could result in unwanted
+ * behaviour: e.g. if an ObservableValue is listened as an Observable, a value
+ * change triggers a call on the listener, but if the value is not read (and
+ * thus remains invalidated) any other change is not propagated (until
+ * invalidation is cleared).
  */
 class RichObservable(val underlying: Observable) extends AnyVal {
 
