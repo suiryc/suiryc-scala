@@ -119,6 +119,12 @@ class TextFieldWithButton() extends Control {
   }
   def getButtons: List[TextFieldButton] = buttons
 
+  // Declare our children
+  getChildren.add(textField)
+  getButtons.foreach { button ⇒
+    getChildren.add(button.arrowButton)
+  }
+
   // This is how we define our own skin, in which the actual layout is done.
   override protected def createDefaultSkin: Skin[_] =
     new TextFieldWithButtonSkin(this, textField)
