@@ -67,7 +67,7 @@ class TextFieldWithButton() extends Control {
 
   // Propagate focus property from text field to our control, so that it is
   // visible on the whole control.
-  textField.focusedProperty().listen { v =>
+  textField.focusedProperty().listen { v ⇒
     setFocused(v)
   }
 
@@ -78,7 +78,7 @@ class TextFieldWithButton() extends Control {
   def setCustomStyleClass(value: String): Unit = customStyleClassProperty.set(value)
 
   // Listen to custom style class to update this control style class
-  customStyleClass.listen { (_, v0, v1) =>
+  customStyleClass.listen { (_, v0, v1) ⇒
     Option(v0).foreach(getStyleClass.remove)
     Option(v1).foreach(getStyleClass.add)
   }
@@ -114,7 +114,7 @@ class TextFieldWithButton() extends Control {
   def setButtonsCount(value: Int): Unit = buttonsCountProperty.set(math.max(value, 1))
 
   // The buttons
-  private var buttons = List.tabulate(getButtonsCount) { idx =>
+  private var buttons = List.tabulate(getButtonsCount) { idx ⇒
     new TextFieldButton(this, idx)
   }
   def getButtons: List[TextFieldButton] = buttons
@@ -156,13 +156,13 @@ class TextFieldWithButton() extends Control {
   def setAlignment(value: Pos): Unit = textField.setAlignment(value)
 
   // Add/remove buttons as necessary
-  buttonsCountProperty.listen { (_, v0, v1) =>
+  buttonsCountProperty.listen { (_, v0, v1) ⇒
     if (v1.intValue < v0.intValue) {
       // Removing last buttons
       buttons = buttons.take(v1.intValue)
     } else if (v1.intValue > v0.intValue) {
       // Adding buttons
-      buttons = buttons ::: (v0.intValue until v1.intValue).toList.map { idx =>
+      buttons = buttons ::: (v0.intValue until v1.intValue).toList.map { idx ⇒
         new TextFieldButton(this, idx)
       }
     }
@@ -249,7 +249,7 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
   // Bind the 'buttonDisable' property to disable the 'arrow-button'.
   arrowButton.disableProperty.bind(buttonDisableProperty)
   // Update tooltip upon change.
-  buttonTooltipProperty.listen { value =>
+  buttonTooltipProperty.listen { value ⇒
     tooltip.foreach(Tooltip.uninstall(arrowButton, _))
     tooltip = Option(value).filterNot(_.trim.isEmpty).map(new Tooltip(_))
     tooltip.foreach(Tooltip.install(arrowButton, _))
@@ -306,7 +306,7 @@ class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField
   textField.applyCss()
 
   // Update control when necessary
-  control.buttonsCountProperty.listen { _ =>
+  control.buttonsCountProperty.listen { _ ⇒
     getChildren.setAll(textField :: control.getButtons.map(_.arrowButton) : _*)
     control.requestLayout()
   }
@@ -317,11 +317,9 @@ class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField
 
   override protected def layoutChildren(x: Double, y: Double, w: Double, h: Double): Unit = {
     // Buttons are placed relatively to the right side of the control.
-    control.getButtons.reverse.foldLeft(0.0) { (arrowButtonsWidth, button) =>
+    control.getButtons.reverse.foldLeft(0.0) { (arrowButtonsWidth, button) ⇒
       val arrowButton = button.arrowButton
-      val arrow = button.arrow
-      val arrowWidth = snapSizeX(arrow.prefWidth(-1))
-      val arrowButtonWidth = arrowButton.snappedLeftInset + arrowWidth + arrowButton.snappedRightInset
+      val arrowButtonWidth = snapSizeX(arrowButton.prefWidth(-1))
       textField.resizeRelocate(x, y, w - arrowButtonsWidth - arrowButtonWidth, h)
       arrowButton.resize(arrowButtonWidth, h)
       positionInArea(arrowButton, (x + w) - arrowButtonsWidth - arrowButtonWidth, y, arrowButtonWidth, h, 0, HPos.CENTER, VPos.CENTER)
@@ -337,11 +335,8 @@ class TextFieldWithButtonSkin(control: TextFieldWithButton, textField: TextField
     MIN_WIDTH
 
   override protected def computePrefWidth(height: Double, topInset: Double, rightInset: Double, bottomInset: Double, leftInset: Double): Double = {
-    val arrowButtonsWidth = control.getButtons.map { button =>
-      val arrowButton = button.arrowButton
-      val arrow = arrowButton.getChildren.get(0)
-      val arrowWidth = snapSizeX(arrow.prefWidth(-1))
-      arrowButton.snappedLeftInset + arrowWidth + arrowButton.snappedRightInset
+    val arrowButtonsWidth = control.getButtons.map { button ⇒
+      snapSizeX(button.arrowButton.prefWidth(-1))
     }.sum
     val displayNodeWidth = textField.prefWidth(height)
     val totalWidth = displayNodeWidth + arrowButtonsWidth
