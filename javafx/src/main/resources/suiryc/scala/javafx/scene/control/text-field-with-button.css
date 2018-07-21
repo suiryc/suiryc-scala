@@ -73,9 +73,15 @@
  *     pseudo-class (making the first section of this stylesheet unnecessary)
  */
 
-/* Override 'arrow-button' padding so that 'arrow' fills most of the content. */
+/* Override 'arrow-button' padding so that 'arrow' fills most of the content.
+ * To do so, use a 'low' padding value on all sides. In standard DPI 4px would
+ * be fine. For proper scaling, we need to use 'em' unit, but 1em is 12px on
+ * Windows and 13px on Linux ...
+ * 0.333333em is good on Windows but introduces a off-by-one offset on
+ * Linux. 0.307692em is good on Linux and appears to also be ok on Windows.
+ */
 .text-field-with-button > .arrow-button {
-  -fx-padding: 0.333333em; /* 4 */
+  -fx-padding: 0.307692em;
 }
 
 /* Compared to default 'combo-box-base' behavior, reset 'hover' color for our
@@ -106,8 +112,13 @@
 
 /* Override default 'arrow' behavior. */
 .text-field-with-button > .arrow-button > .arrow {
-  /* Override padding so that we fill most of the 'arrow-button' content. */
-  -fx-padding: 0.666667em; /* 8 */
+  /* We don't need padding. */
+  -fx-padding: 0;
+  /* Min and max sizes are set to preferred one by default.
+   * Use target size as preferred value.
+   */
+  -fx-pref-width: 1.333333em;
+  -fx-pref-height: 1.333333em;
   -fx-scale-shape: true;
   /* Override with empty path to draw nothing.
    * Actual style class has to override it in order to display something.

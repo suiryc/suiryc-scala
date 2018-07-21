@@ -192,6 +192,8 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
     arrow.setFocusTraversable(false)
     arrow.setId(id)
     arrow.getStyleClass.setAll("arrow", id)
+    arrow.setMinWidth(Region.USE_PREF_SIZE)
+    arrow.setMinHeight(Region.USE_PREF_SIZE)
     arrow.setMaxWidth(Region.USE_PREF_SIZE)
     arrow.setMaxHeight(Region.USE_PREF_SIZE)
     arrow.setMouseTransparent(true)
