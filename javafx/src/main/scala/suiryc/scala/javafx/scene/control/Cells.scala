@@ -1,21 +1,30 @@
 package suiryc.scala.javafx.scene.control
 
 import javafx.beans.property.{BooleanProperty, SimpleBooleanProperty}
+import javafx.scene.Node
 import javafx.scene.control.{Cell, ListCell, Separator, TableCell}
 import javafx.scene.control.cell.CheckBoxListCell
 import suiryc.scala.concurrent.Cancellable
 import suiryc.scala.javafx.beans.value.RichObservableValue._
 
-/** Cell extension that knows how to update cell text. */
+/** Cell extension that knows how to update cell text/graphic. */
 trait CellEx[A] extends Cell[A] {
 
   protected def itemText(item: A): String
+  // scalastyle:off null
+  protected def itemGraphic(@deprecated("unused","") item: A): Node = null
+  // scalastyle:on null
 
   // scalastyle:off null
   override protected def updateItem(item: A, empty: Boolean) {
     super.updateItem(item, empty)
-    if (empty) setText(null)
-    else setText(itemText(item))
+    if (empty) {
+      setText(null)
+      setGraphic(null)
+    } else {
+      setText(itemText(item))
+      setGraphic(itemGraphic(item))
+    }
   }
   // scalastyle:on null
 
@@ -29,6 +38,9 @@ trait CellEx[A] extends Cell[A] {
 trait CellWithSeparator[A] extends Cell[Option[A]] {
 
   protected def itemText(item: A): String
+  // scalastyle:off null
+  protected def itemGraphic(@deprecated("unused","") item: A): Node = null
+  // scalastyle:on null
 
   // scalastyle:off null
   override protected def updateItem(item: Option[A], empty: Boolean): Unit = {
@@ -37,17 +49,12 @@ trait CellWithSeparator[A] extends Cell[Option[A]] {
     // it could have previously been disabled (used as entries separator).
     if (empty) {
       setText(null)
-      setDisable(false)
       setGraphic(null)
+      setDisable(false)
     } else {
       setText(item.map(itemText).orNull)
-      if (item.isEmpty) {
-        setDisable(true)
-        setGraphic(new Separator())
-      } else {
-        setDisable(false)
-        setGraphic(null)
-      }
+      setGraphic(item.map(itemGraphic).getOrElse(new Separator()))
+      setDisable(item.isEmpty)
     }
   }
   // scalastyle:on null
