@@ -87,10 +87,10 @@ object Stages {
         val promise = Promise[Unit]()
         val width = stage.getWidth
         val height = stage.getHeight
-        val cancellable = RichObservableValue.listen(Seq(stage.widthProperty, stage.heightProperty), {
+        val cancellable = RichObservableValue.listen(stage.widthProperty, stage.heightProperty) {
           if ((stage.getWidth != width) && (stage.getHeight != height)) promise.trySuccess(())
           ()
-        })
+        }
         val future = promise.future.withTimeout(timeout)
         future.onComplete { _ =>
           cancellable.cancel()

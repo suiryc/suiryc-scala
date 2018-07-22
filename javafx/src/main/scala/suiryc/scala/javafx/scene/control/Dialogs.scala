@@ -194,10 +194,9 @@ object Dialogs {
       // the Stage from being GCed until the parent is GCed, unless we cancel
       // the listener when necessary, which is not worth the hassle.
       // We can at least listen for the node being resized (dynamic content).
-      RichObservableValue.listen(
-        List(widthProperty, heightProperty),
+      RichObservableValue.listen(widthProperty, heightProperty) {
         centerNode()
-      )
+      }
 
       showingProperty.listen {
         // Center and apply blur effect on parent when we are showing
