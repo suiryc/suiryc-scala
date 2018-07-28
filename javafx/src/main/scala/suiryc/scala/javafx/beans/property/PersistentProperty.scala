@@ -8,7 +8,7 @@ import suiryc.scala.settings.PersistentSetting
  * Persistent property.
  *
  * Property backed by a persistent setting.
- * Value is read from setting, and persisted when value is changed.
+ * Value is read from setting, and persisted when property is changed.
  */
 class PersistentProperty[T](val setting: PersistentSetting[T])
   extends SimpleObjectProperty[T]
@@ -38,7 +38,7 @@ class PersistentProperty[T](val setting: PersistentSetting[T])
   def reset(): Unit =
     set(setting())
 
-  /** Resets value toi default (setting). */
+  /** Resets value to default (setting). */
   def resetDefault(): Unit =
     set(setting.default)
 
