@@ -207,11 +207,11 @@ object Stages {
             cancellable.cancel()
           }(CoreSystem.system.dispatcher)
         }
-        reset(loc.width, stage.widthProperty, stage.setWidth)
-        reset(loc.height, stage.heightProperty, stage.setHeight)
+        reset(math.max(loc.width, stage.getMinWidth), stage.widthProperty, stage.setWidth)
+        reset(math.max(loc.height, stage.getMinHeight), stage.heightProperty, stage.setHeight)
       } else {
-        stage.setWidth(loc.width)
-        stage.setHeight(loc.height)
+        stage.setWidth(math.max(loc.width, stage.getMinWidth))
+        stage.setHeight(math.max(loc.height, stage.getMinHeight))
       }
     }
     stage.setMaximized(loc.maximized)
