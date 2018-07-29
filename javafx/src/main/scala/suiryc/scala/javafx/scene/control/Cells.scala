@@ -18,12 +18,35 @@ trait CellEx[A] extends Cell[A] {
   // scalastyle:off null
   override protected def updateItem(item: A, empty: Boolean) {
     super.updateItem(item, empty)
+    // Notes:
+    // Changing the text will re-set the cell children (text and graphic).
+    // It is thus better to change the graphic first, otherwise in some
+    // situations (e.g. changing the order of items) this triggers
+    // unwanted behaviour:
+    //  -> cell C1 and C2 display items I1 and I2
+    //  -> cell C1 is assigned item I2
+    //   -> C1 text is set from I2
+    //    -> C1 children are re-set: text and I1 icon
+    //   -> C1 graphic is set to I2 icon
+    //    -> I2 icon is removed from C2 (now a child of C1), while still
+    //       being valued as C2 graphic
+    //    -> I1 icon is now parentless
+    //  -> cell C2 is assigned item I1
+    //   -> C2 text is set from I1
+    //    -> C2 children are re-set: text and I2 icon (still valued as
+    //       graphic)
+    //     -> I2 icon is removed from C1 (now child of C2), while still
+    //        being valued as C1 graphic
+    //   -> C2 graphic is set to I1 icon
+    //    -> I2 icon is now parentless
+    // In the end C1 displays I2 but C2 is missing the I1 icon.
+    // Setting the graphic first prevents this.
     if (empty) {
-      setText(null)
       setGraphic(null)
+      setText(null)
     } else {
-      setText(itemText(item))
       setGraphic(itemGraphic(item))
+      setText(itemText(item))
     }
   }
   // scalastyle:on null
@@ -48,12 +71,12 @@ trait CellWithSeparator[A] extends Cell[Option[A]] {
     // Don't forget to re-enable cell (and remove graphic) when applicable as
     // it could have previously been disabled (used as entries separator).
     if (empty) {
-      setText(null)
       setGraphic(null)
+      setText(null)
       setDisable(false)
     } else {
-      setText(item.map(itemText).orNull)
       setGraphic(item.map(itemGraphic).getOrElse(new Separator()))
+      setText(item.map(itemText).orNull)
       setDisable(item.isEmpty)
     }
   }
