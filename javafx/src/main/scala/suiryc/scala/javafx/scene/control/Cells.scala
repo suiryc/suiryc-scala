@@ -6,6 +6,7 @@ import javafx.scene.control.{Cell, ListCell, Separator, TableCell}
 import javafx.scene.control.cell.CheckBoxListCell
 import suiryc.scala.concurrent.Cancellable
 import suiryc.scala.javafx.beans.value.RichObservableValue._
+import suiryc.scala.util.I18NLocale
 
 /** Cell extension that knows how to update cell text/graphic. */
 trait CellEx[A] extends Cell[A] {
@@ -89,6 +90,11 @@ trait ListCellEx[A] extends ListCell[A] with CellEx[A]
 
 /** TableCell extension with CellEx. */
 trait TableCellEx[A, B] extends TableCell[A, B] with CellEx[B]
+
+/** ListCell for I18Locale value. */
+class I18NLocaleCell extends ListCellEx[I18NLocale] {
+  override protected def itemText(item: I18NLocale): String = item.displayName
+}
 
 /**
  * CheckBox ListCell with information.
