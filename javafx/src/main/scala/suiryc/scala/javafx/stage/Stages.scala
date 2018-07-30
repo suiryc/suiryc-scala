@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import javafx.beans.property.ReadOnlyDoubleProperty
 import javafx.geometry.BoundingBox
 import javafx.scene.control.Dialog
-import javafx.stage.Stage
+import javafx.stage.{Stage, Window}
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.concurrent.duration._
 import suiryc.scala.akka.CoreSystem
@@ -175,6 +175,34 @@ object Stages {
    */
   def getStage(dialog: Dialog[_]): Stage =
     dialog.getDialogPane.getScene.getWindow.asInstanceOf[Stage]
+
+  /**
+   * Initializes stage owner.
+   *
+   * When applicable, copies owner stylesheets and icons to target.
+   */
+  def initOwner(stage: Stage, owner: Window): Unit = {
+    stage.initOwner(owner)
+    for {
+      scene1 ← Option(stage.getScene)
+      scene2 ← Option(owner.getScene)
+    } scene1.getStylesheets.setAll(scene2.getStylesheets)
+    owner match {
+      case owner: Stage ⇒ stage.getIcons.setAll(owner.getIcons)
+      case _ ⇒
+    }
+    ()
+  }
+
+  /**
+   * Initializes dialog (stage) owner.
+   *
+   * When applicable, copies owner stylesheets and icons to target.
+   * But unlike Dialog.initOwner, does not bind stylesheets and icons.
+   */
+  def initOwner(dialog: Dialog[_], owner: Window): Unit = {
+    initOwner(getStage(dialog), owner)
+  }
 
   /** Stage location. */
   case class StageLocation(x: Double, y: Double, width: Double, height: Double, maximized: Boolean)
