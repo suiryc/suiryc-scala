@@ -160,25 +160,12 @@ object SettingSnapshot {
     }
 
   /** Builds a snapshot from a (portable setting) config entry. */
-  // Note: unlike other kinds of settings, Config does not use null values, so
-  // handle actual values as Options. Also use actual ConfigValue for easier
-  // handling.
-  def apply[A](setting: ConfigEntry[A]): SettingSnapshot[Option[ConfigValue]] =
-    new SettingSnapshot[Option[ConfigValue]] {
-      override protected def getValue: Option[ConfigValue] = {
-        val config = setting.settings.config
-        if (config.hasPath(setting.path)) {
-          Some(config.getValue(setting.path))
-        } else {
-          None
-        }
-      }
-      override protected def setValue(v: Option[ConfigValue]): Unit = {
-        v match {
-          case Some(value) => setting.settings.withValue(setting.path, value)
-          case None => setting.settings.withoutPath(setting.path)
-        }
-        ()
+  def apply[A >: Null](setting: ConfigEntry[A]): SettingSnapshot[A] =
+    new SettingSnapshot[A] {
+      override protected def getValue: A = setting.opt.orNull
+      override protected def setValue(v: A): Unit = {
+        if (v == null) setting.remove()
+        else setting.set(v)
       }
     }
 
