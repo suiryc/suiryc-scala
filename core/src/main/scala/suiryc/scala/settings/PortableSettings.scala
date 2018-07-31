@@ -16,7 +16,7 @@ import scala.collection.JavaConverters._
  * First change triggers a backup of the original config.
  * After each change the file is updated.
  */
-class PortableSettings(filepath: Path, var _config: Config, ref: Config) {
+class PortableSettings(filepath: Path, private var _config: Config, ref: Config) {
 
   /** Whether config was already backuped. */
   private var backupDone = false
@@ -171,6 +171,11 @@ object PortableSettings extends StrictLogging {
     val ref = defaultReference(confpath:_*)
     val config = appConfig.withFallback(ref)
     new PortableSettings(filepath, config, ref)
+  }
+
+  def reference(confpath: String*): PortableSettings = {
+    val ref = defaultReference(confpath:_*)
+    new PortableSettings(None.orNull, ref, ref)
   }
 
   private def backupPath(filepath: Path): Path = {
