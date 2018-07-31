@@ -72,8 +72,17 @@ object BindingsEx {
    * @param linker creates the actual Binding; links the function value to the
    *               target property
    */
-  def bind[A, B](target: Property[B], dependencies: Observable*)(f: ⇒ A)(implicit linker: Linker[A, B]): Unit = {
+  def bind[A, B](target: Property[B], dependencies: Seq[Observable])(f: ⇒ A)(implicit linker: Linker[A, B]): Unit = {
     target.bind(linker.create(() ⇒ f, dependencies))
+  }
+
+  /**
+   * Binds target with a unidirection binding.
+   *
+   * vararg variant.
+   */
+  def bind[A, B](target: Property[B], dependencies: Observable*)(f: ⇒ A)(implicit linker: Linker[A, B], d: DummyImplicit): Unit = {
+    bind(target, dependencies)(f)
   }
 
   /**
@@ -89,13 +98,22 @@ object BindingsEx {
    * @param f function to compute updated value
    * @return Cancellable to stop observing values
    */
-  def jfxBind[A](target: Property[A], dependencies: ObservableValue[_]*)(f: ⇒ A): Cancellable = {
+  def jfxBind[A](target: Property[A], dependencies: Seq[ObservableValue[_]])(f: ⇒ A): Cancellable = {
     val cancellable = RichObservableValue.listen[Any](dependencies) {
       JFXSystem.schedule(target.setValue(f), logReentrant = false)
     }
     // With proper binding, initial value is pushed to target. Do it too.
     JFXSystem.schedule(target.setValue(f), logReentrant = false)
     cancellable
+  }
+
+  /**
+   * Binds target with a unidirection binding in JavaFX execution context.
+   *
+   * vararg variant.
+   */
+  def jfxBind[A](target: Property[A], dependencies: ObservableValue[_]*)(f: ⇒ A)(implicit d: DummyImplicit): Cancellable = {
+    jfxBind(target, dependencies)(f)
   }
 
   /**
@@ -117,11 +135,22 @@ object BindingsEx {
    * @return Cancellable to stop observing values
    */
   def bind[A](target: Property[A], throttle: FiniteDuration, scheduler: Scheduler,
-    dependencies: Observable*)(f: ⇒ A): Cancellable =
+    dependencies: Seq[Observable])(f: ⇒ A): Cancellable =
   {
     new Builder(scheduler) {
       add(target)(f)
     }.bind(throttle, dependencies:_*)
+  }
+
+  /**
+   * Binds target with a throttled unidirection binding.
+   *
+   * vararg variant.
+   */
+  def bind[A](target: Property[A], throttle: FiniteDuration, scheduler: Scheduler,
+    dependencies: Observable*)(f: ⇒ A)(implicit d: DummyImplicit): Cancellable =
+  {
+    bind(target, throttle, scheduler, dependencies)(f)
   }
 
   /**
@@ -193,12 +222,21 @@ object BindingsEx {
      * @param dependencies values to observe
      * @return Cancellable to stop observing values
      */
-    def bind(dependencies: ObservableValue[_]*): Cancellable = {
+    def bind(dependencies: Seq[ObservableValue[_]]): Cancellable = {
       val cancellable = RichObservableValue.listen[Any](dependencies) {
         update(inEC = false)
       }
       update(inEC = false)
       cancellable
+    }
+
+    /**
+     * Binds the targets.
+     *
+     * vararg variant.
+     */
+    def bind(dependencies: ObservableValue[_]*)(implicit d: DummyImplicit): Cancellable = {
+      bind(dependencies)
     }
 
     /**
@@ -208,7 +246,7 @@ object BindingsEx {
      * @param dependencies values to observe
      * @return Cancellable to stop observing values
      */
-    def bind(throttle: FiniteDuration, dependencies: Observable*): Cancellable = {
+    def bind(throttle: FiniteDuration, dependencies: Seq[Observable]): Cancellable = {
       val throttler = CallThrottler(schedulerOpt.getOrElse(CoreSystem.scheduler), throttle) { inEC ⇒
         update(inEC || schedulerOpt.isEmpty)
       }
@@ -218,6 +256,16 @@ object BindingsEx {
       throttler()
       cancellable
     }
+
+    /**
+     * Binds the targets using throttling.
+     *
+     * vararg variant.
+     */
+    def bind(throttle: FiniteDuration, dependencies: Observable*)(implicit d: DummyImplicit): Cancellable = {
+      bind(throttle, dependencies)
+    }
+
   }
 
   // Simple binding linker from scala to java Boolean
