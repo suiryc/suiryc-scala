@@ -30,8 +30,9 @@ class PortableSettings(filepath: Path, private var _config: Config, ref: Config)
     if (!_config.hasPath(path) || (_config.getValue(path) != value)) {
       backup()
       // Keep origin when applicable
+      // (take care of ConfigNull values too)
       val actual =
-        if (ref.hasPath(path)) value.withOrigin(ref.getValue(path).origin)
+        if (ref.hasPathOrNull(path)) value.withOrigin(getValue(ref, path).origin)
         else value
       _config = _config.withValue(path, actual)
       save()
@@ -41,7 +42,7 @@ class PortableSettings(filepath: Path, private var _config: Config, ref: Config)
   /** Removes a path. */
   def withoutPath(path: String): Unit = {
     // Do nothing if path was already absent
-    if (_config.hasPath(path)) {
+    if (_config.hasPathOrNull(path)) {
       backup()
       _config = _config.withoutPath(path)
       save()
@@ -64,11 +65,11 @@ class PortableSettings(filepath: Path, private var _config: Config, ref: Config)
   /** Actual config saving (given file path). */
   protected def save(path: Path, backup: Boolean): Unit = {
     clean(config) match {
-      case Some(cleanedConfig) =>
+      case Some(cleanedConfig) ⇒
         val renderOptions = ConfigRenderOptions.defaults.setOriginComments(false).setJson(false)
         Files.write(path, cleanedConfig.root.render(renderOptions).getBytes(StandardCharsets.UTF_8))
 
-      case None =>
+      case None ⇒
         // We could delete the configuration as there is no change from the
         // reference. But it's more user-friendly to simply say so in the file.
         // We only delete the backup file in this case.
@@ -78,24 +79,94 @@ class PortableSettings(filepath: Path, private var _config: Config, ref: Config)
     ()
   }
 
-  @scala.annotation.tailrec
-  private def isEmpty(objs: List[ConfigObject]): Boolean = {
-    // If there is no more entry to check, we are empty
-    if (objs.isEmpty) true
-    else {
-      val head = objs.head
-      val tail = objs.tail
-      // If next object is empty, check the rest
-      if (head.isEmpty) isEmpty(objs.tail)
-      else {
-        val values = head.values
-        val children = values.asScala.toList.takeWhile(_.valueType == ConfigValueType.OBJECT)
-        // If there are non objects, we are not empty; otherwise check all
-        // children are empty.
-        if (values.size != children.size) false
-        else isEmpty(tail ::: children.map(_.asInstanceOf[ConfigObject]))
+  // Gets value, even if null (ConfigNull).
+  // Config.getValue throws Exception for null values. To workaround this we
+  // need to go through ConfigObject.get which works with keys (direct children)
+  // instead of paths. Use ConfigUtil.splitPath to determine the children
+  // hierarchy to go through to get the value.
+  private def getValue(config: Config, path: String): ConfigValue = {
+    // Get the value directly, throws an appropriate exception when applicable
+    def direct(): ConfigValue = config.getValue(path)
+
+    @scala.annotation.tailrec
+    def loop(value: ConfigValue, path: List[String]): ConfigValue = {
+      // If this is the end ot the path, we got our value
+      if (path.isEmpty) value
+      else if (value.valueType != ConfigValueType.OBJECT) {
+        // Should not happen: we checked that the path existed
+        direct()
+      } else {
+        // Process child value (its key is the head of the path)
+        val head = path.head
+        val tail = path.tail
+        Option(value.asInstanceOf[ConfigObject].get(head)) match {
+          case Some(obj) ⇒
+            loop(obj, tail)
+
+          case None ⇒
+            // Should not happen: we checked that the path existed
+            direct()
+        }
       }
     }
+
+    if (!config.hasPathOrNull(path) || !config.getIsNull(path)) direct()
+    else loop(config.root, ConfigUtil.splitPath(path).asScala.toList)
+  }
+
+  // Finds all paths (and values, even if null).
+  // Config.entrySet does filter null values. To workaround this, we need to
+  // go through ConfigObject.entrySet (returns direct children) recursively.
+  private def findPaths(obj: ConfigObject): Map[String, ConfigValue] = {
+    @scala.annotation.tailrec
+    def loop(entries: Map[String, ConfigValue], objs: List[(List[String], ConfigObject)]): Map[String, ConfigValue] = {
+      // If there is no more object to process, we are done
+      if (objs.isEmpty) entries
+      else {
+        val head = objs.head
+        val tail = objs.tail
+        val path = head._1
+        val obj = head._2
+        // Get this object content, adding simple values to entries to return
+        // and objects to those left to process.
+        val (entries2, objs2) = obj.entrySet.asScala.toList.foldLeft((entries, tail)) { case ((entries0, objs0), entry) ⇒
+          val key = entry.getKey
+          val path2 = path :+ key
+          val value = entry.getValue
+          if (value.valueType != ConfigValueType.OBJECT) (entries0 + (ConfigUtil.joinPath(path2:_*) → value), objs0)
+          else (entries0, objs0 :+ (path2 → value.asInstanceOf[ConfigObject]))
+        }
+        loop(entries2, objs2)
+      }
+    }
+
+    loop(Map.empty, List(Nil → obj))
+  }
+
+  // Gets whether an object is empty.
+  // Object is empty it it contains nothing or children that are empty.
+  private def isEmpty(obj: ConfigObject): Boolean = {
+    @scala.annotation.tailrec
+    def loop(objs: List[ConfigObject]): Boolean = {
+      // If there is no more entry to check, we are empty
+      if (objs.isEmpty) true
+      else {
+        val head = objs.head
+        val tail = objs.tail
+        // If next object is empty, check the rest
+        if (head.isEmpty) loop(objs.tail)
+        else {
+          val values = head.values
+          val children = values.asScala.toList.takeWhile(_.valueType == ConfigValueType.OBJECT)
+          // If there are non objects, we are not empty; otherwise check all
+          // children are empty.
+          if (values.size != children.size) false
+          else loop(tail ::: children.map(_.asInstanceOf[ConfigObject]))
+        }
+      }
+    }
+
+    loop(List(obj))
   }
 
   private case class ObjectEntry(path: String, value: ConfigObject)
@@ -109,13 +180,13 @@ class PortableSettings(filepath: Path, private var _config: Config, ref: Config)
         val head = entries.head
         val tail = entries.tail
         // If next entry is empty, remove its path and check the rest
-        if (isEmpty(List(head.value))) {
+        if (isEmpty(head.value)) {
           // If we are to remove the root path, whole config is empty
           if (head.path.isEmpty) None
           else clean(config.withoutPath(head.path), tail)
         } else {
           // Adds children objects for next.
-          val newEntries = head.value.entrySet.asScala.toList.filter(_.getValue.valueType == ConfigValueType.OBJECT).map { entry =>
+          val newEntries = head.value.entrySet.asScala.toList.filter(_.getValue.valueType == ConfigValueType.OBJECT).map { entry ⇒
             ObjectEntry(
               path = List(head.path, entry.getKey).filter(_.length > 0).mkString("."),
               value = entry.getValue.asInstanceOf[ConfigObject]
@@ -126,10 +197,12 @@ class PortableSettings(filepath: Path, private var _config: Config, ref: Config)
       }
     }
 
-    // We first remove unchanged values
-    val cleaned1 = config.entrySet.asScala.foldLeft(config) { (acc, entry) =>
-      val key = entry.getKey
-      if (ref.hasPath(key) && ref.getValue(key) == entry.getValue) acc.withoutPath(key)
+    // We first remove unchanged values.
+    // Take care of null values too.
+    val cleaned1 = findPaths(config.root).foldLeft(config) { (acc, entry) ⇒
+      val key = entry._1
+      val value = entry._2
+      if (ref.hasPathOrNull(key) && (getValue(ref, key) == value)) acc.withoutPath(key)
       else acc
     }
 
@@ -159,12 +232,12 @@ object PortableSettings extends StrictLogging {
     val appConfig = try {
       ConfigFactory.parseFile(filepath.toFile)
     } catch {
-      case ex: Exception if backup.exists =>
+      case ex: Exception if backup.exists ⇒
         logger.error(s"Failed to load configuration=<$filepath>, switching to backup: ${ex.getMessage}", ex)
         try {
           ConfigFactory.parseFile(backup)
         } catch {
-          case _: Exception =>
+          case _: Exception ⇒
             throw ex
         }
     }
