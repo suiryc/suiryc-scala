@@ -56,7 +56,7 @@ trait ConfigEntry[A] {
   }
   /** Sets the entry as a single value. */
   def set(v: A): Unit = {
-    if (v == null) reset()
+    if ((v == null) || refOpt.contains(v)) reset()
     else {
       settings.withValue(path, ConfigValueFactory.fromAnyRef(handler.toInner(v)))
       cached = Some(Some(v))
@@ -65,9 +65,12 @@ trait ConfigEntry[A] {
   }
   /** Sets the entry as a list of values. */
   def setList(v: List[A]): Unit = {
-    settings.withValue(path, ConfigValueFactory.fromIterable(v.map(handler.toInner).asJava))
-    cached = None
-    cachedList = Some(v)
+    if (refOptList == v) reset()
+    else {
+      settings.withValue(path, ConfigValueFactory.fromIterable(v.map(handler.toInner).asJava))
+      cached = None
+      cachedList = Some(v)
+    }
   }
   /** Resets entry. */
   def reset(): Unit = {
@@ -78,11 +81,34 @@ trait ConfigEntry[A] {
     cachedList = None
   }
 
-  /** Adds default value for 'get' (if entry is missing) */
+  // Some helpers to read the same setting in the reference configuration.
+  protected var refCached: Option[Option[A]] = None
+  protected var refCachedList: Option[List[A]] = None
+
+  /** Gets whether reference entry exists. */
+  def refExists: Boolean = settings.reference.hasPath(path)
+  /** Gets the reference entry as a single value. */
+  def refGet: A = refCached.flatten.getOrElse {
+    val v = handler.get(settings.reference, path)
+    refCached = Some(Some(v))
+    v
+  }
+  /** Gets the reference entry as a single optional value. */
+  def refOpt: Option[A] = refCached.getOrElse(if (refExists) Some(refGet) else None)
+  /** Gets the reference entry as a list of values. */
+  def refGetList: List[A] = refCachedList.getOrElse {
+    val v = handler.getList(settings.reference, path)
+    refCachedList = Some(v)
+    v
+  }
+  /** Gets the reference entry as a list of values (empty if entry is missing). */
+  def refOptList: List[A] = refCachedList.getOrElse(if (refExists) refGetList else Nil)
+
+  /** Adds default value for 'get'/'refGet' (if entry is missing) */
   def withDefault(v: A): ConfigEntry[A] = new ConfigEntry.Wrapped[A](this) with ConfigEntry.WithDefault[A] {
     override protected val default: A = v
   }
-  /** Adds default value for 'getList' (if entry is missing) */
+  /** Adds default value for 'getList'/'refGetList' (if entry is missing) */
   def withDefault(v: List[A]): ConfigEntry[A] = new ConfigEntry.Wrapped[A](this) with ConfigEntry.WithDefaultList[A] {
     override protected val defaultList: List[A] = v
   }
@@ -151,6 +177,14 @@ object ConfigEntry extends BaseConfigImplicits {
       // Re-set cache since the value is now the default one
       cached = Some(Some(default))
     }
+    override def refGet: A = refCached.flatten.getOrElse {
+      val v =
+        if (refExists) handler.get(settings.reference, path)
+        else default
+      refCached = Some(Some(v))
+      v
+    }
+    override def refOpt: Option[A] = refCached.getOrElse(Some(refGet))
   }
 
   /** Handles default list value for config entry. */
@@ -173,6 +207,14 @@ object ConfigEntry extends BaseConfigImplicits {
       // Re-set cache since the value is now the default one
       cachedList = Some(defaultList)
     }
+    override def refGetList: List[A] = refCachedList.getOrElse {
+      val v =
+        if (refExists) handler.getList(settings.reference, path)
+        else defaultList
+      refCachedList = Some(v)
+      v
+    }
+    override def refOptList: List[A] = refCachedList.getOrElse(refGetList)
   }
 
   /** Builds a config entry for a type with implicit handler. */
