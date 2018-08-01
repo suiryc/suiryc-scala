@@ -211,7 +211,10 @@ class SettingsSnapshot {
     snapshots.exists(_.isDraftChanged(original, refreshed))
 
   /** Refreshes, applies drafts values and returns whether any was changed. */
-  def applyDraft(): Boolean = snapshots.foldLeft(false)(_ || _.applyDraft())
+  def applyDraft(): Boolean = snapshots.foldLeft(false) { (changed, snapshot) ⇒
+    // Note: always apply draft, then merge 'changed' result
+    snapshot.applyDraft() || changed
+  }
 
   /** Refreshes drafts values. */
   def refreshDraft(): Unit = snapshots.foreach(_.refreshDraft())
