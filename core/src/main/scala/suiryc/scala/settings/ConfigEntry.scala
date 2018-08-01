@@ -22,7 +22,7 @@ trait ConfigEntry[A] {
 
   // Cached value (to prevent re-parsing)
   protected var cached: Option[Option[A]] = None
-  protected var cachedList: Option[Option[List[A]]] = None
+  protected var cachedList: Option[List[A]] = None
 
   /** Gets whether entry exists. */
   def exists: Boolean = settings.config.hasPath(path)
@@ -33,15 +33,27 @@ trait ConfigEntry[A] {
     v
   }
   /** Gets the entry as a single optional value. */
-  def opt: Option[A] = cached.getOrElse(if (exists) Some(get) else None)
+  def opt: Option[A] = cached.getOrElse {
+    if (exists) Some(get)
+    else {
+      cached = Some(None)
+      None
+    }
+  }
   /** Gets the entry as a list of values. */
-  def getList: List[A] = cachedList.flatten.getOrElse {
+  def getList: List[A] = cachedList.getOrElse {
     val v = handler.getList(settings.config, path)
-    cachedList = Some(Some(v))
+    cachedList = Some(v)
     v
   }
   /** Gets the entry as a list of values (empty if entry is missing). */
-  def optList: List[A] = cachedList.map(_.getOrElse(Nil)).getOrElse(if (exists) getList else Nil)
+  def optList: List[A] = cachedList.getOrElse {
+    if (exists) getList
+    else {
+      cachedList = Some(Nil)
+      Nil
+    }
+  }
   /** Sets the entry as a single value. */
   def set(v: A): Unit = {
     if (v == null) reset()
@@ -55,7 +67,7 @@ trait ConfigEntry[A] {
   def setList(v: List[A]): Unit = {
     settings.withValue(path, ConfigValueFactory.fromIterable(v.map(handler.toInner).asJava))
     cached = None
-    cachedList = Some(Some(v))
+    cachedList = Some(v)
   }
   /** Resets entry. */
   def reset(): Unit = {
@@ -117,8 +129,6 @@ object ConfigEntry extends BaseConfigImplicits {
     override protected[settings] val settings: PortableSettings = wrapped.settings
     override protected val handler: ConfigEntry.Handler[A] = wrapped.handler
     override protected[settings] val path: String = wrapped.path
-    override def get: A = wrapped.get
-    override def getList: List[A] = wrapped.getList
   }
 
   /** Handles default value for config entry. */
@@ -146,14 +156,14 @@ object ConfigEntry extends BaseConfigImplicits {
   /** Handles default list value for config entry. */
   trait WithDefaultList[A] extends ConfigEntry[A] {
     protected val defaultList: List[A]
-    override def getList: List[A] = cachedList.flatten.getOrElse {
+    override def getList: List[A] = cachedList.getOrElse {
       val v =
         if (exists) handler.getList(settings.config, path)
         else defaultList
-      cachedList = Some(Some(v))
+      cachedList = Some(v)
       v
     }
-    override def optList: List[A] = cachedList.flatten.getOrElse(getList)
+    override def optList: List[A] = cachedList.getOrElse(getList)
     override def setList(v: List[A]): Unit = {
       if (defaultList == v) reset()
       else super.setList(v)
@@ -161,7 +171,7 @@ object ConfigEntry extends BaseConfigImplicits {
     override def reset(): Unit = {
       super.reset()
       // Re-set cache since the value is now the default one
-      cachedList = Some(Some(defaultList))
+      cachedList = Some(defaultList)
     }
   }
 
