@@ -44,7 +44,7 @@ trait ConfigEntry[A] {
   def optList: List[A] = cachedList.map(_.getOrElse(Nil)).getOrElse(if (exists) getList else Nil)
   /** Sets the entry as a single value. */
   def set(v: A): Unit = {
-    if (v == null) remove()
+    if (v == null) reset()
     else {
       settings.withValue(path, ConfigValueFactory.fromAnyRef(handler.toInner(v)))
       cached = Some(Some(v))
@@ -57,11 +57,13 @@ trait ConfigEntry[A] {
     cached = None
     cachedList = Some(Some(v))
   }
-  /** Removes entry. */
-  def remove(): Unit = {
+  /** Resets entry. */
+  def reset(): Unit = {
     settings.withoutPath(path)
-    cached = Some(None)
-    cachedList = Some(None)
+    // Since the fallback config may hold a default value, let next read call
+    // determine it.
+    cached = None
+    cachedList = None
   }
 
   /** Adds default value for 'get' (if entry is missing) */
@@ -131,11 +133,13 @@ object ConfigEntry extends BaseConfigImplicits {
     }
     override def opt: Option[A] = cached.getOrElse(Some(get))
     override def set(v: A): Unit = {
-      if (default == v) {
-        remove()
-        // Re-set cache since the value is now the default one
-        cached = Some(Some(default))
-      } else super.set(v)
+      if (default == v) reset()
+      else super.set(v)
+    }
+    override def reset(): Unit = {
+      super.reset()
+      // Re-set cache since the value is now the default one
+      cached = Some(Some(default))
     }
   }
 
@@ -151,11 +155,13 @@ object ConfigEntry extends BaseConfigImplicits {
     }
     override def optList: List[A] = cachedList.flatten.getOrElse(getList)
     override def setList(v: List[A]): Unit = {
-      if (defaultList == v) {
-        remove()
-        // Re-set cache since the value is now the default one
-        cachedList = Some(Some(defaultList))
-      } else super.setList(v)
+      if (defaultList == v) reset()
+      else super.setList(v)
+    }
+    override def reset(): Unit = {
+      super.reset()
+      // Re-set cache since the value is now the default one
+      cachedList = Some(Some(defaultList))
     }
   }
 

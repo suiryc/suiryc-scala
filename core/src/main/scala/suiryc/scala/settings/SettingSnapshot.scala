@@ -164,7 +164,7 @@ object SettingSnapshot {
     new SettingSnapshot[A] {
       override protected def getValue: A = setting.opt.orNull
       override protected def setValue(v: A): Unit = {
-        if (v == null) setting.remove()
+        if (v == null) setting.reset()
         else setting.set(v)
       }
     }

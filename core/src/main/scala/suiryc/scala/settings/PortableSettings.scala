@@ -16,10 +16,20 @@ import scala.collection.JavaConverters._
  * First change triggers a backup of the original config.
  * After each change the file is updated.
  */
-class PortableSettings(filepath: Path, private var _config: Config, ref: Config) {
+class PortableSettings(filepath: Path, private var _config: Config, val reference: Config) {
+
+  /** The standalone config (without reference fallback). */
+  private var _configStandalone: Config = updateStandalone(_config)
 
   /** Whether config was already backuped. */
   private var backupDone = false
+
+  private def updateStandalone(c: Config): Config = {
+    _configStandalone = c
+    // We always keep reference as fallback
+    _config = _configStandalone.withFallback(reference)
+    _configStandalone
+  }
 
   /** The underlying config. */
   def config: Config = _config
@@ -32,19 +42,19 @@ class PortableSettings(filepath: Path, private var _config: Config, ref: Config)
       // Keep origin when applicable
       // (take care of ConfigNull values too)
       val actual =
-        if (ref.hasPathOrNull(path)) value.withOrigin(getValue(ref, path).origin)
+        if (reference.hasPathOrNull(path)) value.withOrigin(getValue(reference, path).origin)
         else value
-      _config = _config.withValue(path, actual)
+      updateStandalone(_configStandalone.withValue(path, actual))
       save()
     }
   }
 
-  /** Removes a path. */
+  /** Removes a path (but still fallbacks to the reference). */
   def withoutPath(path: String): Unit = {
     // Do nothing if path was already absent
-    if (_config.hasPathOrNull(path)) {
+    if (_configStandalone.hasPathOrNull(path)) {
       backup()
-      _config = _config.withoutPath(path)
+      updateStandalone(_configStandalone.withoutPath(path))
       save()
     }
   }
@@ -64,7 +74,7 @@ class PortableSettings(filepath: Path, private var _config: Config, ref: Config)
 
   /** Actual config saving (given file path). */
   protected def save(path: Path, backup: Boolean): Unit = {
-    clean(config) match {
+    clean(_configStandalone) match {
       case Some(cleanedConfig) ⇒
         val renderOptions = ConfigRenderOptions.defaults.setOriginComments(false).setJson(false)
         Files.write(path, cleanedConfig.root.render(renderOptions).getBytes(StandardCharsets.UTF_8))
@@ -171,6 +181,12 @@ class PortableSettings(filepath: Path, private var _config: Config, ref: Config)
 
   private case class ObjectEntry(path: String, value: ConfigObject)
 
+  // Cleans configuration.
+  // Removes null entries or with default values, and empty objects.
+  // Returns remaining configuration, or None if empty.
+  // Note: this is a last-time effort to drop useless entries in configuration
+  // before saving it. In most cases (using ConfigEntry to access content), at
+  // least default values can be taken care of by code holding those settings.
   private def clean(config: Config): Option[Config] = {
     @scala.annotation.tailrec
     def clean(config: Config, entries: List[ObjectEntry]): Option[Config] = {
@@ -202,7 +218,7 @@ class PortableSettings(filepath: Path, private var _config: Config, ref: Config)
     val cleaned1 = findPaths(config.root).foldLeft(config) { (acc, entry) ⇒
       val key = entry._1
       val value = entry._2
-      if (ref.hasPathOrNull(key) && (getValue(ref, key) == value)) acc.withoutPath(key)
+      if (reference.hasPathOrNull(key) && (getValue(reference, key) == value)) acc.withoutPath(key)
       else acc
     }
 
@@ -242,8 +258,7 @@ object PortableSettings extends StrictLogging {
         }
     }
     val ref = defaultReference(confpath:_*)
-    val config = appConfig.withFallback(ref)
-    new PortableSettings(filepath, config, ref)
+    new PortableSettings(filepath, appConfig, ref)
   }
 
   def reference(confpath: String*): PortableSettings = {
