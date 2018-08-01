@@ -159,7 +159,7 @@ object SettingSnapshot {
       override protected def setValue(v: T): Unit = setting() = v
     }
 
-  /** Builds a snapshot from a (portable setting) config entry. */
+  /** Builds a snapshot from a (portable setting) object config entry. */
   def apply[A >: Null](setting: ConfigEntry[A]): SettingSnapshot[A] =
     new SettingSnapshot[A] {
       override protected def getValue: A = setting.opt.orNull
@@ -167,6 +167,14 @@ object SettingSnapshot {
         if (v == null) setting.remove()
         else setting.set(v)
       }
+    }
+
+  /** Builds a snapshot from a (portable setting) value config entry. */
+  // Variant for values that cannot be null (Int, etc).
+  def apply[A <: AnyVal](setting: ConfigEntry[A])(implicit d: DummyImplicit): SettingSnapshot[A] =
+    new SettingSnapshot[A] {
+      override protected def getValue: A = setting.get
+      override protected def setValue(v: A): Unit = setting.set(v)
     }
 
 }
