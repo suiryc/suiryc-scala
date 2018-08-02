@@ -3,6 +3,7 @@ package suiryc.scala.settings
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import suiryc.scala.misc.Util
 
 /**
  * Base config helper.
@@ -18,6 +19,12 @@ class BaseConfig(val config: Config) extends BaseConfigImplicits {
   /** Get typed optional config value. */
   def option[T](path: String, config: Config = config)(implicit t: (Config, String) => T): Option[T] =
     if (config.hasPath(path)) Some(t(config, path)) else None
+
+}
+
+object BaseConfig {
+
+  def toDuration(v: java.time.Duration): FiniteDuration = Duration.fromNanos(v.toNanos)
 
 }
 
@@ -75,13 +82,25 @@ trait BaseConfigImplicits {
     config.getDoubleList(path).asScala.toList.map(Double.unbox)
 
   /** Implicit function to get Duration (as scala) config value. */
-  implicit def configGetDuration(config: Config, path: String): FiniteDuration =
-    toDuration(config.getDuration(path))
+  implicit def configGetDuration(config: Config, path: String): FiniteDuration = {
+    // Try to parse duration as-is (best effort to keep original unit), and
+    // fallbacks to Config duration parsing upon issue.
+    try {
+      Util.parseDuration(config.getString(path)).asInstanceOf[FiniteDuration]
+    } catch {
+      case _: Exception ⇒ BaseConfig.toDuration(config.getDuration(path))
+    }
+  }
 
   /** Implicit function to get Duration (as scala) List config value. */
-  implicit def configGetDurationList(config: Config, path: String): List[FiniteDuration] =
-    config.getDurationList(path).asScala.toList.map(toDuration)
-
-  private def toDuration(v: java.time.Duration): FiniteDuration = Duration.fromNanos(v.toNanos)
+  implicit def configGetDurationList(config: Config, path: String): List[FiniteDuration] = {
+    // Try to parse duration as-is (best effort to keep original unit), and
+    // fallbacks to Config duration parsing upon issue.
+    try {
+      config.getStringList(path).asScala.toList.map(Util.parseDuration(_).asInstanceOf[FiniteDuration])
+    } catch {
+      case _: Exception ⇒ config.getDurationList(path).asScala.toList.map(BaseConfig.toDuration)
+    }
+  }
 
 }
