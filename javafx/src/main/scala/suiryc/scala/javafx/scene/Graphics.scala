@@ -15,6 +15,14 @@ object Graphics {
   /** Standard icon size. */
   val iconSize = 16.0
 
+  lazy val stylesheet: String = getClass.getResource("graphics.css").toExternalForm
+
+  /** Helper to add stylesheet. */
+  def addStylesheet(scene: Scene): Unit = {
+    scene.getStylesheets.add(stylesheet)
+    ()
+  }
+
   /**
    * Builds a SVG path.
    *

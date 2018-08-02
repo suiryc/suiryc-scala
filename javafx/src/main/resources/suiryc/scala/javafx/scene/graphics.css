@@ -1,0 +1,7 @@
+.button-square-icon {
+  /* Reset button padding.
+   * By default uses 8 on each horizontal side and 4 on each vertical side,
+   * which gives a rectangle. Use 4 on each side to get a square.
+   */
+  -fx-padding: 4;
+}
