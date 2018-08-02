@@ -64,19 +64,19 @@ trait SettingSnapshot[T] {
   }
 
   /** Sets default value. */
-  def withDefault(v: T): SettingSnapshot[T] = {
+  def withDefault(v: T): this.type = {
     defaultValue = v
     this
   }
 
   /** Sets code to execute upon actual value change. */
-  def setOnChange(f: T ⇒ Unit): SettingSnapshot[T] = {
+  def setOnChange(f: T ⇒ Unit): this.type = {
     onChange = Some(f)
     this
   }
 
   /** Sets code to execute to refresh draft value (form external input). */
-  def setOnRefreshDraft(f: ⇒ T): SettingSnapshot[T] = {
+  def setOnRefreshDraft(f: ⇒ T): this.type = {
     onRefreshDraft = Some(() ⇒ f)
     this
   }
@@ -160,8 +160,8 @@ object SettingSnapshot {
     }
 
   /** Builds a snapshot from a (portable setting) object config entry. */
-  def apply[A >: Null](setting: ConfigEntry[A]): SettingSnapshot[A] =
-    new SettingSnapshot[A] {
+  def apply[A >: Null](setting: ConfigEntry[A]): ConfigEntrySnapshot[A] =
+    new ConfigEntrySnapshot[A](setting) {
       override protected def getValue: A = setting.opt.orNull
       override protected def setValue(v: A): Unit = {
         if (v == null) setting.reset()
@@ -171,8 +171,8 @@ object SettingSnapshot {
 
   /** Builds a snapshot from a (portable setting) value config entry. */
   // Variant for values that cannot be null (Int, etc).
-  def apply[A <: AnyVal](setting: ConfigEntry[A])(implicit d: DummyImplicit): SettingSnapshot[A] =
-    new SettingSnapshot[A] {
+  def apply[A <: AnyVal](setting: ConfigEntry[A])(implicit d: DummyImplicit): ConfigEntrySnapshot[A] =
+    new ConfigEntrySnapshot[A](setting) {
       override protected def getValue: A = setting.get
       override protected def setValue(v: A): Unit = setting.set(v)
     }

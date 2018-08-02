@@ -12,13 +12,13 @@ import suiryc.scala.misc.Units
  *
  * Relies on portable settings to get/update config.
  */
-trait ConfigEntry[A] {
-  // The portable settings (to track updated config)
-  protected[settings] val settings: PortableSettings
-  // The actual value handler
+trait ConfigEntry[A] extends {
+  /** The portable settings (to track updated config) */
+  val settings: PortableSettings
+  /** The setting path */
+  val path: String
+  /** The actual value handler */
   protected val handler: ConfigEntry.Handler[A]
-  // The setting path
-  protected[settings] val path: String
 
   // Cached value (to prevent re-parsing)
   protected var cached: Option[Option[A]] = None
@@ -141,9 +141,9 @@ object ConfigEntry extends BaseConfigImplicits {
 
   /** Basic (default implementation) ConfigEntry. */
   class Basic[A](
-    override protected[settings] val settings: PortableSettings,
-    override protected val handler: ConfigEntry.Handler[A],
-    override protected[settings] val path: String
+    override val settings: PortableSettings,
+    override val path: String,
+    override protected val handler: ConfigEntry.Handler[A]
   ) extends ConfigEntry[A]
 
   /**
@@ -152,9 +152,9 @@ object ConfigEntry extends BaseConfigImplicits {
    * Used to override get or getList with default value.
    */
   class Wrapped[A](wrapped: ConfigEntry[A]) extends ConfigEntry[A] {
-    override protected[settings] val settings: PortableSettings = wrapped.settings
+    override val settings: PortableSettings = wrapped.settings
+    override val path: String = wrapped.path
     override protected val handler: ConfigEntry.Handler[A] = wrapped.handler
-    override protected[settings] val path: String = wrapped.path
   }
 
   /** Handles default value for config entry. */
@@ -219,11 +219,11 @@ object ConfigEntry extends BaseConfigImplicits {
 
   /** Builds a config entry for a type with implicit handler. */
   def from[A](settings: PortableSettings, path: String*)(implicit handler: Handler[A]): ConfigEntry[A] =
-    new Basic(settings, handler, path.mkString("."))
+    new Basic(settings, path.mkString("."), handler)
 
   /** Builds a config entry for a given Enumeration. */
   def from[A <: Enumeration](settings: PortableSettings, enum: A, path: String*): ConfigEntry[A#Value] =
-    new Basic(settings, enumerationHandler(enum), path.mkString("."))
+    new Basic(settings, path.mkString("."), enumerationHandler(enum))
 
   /** Boolean entry handler. */
   implicit val booleanHandler: Handler[Boolean] = baseHandler[Boolean]
