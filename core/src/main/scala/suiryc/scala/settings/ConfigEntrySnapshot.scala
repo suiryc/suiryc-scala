@@ -30,7 +30,7 @@ abstract class ConfigEntrySnapshot[A](setting: ConfigEntry[A]) extends SettingSn
     else None
   }
   // Automatically get default reference value when applicable.
-  if (setting.refExists) withDefault(setting.refGet)
+  if (setting.refOpt.isDefined) withDefault(setting.refGet)
 
   /**
    * Sets draft raw value.
