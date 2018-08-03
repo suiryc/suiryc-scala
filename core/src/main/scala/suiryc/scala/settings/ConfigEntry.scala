@@ -219,11 +219,11 @@ object ConfigEntry extends BaseConfigImplicits {
 
   /** Builds a config entry for a type with implicit handler. */
   def from[A](settings: PortableSettings, path: String*)(implicit handler: Handler[A]): ConfigEntry[A] =
-    new Basic(settings, path.mkString("."), handler)
+    new Basic(settings, BaseConfig.joinPath(path), handler)
 
   /** Builds a config entry for a given Enumeration. */
   def from[A <: Enumeration](settings: PortableSettings, enum: A, path: String*): ConfigEntry[A#Value] =
-    new Basic(settings, path.mkString("."), enumerationHandler(enum))
+    new Basic(settings, BaseConfig.joinPath(path), enumerationHandler(enum))
 
   /** Boolean entry handler. */
   implicit val booleanHandler: Handler[Boolean] = baseHandler[Boolean]

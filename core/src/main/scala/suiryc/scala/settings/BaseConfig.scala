@@ -1,6 +1,6 @@
 package suiryc.scala.settings
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigUtil}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import suiryc.scala.misc.Util
@@ -23,6 +23,8 @@ class BaseConfig(val config: Config) extends BaseConfigImplicits {
 }
 
 object BaseConfig {
+
+  def joinPath(path: Seq[String]): String = ConfigUtil.joinPath(path.asJava)
 
   def toDuration(v: java.time.Duration): FiniteDuration = Duration.fromNanos(v.toNanos)
 

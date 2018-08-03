@@ -179,7 +179,7 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
     loop(List(obj))
   }
 
-  private case class ObjectEntry(path: String, value: ConfigObject)
+  private case class ObjectEntry(path: List[String], value: ConfigObject)
 
   // Cleans configuration.
   // Removes null entries or with default values, and empty objects.
@@ -199,12 +199,12 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
         if (isEmpty(head.value)) {
           // If we are to remove the root path, whole config is empty
           if (head.path.isEmpty) None
-          else clean(config.withoutPath(head.path), tail)
+          else clean(config.withoutPath(BaseConfig.joinPath(head.path)), tail)
         } else {
           // Adds children objects for next.
           val newEntries = head.value.entrySet.asScala.toList.filter(_.getValue.valueType == ConfigValueType.OBJECT).map { entry ⇒
             ObjectEntry(
-              path = List(head.path, entry.getKey).filter(_.length > 0).mkString("."),
+              path = head.path :+ entry.getKey,
               value = entry.getValue.asInstanceOf[ConfigObject]
             )
           }
@@ -223,7 +223,7 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
     }
 
     // Then we can remove empty objects
-    clean(cleaned1, List(ObjectEntry("", cleaned1.root)))
+    clean(cleaned1, List(ObjectEntry(Nil, cleaned1.root)))
   }
 
 }
@@ -232,7 +232,7 @@ object PortableSettings extends StrictLogging {
 
   /** Gets the Config default reference (for the given config path). */
   def defaultReference(path: String*): Config = {
-    val fullpath = path.mkString(".")
+    val fullpath = BaseConfig.joinPath(path)
     ConfigFactory.defaultReference().getConfig(fullpath).atPath(fullpath)
   }
 
