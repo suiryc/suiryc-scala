@@ -1,0 +1,31 @@
+/* 'warning' pseudo class uses orange to highlight fields */
+:warning {
+  /* First override base colors. */
+  -fx-color: rgb(255, 165, 0);
+  -fx-base: rgb(255, 188, 64);
+  /* For text fields, also override the border and focus colors. */
+  -fx-text-box-border: -fx-color;
+  -fx-focus-color: -fx-color;
+  -fx-faint-focus-color: rgba(255, 165, 0, 0.2);
+  /* Notes:
+   * We could also override the node border color (-fx-border-color). However
+   * it is usually transparent (and takes no place) and when displayed it makes
+   * the node size (and parent layout) change, unless countered.
+   * See: https://bugs.openjdk.java.net/browse/JDK-8120031
+   * Example:
+   *   -fx-border-color: ...;
+   *   -fx-border-insets: -1;
+   * Since this plus the focus color is not visually nice, we would need to
+   * remove it in this case (:warning:focused):
+   *   -fx-border-color: transparent;
+   */
+}
+
+/* 'error' pseudo class uses red to highlight fields */
+:error {
+  -fx-color: rgb(255, 64, 64);
+  -fx-base: rgb(255, 128, 128);
+  -fx-text-box-border: -fx-color;
+  -fx-focus-color: -fx-color;
+  -fx-faint-focus-color: rgba(255, 64, 64, 0.2);
+}
