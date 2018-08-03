@@ -231,9 +231,14 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
 object PortableSettings extends StrictLogging {
 
   /** Gets the Config default reference (for the given config path). */
-  def defaultReference(path: String*): Config = {
+  def defaultReference(path: Seq[String]): Config = {
     val fullpath = BaseConfig.joinPath(path)
     ConfigFactory.defaultReference().getConfig(fullpath).atPath(fullpath)
+  }
+
+  /** Gets the Config default reference (for the given config path). */
+  def defaultReference(path: String*)(implicit d: DummyImplicit): Config = {
+    defaultReference(path)
   }
 
   /**
@@ -243,7 +248,7 @@ object PortableSettings extends StrictLogging {
    * instead.
    * In both cases, default reference is used as fallback.
    */
-  def apply(filepath: Path, confpath: String*): PortableSettings = {
+  def apply(filepath: Path, confpath: Seq[String]): PortableSettings = {
     val backup = backupPath(filepath).toFile
     val appConfig = try {
       ConfigFactory.parseFile(filepath.toFile)
@@ -257,8 +262,17 @@ object PortableSettings extends StrictLogging {
             throw ex
         }
     }
-    val ref = defaultReference(confpath:_*)
+    val ref = defaultReference(confpath)
     new PortableSettings(filepath, appConfig, ref)
+  }
+
+  /**
+   * Gets portable settings.
+   *
+   * vararg variant.
+   */
+  def apply(filepath: Path, confpath: String*)(implicit d: DummyImplicit): PortableSettings = {
+    apply(filepath, confpath)
   }
 
   private def backupPath(filepath: Path): Path = {
