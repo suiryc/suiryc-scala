@@ -7,7 +7,7 @@ import javafx.beans.property.{Property, SimpleObjectProperty}
  *
  * Allows to determine if a setting was changed and reset it.
  */
-trait SettingSnapshot[T] {
+trait SettingSnapshot[A] extends Snapshot {
 
   // Notes:
   // We wish to
@@ -33,59 +33,59 @@ trait SettingSnapshot[T] {
   // to refresh the value makes the caller job easier.
 
   /** Original value. */
-  protected val originalValue: T = getValue
+  protected val originalValue: A = getValue
 
   /** Default value (original one by default). */
-  protected var defaultValue: T = originalValue
+  protected var defaultValue: A = originalValue
 
   /** Code to execute upon actual value change (side-effect). */
-  protected var onChange: Option[T ⇒ Unit] = None
+  protected var onChange: Option[A ⇒ Unit] = None
 
   /** Code to execute to refresh draft value (from external input). */
-  protected var onRefreshDraft: Option[() ⇒ T] = None
+  protected var onRefreshDraft: Option[() ⇒ A] = None
 
   /** Draft value (prepared to apply value change). */
-  val draft = new SimpleObjectProperty[T](originalValue)
+  val draft = new SimpleObjectProperty[A](originalValue)
 
   /** Gets underlying setting value. */
-  protected def getValue: T
+  protected def getValue: A
 
   /** Sets underlying setting value. */
-  protected def setValue(v: T): Unit
+  protected def setValue(v: A): Unit
 
   /**
    * Changes underlying setting value.
    *
    * Sets value and executes associated code if any.
    */
-  protected def applyChange(v: T): Unit = {
+  protected def applyChange(v: A): Unit = {
     setValue(v)
     onChange.foreach(_(v))
   }
 
   /** Sets default value. */
-  def withDefault(v: T): this.type = {
+  def withDefault(v: A): this.type = {
     defaultValue = v
     this
   }
 
   /** Sets code to execute upon actual value change. */
-  def setOnChange(f: T ⇒ Unit): this.type = {
+  def setOnChange(f: A ⇒ Unit): this.type = {
     onChange = Some(f)
     this
   }
 
   /** Sets code to execute to refresh draft value (form external input). */
-  def setOnRefreshDraft(f: ⇒ T): this.type = {
+  def setOnRefreshDraft(f: ⇒ A): this.type = {
     onRefreshDraft = Some(() ⇒ f)
     this
   }
 
   /** Gets whether the underlying setting value was changed. */
-  def changed(): Boolean = originalValue != getValue
+  override def changed(): Boolean = originalValue != getValue
 
   /** Resets the setting to its initial value. */
-  def reset(): Unit = if (changed()) applyChange(originalValue)
+  override def reset(): Unit = if (changed()) applyChange(originalValue)
 
   /**
    * Gets draft/refresh value.
@@ -94,7 +94,7 @@ trait SettingSnapshot[T] {
    * If requested, gets the refreshed value (without actually refreshing the
    * draft value).
    */
-  def getDraftValue(refreshed: Boolean = true): T = {
+  def getDraftValue(refreshed: Boolean = true): A = {
     if (refreshed) onRefreshDraft.map(_()).getOrElse(draft.get)
     else draft.get
   }
@@ -104,14 +104,14 @@ trait SettingSnapshot[T] {
    *
    * Compares current/refreshed draft value to original or default one.
    */
-  def isDraftChanged(original: Boolean = true, refreshed: Boolean = true): Boolean = {
+  override def isDraftChanged(original: Boolean = true, refreshed: Boolean = true): Boolean = {
     val draftValue = getDraftValue(refreshed)
     if (original) draftValue != originalValue
     else draftValue != defaultValue
   }
 
   /** Refreshes, applies draft value and returns whether it was changed. */
-  def applyDraft(): Boolean = {
+  override def applyDraft(): Boolean = {
     refreshDraft()
     if (isDraftChanged(refreshed = false)) {
       applyChange(draft.get)
@@ -120,7 +120,7 @@ trait SettingSnapshot[T] {
   }
 
   /** Refreshes draft value. */
-  def refreshDraft(): Unit = onRefreshDraft.foreach(f ⇒ draft.set(f()))
+  override def refreshDraft(): Unit = onRefreshDraft.foreach(f ⇒ draft.set(f()))
 
   /**
    * Sets draft to original or default value.
@@ -128,7 +128,7 @@ trait SettingSnapshot[T] {
    * If asked, first refresh the draft value (useful to trigger value change
    * if the draft value was not up-to-date yet).
    */
-  def resetDraft(original: Boolean = true, refresh: Boolean = true): Unit = {
+  override def resetDraft(original: Boolean = true, refresh: Boolean = true): Unit = {
     if (refresh) refreshDraft()
     if (original) draft.set(originalValue)
     else draft.set(defaultValue)
@@ -139,24 +139,24 @@ trait SettingSnapshot[T] {
 object SettingSnapshot {
 
   /** Builds a snapshot from a Preference. */
-  def apply[T](preference: Preference[T]): SettingSnapshot[T] =
-    new SettingSnapshot[T] {
-      override protected def getValue: T = preference()
-      override protected def setValue(v: T): Unit = preference() = v
+  def apply[A](preference: Preference[A]): SettingSnapshot[A] =
+    new SettingSnapshot[A] {
+      override protected def getValue: A = preference()
+      override protected def setValue(v: A): Unit = preference() = v
     }
 
   /** Builds a snapshot from a property. */
-  def apply[T](property: Property[T]): SettingSnapshot[T] =
-    new SettingSnapshot[T] {
-      override protected def getValue: T = property.getValue
-      override protected def setValue(v: T): Unit = property.setValue(v)
+  def apply[A](property: Property[A]): SettingSnapshot[A] =
+    new SettingSnapshot[A] {
+      override protected def getValue: A = property.getValue
+      override protected def setValue(v: A): Unit = property.setValue(v)
     }
 
   /** Builds a snapshot from a persistent setting. */
-  def apply[T](setting: PersistentSetting[T]): SettingSnapshot[T] =
-    new SettingSnapshot[T] {
-      override protected def getValue: T = setting()
-      override protected def setValue(v: T): Unit = setting() = v
+  def apply[A](setting: PersistentSetting[A]): SettingSnapshot[A] =
+    new SettingSnapshot[A] {
+      override protected def getValue: A = setting()
+      override protected def setValue(v: A): Unit = setting() = v
     }
 
   /** Builds a snapshot from a (portable setting) object config entry. */
@@ -180,47 +180,92 @@ object SettingSnapshot {
 }
 
 /**
+ * Generic snapshot feature.
+ *
+ * Abstracts the most generic needs. From a user point of view, whether a
+ * snapshot points to one or many settings does not really matter: what usually
+ * matters is whether there is a pending change, and reset/apply the change.
+ * This trait helps build simple (one value) and complex (list of values,
+ * possibly recursive) snapshots around those generic features.
+ */
+trait Snapshot {
+
+  /** Gets whether the setting value was changed. */
+  def changed(): Boolean
+
+  /** Resets the setting to its initial value. */
+  def reset(): Unit
+
+  /**
+   * Whether draft value was changed.
+   *
+   * Compares current/refreshed draft value to original or default one.
+   */
+  def isDraftChanged(original: Boolean = true, refreshed: Boolean = true): Boolean
+
+  /** Refreshes, applies draft value and returns whether it was changed. */
+  def applyDraft(): Boolean
+
+  /** Refreshes draft value. */
+  def refreshDraft(): Unit
+
+  /**
+   * Sets draft to original or default value.
+   *
+   * If asked, first refresh the draft value (useful to trigger value change
+   * if the draft value was not up-to-date yet).
+   */
+  def resetDraft(original: Boolean = true, refresh: Boolean = true): Unit
+
+}
+
+/**
  * Settings snapshot.
  *
  * Hold a list of snapshots. Allows to determine if any changed, and reset
  * them all.
  */
-class SettingsSnapshot {
+class Snapshots[A <: Snapshot] extends Snapshot {
 
-  /** Setting snapshots. */
-  private var snapshots: List[SettingSnapshot[_]] = Nil
+  /** Managed snapshots. */
+  protected var snapshots: List[A] = Nil
+
+  /** Gets currently managed snapshots. */
+  def getSnapshots: List[A] = snapshots
 
   /** Adds setting snapshots. */
-  def add(others: Seq[SettingSnapshot[_]]): Unit = snapshots ++= others.toList
+  def add(others: Seq[A]): Unit = snapshots ++= others.toList
 
   /** Adds setting snapshots. (vararg variant) */
-  def add(others: SettingSnapshot[_]*)(implicit d: DummyImplicit): Unit = add(others)
+  def add(others: A*)(implicit d: DummyImplicit): Unit = add(others)
 
-  /** Gets whether any setting changed. */
-  def changed(): Boolean = snapshots.exists(_.changed())
+  /** Gets whether any snapshot changed. */
+  override def changed(): Boolean = snapshots.exists(_.changed())
 
-  /** Resets all settings. */
-  def reset(): Unit = snapshots.foreach(_.reset())
+  /** Resets all snapshots. */
+  override def reset(): Unit = snapshots.foreach(_.reset())
 
   /**
    * Whether any draft value was changed.
    *
    * Compares current/refreshed draft value to original or default one.
    */
-  def isDraftChanged(original: Boolean = true, refreshed: Boolean = true): Boolean =
+  override def isDraftChanged(original: Boolean = true, refreshed: Boolean = true): Boolean =
     snapshots.exists(_.isDraftChanged(original, refreshed))
 
   /** Refreshes, applies drafts values and returns whether any was changed. */
-  def applyDraft(): Boolean = snapshots.foldLeft(false) { (changed, snapshot) ⇒
+  override def applyDraft(): Boolean = snapshots.foldLeft(false) { (changed, snapshot) ⇒
     // Note: always apply draft, then merge 'changed' result
     snapshot.applyDraft() || changed
   }
 
   /** Refreshes drafts values. */
-  def refreshDraft(): Unit = snapshots.foreach(_.refreshDraft())
+  override def refreshDraft(): Unit = snapshots.foreach(_.refreshDraft())
 
   /** Sets drafts to original or default value. */
-  def resetDraft(original: Boolean = true, refresh: Boolean = true): Unit =
+  override def resetDraft(original: Boolean = true, refresh: Boolean = true): Unit =
     snapshots.foreach(_.resetDraft(original, refresh))
 
 }
+
+class SettingsSnapshot extends Snapshots[Snapshot] with Snapshot
