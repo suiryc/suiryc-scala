@@ -24,6 +24,9 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
   /** Whether config was already backuped. */
   private var backupDone = false
 
+  /** Whether saving is currently delayed and needed. */
+  private var needSave = Option.empty[Boolean]
+
   private def updateStandalone(c: Config): Config = {
     _configStandalone = c
     // We always keep reference as fallback
@@ -59,9 +62,31 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
     }
   }
 
+  /** Enables/disables saving delaying. */
+  def setDelaySave(delay: Boolean): Unit = {
+    if (delay) {
+      if (needSave.isEmpty) needSave = Some(false)
+    } else {
+      val needed = needSave.contains(true)
+      needSave = None
+      if (needed) save()
+    }
+  }
+
+  /** Delay saving while executing code. */
+  def delayedSave[A](f: ⇒ A): A = {
+    setDelaySave(delay = true)
+    try {
+      f
+    } finally {
+      setDelaySave(delay = false)
+    }
+  }
+
   /** Saves the config. */
   def save(): Unit = this.synchronized {
-    save(filepath, backup = false)
+    if (needSave.isDefined) needSave = Some(true)
+    else save(filepath, backup = false)
   }
 
   /** Backups the config. */
