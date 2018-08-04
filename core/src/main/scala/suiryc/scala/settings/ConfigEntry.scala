@@ -155,6 +155,25 @@ object ConfigEntry extends BaseConfigImplicits {
     override val settings: PortableSettings = wrapped.settings
     override val path: String = wrapped.path
     override protected val handler: ConfigEntry.Handler[A] = wrapped.handler
+
+    // Propagate changes to wrapped entry.
+    // Notes:
+    // This helps if there is a need to create a wrapped value temporarily while
+    // having the underlying one retain changes done.
+    // Since it is the same value that is set twice, only the first change in
+    // the underlying portable settings (withValue) actually triggers something.
+    override def set(v: A): Unit = {
+      wrapped.set(v)
+      super.set(v)
+    }
+    override def setList(v: List[A]): Unit = {
+      wrapped.setList(v)
+      super.setList(v)
+    }
+    override def reset(): Unit = {
+      wrapped.reset()
+      super.reset()
+    }
   }
 
   /** Handles default value for config entry. */
