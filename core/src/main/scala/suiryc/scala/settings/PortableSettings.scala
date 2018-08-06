@@ -258,7 +258,9 @@ object PortableSettings extends StrictLogging {
   /** Gets the Config default reference (for the given config path). */
   def defaultReference(path: Seq[String]): Config = {
     val fullpath = BaseConfig.joinPath(path)
-    ConfigFactory.defaultReference().getConfig(fullpath).atPath(fullpath)
+    val ref = ConfigFactory.defaultReference()
+    if (ref.hasPath(fullpath)) ref.getConfig(fullpath).atPath(fullpath)
+    else ConfigFactory.empty()
   }
 
   /** Gets the Config default reference (for the given config path). */
@@ -300,7 +302,7 @@ object PortableSettings extends StrictLogging {
     apply(filepath, confpath)
   }
 
-  private def backupPath(filepath: Path): Path = {
+  private[settings] def backupPath(filepath: Path): Path = {
     filepath.resolveSibling(filepath.getFileName.toString + ".bak")
   }
 
