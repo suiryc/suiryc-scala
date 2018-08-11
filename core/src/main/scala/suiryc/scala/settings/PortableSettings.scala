@@ -30,7 +30,7 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
   private def updateStandalone(c: Config): Config = {
     _configStandalone = c
     // We always keep reference as fallback
-    _config = _configStandalone.withFallback(reference)
+    _config = _configStandalone.withFallback(reference).resolve()
     _configStandalone
   }
 
