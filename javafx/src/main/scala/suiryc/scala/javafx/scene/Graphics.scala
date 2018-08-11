@@ -3,6 +3,7 @@ package suiryc.scala.javafx.scene
 import javafx.geometry._
 import javafx.scene.image.{Image, WritableImage}
 import javafx.scene._
+import javafx.scene.control.{Labeled, MenuBar, TabPane}
 import javafx.scene.layout._
 import javafx.scene.paint.{Color, Paint}
 import javafx.scene.shape.SVGPath
@@ -325,6 +326,83 @@ object Graphics {
     }
     img
   }
+
+  /**
+   * Sets (graphic) icon on matching node (and any sub-node).
+   *
+   * Walks the node hierarchy to match elements by style class and set graphic
+   * where applicable.
+   * The style class matcher does not need to be exact: only non-empty icon
+   * matters, in which case the matched style class is removed from the node and
+   * the icon set as graphic.
+   * Handles MenuBar, Labeled, Pane, TabPane and Parent.
+   *
+   * @param node root node to set icon(s) on
+   * @param styleClassPredicate style class matcher
+   * @param iconOpt (graphic) icon to set where applicable
+   */
+  // scalastyle:off method.length
+  def setIcons(node: Node, styleClassPredicate: String ⇒ Boolean, iconOpt: String ⇒ Option[Node]): Unit = {
+    @scala.annotation.tailrec
+    def loop(nodes: List[Node]): Unit = {
+      if (nodes.nonEmpty) {
+        val head = nodes.head
+        val tail = nodes.tail
+        val remaining = head match {
+          case menuBar: MenuBar ⇒
+            menuBar.getMenus.asScala.flatMap(_.getItems.asScala).foreach { item ⇒
+              item.getStyleClass.asScala.find(styleClassPredicate).foreach { styleClass ⇒
+                iconOpt(styleClass).foreach { icon ⇒
+                  item.getStyleClass.remove(styleClass)
+                  item.setGraphic(icon)
+                }
+              }
+            }
+            tail
+
+          case labeled: Labeled ⇒
+            labeled.getStyleClass.asScala.find(styleClassPredicate).foreach { styleClass ⇒
+              iconOpt(styleClass).foreach { icon ⇒
+                labeled.getStyleClass.remove(styleClass)
+                labeled.setGraphic(icon)
+              }
+            }
+            tail
+
+          case pane: Pane ⇒
+            val remaining = tail ::: pane.getChildrenUnmodifiable.asScala.toList
+            pane.getStyleClass.asScala.find(styleClassPredicate).foreach { styleClass ⇒
+              iconOpt(styleClass).foreach { icon ⇒
+                pane.getStyleClass.remove(styleClass)
+                pane.getChildren.add(icon)
+              }
+            }
+            remaining
+
+          case tabPane: TabPane ⇒
+            tail ::: tabPane.getTabs.asScala.toList.map { tab ⇒
+              tab.getStyleClass.asScala.find(styleClassPredicate).foreach { styleClass ⇒
+                iconOpt(styleClass).foreach { icon ⇒
+                  tab.getStyleClass.remove(styleClass)
+                  tab.setGraphic(icon)
+                }
+              }
+              tab.getContent
+            }
+
+          case parent: Parent ⇒
+            tail ::: parent.getChildrenUnmodifiable.asScala.toList
+
+          case _ ⇒
+            tail
+        }
+        loop(remaining)
+      }
+    }
+
+    loop(List(node))
+  }
+  // scalastyle:on method.length
 
   /** Simple function to build an SVGGroup */
   protected type BuilderFunc = (List[String], Double) ⇒ SVGGroup
