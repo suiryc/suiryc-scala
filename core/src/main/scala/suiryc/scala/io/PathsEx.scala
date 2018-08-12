@@ -1,6 +1,7 @@
 package suiryc.scala.io
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
+import suiryc.scala.io.RichFile._
 
 /** Path (and filename) helpers. */
 object PathsEx {
@@ -130,6 +131,37 @@ object PathsEx {
     sanitizedChars.foldLeft(str) { (str, entry) =>
       str.replace(entry._1, entry._2)
     }
+  }
+
+  /**
+   * Finds available path.
+   *
+   * Starting from given given path, find the first name that is available,
+   * adding " (n)" suffix (before extension if any for files) with 'n' starting
+   * from 1.
+   *
+   * @param path path to test
+   * @param isFile whether this is supposed to be a file path
+   * @return
+   */
+  def getAvailable(path: Path, isFile: Boolean = true): Path = {
+    @scala.annotation.tailrec
+    def loop(n: Int): Path = {
+      val probe = if (n == 0) {
+        path
+      } else if (isFile) {
+        val (base, ext) = path.toFile.baseAndExt
+        val extOpt = Some(ext).filterNot(_.isEmpty)
+        path.resolveSibling(s"$base ($n)${extOpt.map(v ⇒ s".$v").getOrElse("")}")
+      } else {
+        val name = path.name
+        path.resolveSibling(s"$name ($n)")
+      }
+      if (Files.exists(probe)) loop(n + 1)
+      else probe
+    }
+
+    loop(0)
   }
 
 }
