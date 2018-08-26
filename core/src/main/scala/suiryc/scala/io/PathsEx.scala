@@ -133,6 +133,11 @@ object PathsEx {
     }
   }
 
+  /** Gets backup path (".bak" suffix) for a given file. */
+  def backupPath(filepath: Path): Path = {
+    filepath.resolveSibling(filepath.getFileName.toString + ".bak")
+  }
+
   /**
    * Finds available path.
    *

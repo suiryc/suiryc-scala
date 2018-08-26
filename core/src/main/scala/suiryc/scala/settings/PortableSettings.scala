@@ -5,6 +5,7 @@ import com.typesafe.scalalogging.StrictLogging
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
 import scala.collection.JavaConverters._
+import suiryc.scala.io.PathsEx
 
 /**
  * Portable settings.
@@ -92,7 +93,7 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
   /** Backups the config. */
   protected def backup(): Unit = this.synchronized {
     if (!backupDone) {
-      save(PortableSettings.backupPath(filepath), backup = true)
+      save(PathsEx.backupPath(filepath), backup = true)
       backupDone = true
     }
   }
@@ -276,7 +277,7 @@ object PortableSettings extends StrictLogging {
    * In both cases, default reference is used as fallback.
    */
   def apply(filepath: Path, confpath: Seq[String]): PortableSettings = {
-    val backup = backupPath(filepath).toFile
+    val backup = PathsEx.backupPath(filepath).toFile
     val appConfig = try {
       ConfigFactory.parseFile(filepath.toFile)
     } catch {
@@ -300,10 +301,6 @@ object PortableSettings extends StrictLogging {
    */
   def apply(filepath: Path, confpath: String*)(implicit d: DummyImplicit): PortableSettings = {
     apply(filepath, confpath)
-  }
-
-  private[settings] def backupPath(filepath: Path): Path = {
-    filepath.resolveSibling(filepath.getFileName.toString + ".bak")
   }
 
 }

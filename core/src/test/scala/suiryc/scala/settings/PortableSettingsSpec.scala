@@ -4,6 +4,7 @@ import com.typesafe.config.{ConfigException, ConfigFactory, ConfigUtil, ConfigVa
 import java.nio.file.{Files, Path}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import scala.collection.JavaConverters._
+import suiryc.scala.io.PathsEx
 
 class PortableSettingsSpec extends WordSpec with Matchers with BeforeAndAfterEach {
 
@@ -38,7 +39,7 @@ class PortableSettingsSpec extends WordSpec with Matchers with BeforeAndAfterEac
 
   override def afterEach(): Unit = {
     Option(applicationFile).foreach(_.toFile.delete())
-    Option(applicationFile).foreach(PortableSettings.backupPath(_).toFile.delete())
+    Option(applicationFile).foreach(PathsEx.backupPath(_).toFile.delete())
   }
 
   def newSettings: PortableSettings = {
@@ -52,7 +53,7 @@ class PortableSettingsSpec extends WordSpec with Matchers with BeforeAndAfterEac
     PortableSettings(applicationFile, ConfigUtil.splitPath(PATH_PREFIX).asScala)
 
   def backupSettings: PortableSettings =
-    PortableSettings(PortableSettings.backupPath(applicationFile), ConfigUtil.splitPath(PATH_PREFIX).asScala)
+    PortableSettings(PathsEx.backupPath(applicationFile), ConfigUtil.splitPath(PATH_PREFIX).asScala)
 
   "PortableSettings" should {
 
@@ -71,9 +72,9 @@ class PortableSettingsSpec extends WordSpec with Matchers with BeforeAndAfterEac
       val settings = newSettings
       val path = s"$PATH_PREFIX.key1"
       // Backup file should be created on the first change
-      PortableSettings.backupPath(applicationFile).toFile.exists shouldBe false
+      PathsEx.backupPath(applicationFile).toFile.exists shouldBe false
       settings.withValue(path, ConfigValueFactory.fromAnyRef("something else"))
-      PortableSettings.backupPath(applicationFile).toFile.exists shouldBe true
+      PathsEx.backupPath(applicationFile).toFile.exists shouldBe true
 
       // Current settings should have the new value
       settings.config.getString(path) shouldBe "something else"
@@ -88,7 +89,7 @@ class PortableSettingsSpec extends WordSpec with Matchers with BeforeAndAfterEac
       val path = s"$PATH_PREFIX.key1"
       settings.setDelaySave(true)
       settings.withValue(path, ConfigValueFactory.fromAnyRef("something else"))
-      PortableSettings.backupPath(applicationFile).toFile.exists shouldBe true
+      PathsEx.backupPath(applicationFile).toFile.exists shouldBe true
 
       settings.config.getString(path) shouldBe "something else"
       // The current file shall not have the new value
