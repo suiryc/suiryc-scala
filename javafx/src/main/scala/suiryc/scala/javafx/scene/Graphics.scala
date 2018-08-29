@@ -82,6 +82,8 @@ object Graphics {
     // shape
     hpos: HPos = HPos.CENTER,
     vpos: VPos = VPos.CENTER,
+    // Whether to align (through translation) scaled SVG on pixel boundaries
+    snapToPixel: Boolean = false,
     // Pane additional style classes
     styleClass: List[String] = Nil,
     // Pane background fill
@@ -115,6 +117,22 @@ object Graphics {
       val flat = v2.flatten
       if (flat.isEmpty) v1
       else math.max(v1, flat.max)
+    }
+    private def snapValue(snapToPixel: Boolean, v0: Double, scaleOpt: Option[Double]): Double = {
+      if (snapToPixel) {
+        // Check whether scaled value is too 'far' from pixel boundary
+        val scale = scaleOpt.getOrElse(1.0)
+        val scaled = scale * v0
+        if (math.abs(scaled - math.round(scaled)) > 0.1) {
+          // Snap to pixel
+          math.round(scaled) / scale
+        } else {
+          // Near enough
+          v0
+        }
+      } else {
+        v0
+      }
     }
 
     // Notes:
@@ -221,7 +239,7 @@ object Graphics {
     }
     // The actual translation also needs to apply the SVG offset (space between
     // the SVG group and the view top/left).
-    private val translateX = svgOffsetLeft + offsetLeft
+    private val translateX = snapValue(params.snapToPixel, svgOffsetLeft + offsetLeft, scaleX)
     // Vertical offset: similar to what is done for horizontal offset.
     private val offsetTop = if (paneHeight > scaledHeight) {
       val unscaledPadding = paneHeight / scaleY.getOrElse(1.0) - svgHeight
@@ -234,7 +252,7 @@ object Graphics {
     } else {
       0.0
     }
-    private val translateY = svgOffsetTop + offsetTop
+    private val translateY = snapValue(params.snapToPixel, svgOffsetTop + offsetTop, scaleY)
 
     // Scaling if any.
     private val scaleOpt = if (scaleX.isDefined || scaleY.isDefined) {
