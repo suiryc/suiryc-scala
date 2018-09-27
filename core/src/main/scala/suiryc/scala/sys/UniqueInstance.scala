@@ -7,9 +7,9 @@ import java.nio.ByteBuffer
 import java.nio.channels.{FileChannel, FileLock}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, StandardOpenOption}
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
-import suiryc.scala.io.{PathsEx, RichFile}
+import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
 
 /**
  * Unique instance application handling.
@@ -75,6 +75,12 @@ import suiryc.scala.io.{PathsEx, RichFile}
  */
 object UniqueInstance extends LazyLogging {
 
+  /** Actual command result (code and optional output). */
+  case class CommandResult(
+    code: Int,
+    output: Option[String] = None
+  )
+
   // Some constants (to fix code style warnings)
   /** Size (bytes) needed to write an Int */
   private val INT_SIZE = 4
@@ -102,11 +108,15 @@ object UniqueInstance extends LazyLogging {
    * @param appId the application (unique) id
    * @param f the function used to handle command arguments
    * @param args the command arguments
-   * @param ready for the first instance, a Future completed (sucess) when the
+   * @param ready for the first instance, a Future completed (success) when the
    *              caller is ready to have the command arguments processed; this
    *              Future may already be completed before calling this function
+   * @param streams system streams (in case they were replaced)
+   * @return a Future completed when the arguments have been handled
    */
-  def start(appId: String, f: Array[String] ⇒ Int, args: Array[String], ready: Future[Unit]): Unit = {
+  def start(appId: String, f: Array[String] ⇒ CommandResult, args: Array[String],
+    ready: Future[Unit], streams: SystemStreams = SystemStreams()): Future[Unit] =
+  {
     try {
       val lockPath = RichFile.userHome.toPath.resolve(s".${PathsEx.sanitizeFilename(appId)}")
       val channel = FileChannel.open(lockPath, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE)
@@ -123,12 +133,12 @@ object UniqueInstance extends LazyLogging {
         case Some(instanceLock) ⇒
           // We are the first instance to run, holding the lock
           logger.debug(s"Unique instance starting")
-          startUniqueInstance(lockPath, channel, dataLock, instanceLock, f, args, ready)
+          startUniqueInstance(lockPath, channel, dataLock, instanceLock, f, args, ready, streams)
 
         case None ⇒
           // Another instance is supposedly running
           logger.debug(s"Unique instance already running, delegating command execution")
-          startOtherInstance(channel, dataLock, args)
+          startOtherInstance(channel, dataLock, args, streams)
       }
     } catch {
       case ex: Exception ⇒
@@ -146,8 +156,8 @@ object UniqueInstance extends LazyLogging {
   /** Starts the (first) unique instance. */
   private def startUniqueInstance(lockPath: Path, channel: FileChannel,
     dataLock: FileLock, instanceLock: FileLock,
-    f: Array[String] ⇒ Int, args: Array[String],
-    ready: Future[Unit]): Unit =
+    f: Array[String] ⇒ CommandResult, args: Array[String],
+    ready: Future[Unit], streams: SystemStreams): Future[Unit] =
   {
     // Add shutdown hook to clean resources before exiting
     sys.addShutdownHook {
@@ -173,22 +183,27 @@ object UniqueInstance extends LazyLogging {
     dataLock.release()
 
     // Wait for caller to be ready
+    val promise = Promise[Unit]()
     ready.onComplete {
       case Success(_) ⇒
         // Then run our command before starting serving other instances
         try {
-          f(args)
+          handleResultOutput(f(args), streams)
         } finally {
           new ServerHandler(server, f).start()
+          promise.trySuccess(())
+          ()
         }
 
-      case Failure(_) ⇒
+      case Failure(ex) ⇒
         // Do nothing (application is responsible for exiting when applicable)
+        promise.tryFailure(ex)
     }(suiryc.scala.akka.CoreSystem.system.dispatcher)
+    promise.future
   }
 
   /** Starts a second instance. */
-  private def startOtherInstance(channel: FileChannel, dataLock: FileLock, args: Array[String]): Nothing = {
+  private def startOtherInstance(channel: FileChannel, dataLock: FileLock, args: Array[String], streams: SystemStreams): Nothing = {
     // Release the lock (we don't need it anymore) and read the local prt
     dataLock.release()
     val bb1 = ByteBuffer.wrap(new Array[Byte](INT_SIZE))
@@ -224,11 +239,22 @@ object UniqueInstance extends LazyLogging {
       // Wait for the return code to exit with
       read(is, bb1.array)
       val r = bb1.getInt(0)
+      handleResultOutput(CommandResult(r, readOptString(is)), streams)
       sys.exit(r)
     } catch {
       case ex: Exception ⇒
         logger.error(s"Failed to execute command on unique instance: ${ex.getMessage}", ex)
         sys.exit(-1)
+    }
+  }
+
+  /** Prints result output if any. */
+  private def handleResultOutput(result: CommandResult, streams: SystemStreams): Unit = {
+    result.output.foreach { s ⇒
+      // scalastyle:off regex
+      if (result.code != 0) streams.err.println(s)
+      else streams.out.println(s)
+      // scalastyle:on regex
     }
   }
 
@@ -240,8 +266,27 @@ object UniqueInstance extends LazyLogging {
     }
   }
 
+  /** Reads a String. */
+  private def readString(is: InputStream): String = {
+    val bb1 = ByteBuffer.wrap(new Array[Byte](INT_SIZE))
+    read(is, bb1.array)
+    val len = bb1.getInt(0)
+    val bb = ByteBuffer.wrap(new Array[Byte](len))
+    read(is, bb.array)
+    new String(bb.array, StandardCharsets.UTF_8)
+  }
+
+  /** Reads an optional String. */
+  private def readOptString(is: InputStream): Option[String] = {
+    try {
+      Some(readString(is)).filterNot(_.isEmpty)
+    } catch {
+      case _: Exception ⇒ None
+    }
+  }
+
   /** Local server socket handler. */
-  private class ServerHandler(server: ServerSocket, f: Array[String] ⇒ Int) extends Thread {
+  private class ServerHandler(server: ServerSocket, f: Array[String] ⇒ CommandResult) extends Thread {
 
     setDaemon(true)
 
@@ -271,7 +316,7 @@ object UniqueInstance extends LazyLogging {
   }
 
   /** Local server socket connection handler. */
-  private class SocketHandler(socket: Socket, f: Array[String] ⇒ Int) extends Thread {
+  private class SocketHandler(socket: Socket, f: Array[String] ⇒ CommandResult) extends Thread {
 
     setDaemon(true)
 
@@ -285,11 +330,7 @@ object UniqueInstance extends LazyLogging {
 
         def loop(n: Int, args: List[String]): Array[String] = {
           if (n > 0) {
-            read(is, bb1.array)
-            val len = bb1.getInt(0)
-            val bb = ByteBuffer.wrap(new Array[Byte](len))
-            read(is, bb.array)
-            loop(n - 1, args :+ new String(bb.array, StandardCharsets.UTF_8))
+            loop(n - 1, args :+ readString(is))
           } else {
             args.toArray
           }
@@ -299,28 +340,34 @@ object UniqueInstance extends LazyLogging {
         done(execute(args))
       } catch {
         case ex: Exception ⇒
-          logger.error(s"Failed to read arguments from socket: ${ex.getMessage}")
-          done(-1)
+          val message = s"Failed to read arguments from socket: ${ex.getMessage}"
+          logger.error(message)
+          done(CommandResult(-1, Some(message)))
       }
     }
 
-    private def execute(args: Array[String]): Int = {
+    private def execute(args: Array[String]): CommandResult = {
       try {
-        if (!_stopping) f(args) else -1
+        if (!_stopping) f(args) else CommandResult(-1, Some("Program is stopping"))
       } catch {
         case ex: Exception ⇒
-          logger.error(s"Failed to process arguments: ${ex.getMessage}", ex)
-          -1
+          val message = s"Failed to process arguments: ${ex.getMessage}"
+          logger.error(message, ex)
+          CommandResult(-1, Some(message))
       }
     }
 
-    private def done(code: Int): Unit = {
+    private def done(result: CommandResult): Unit = {
       // Send return code before closing socket
       try {
         val os = socket.getOutputStream
         val bb = ByteBuffer.wrap(new Array[Byte](INT_SIZE))
-        bb.putInt(code)
+        bb.putInt(0, result.code)
         os.write(bb.array)
+        val output = result.output.getOrElse("").getBytes(StandardCharsets.UTF_8)
+        bb.putInt(0, output.length)
+        os.write(bb.array)
+        if (output.nonEmpty) os.write(output)
       } catch {
         case ex: Exception ⇒
           logger.warn(s"Failed to return response code through socket: ${ex.getMessage}")
