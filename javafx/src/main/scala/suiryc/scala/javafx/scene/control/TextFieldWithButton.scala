@@ -9,6 +9,7 @@ import javafx.scene.input.{InputEvent, MouseEvent}
 import javafx.scene.layout.{Region, StackPane}
 import javafx.scene.text.Font
 import suiryc.scala.javafx.beans.value.RichObservableValue._
+import suiryc.scala.unused
 
 /**
  * TextField with button(s).
@@ -267,7 +268,7 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
   protected def disarm(): Unit = armed.set(false)
 
   // Arms button if triggered
-  protected def mousePressed(@deprecated("unused","") e: MouseEvent): Unit =
+  protected def mousePressed(@unused e: MouseEvent): Unit =
     if (!isArmed) arm()
 
   // Fires (and disarms button) if triggered.
@@ -278,11 +279,11 @@ class TextFieldButton(control: TextFieldWithButton, idx: Int) {
     }
 
   // Re-arms button if we get back to the button while still pressing.
-  protected def mouseEntered(@deprecated("unused","") e: MouseEvent): Unit =
+  protected def mouseEntered(@unused e: MouseEvent): Unit =
     if (arrowButton.isPressed) arm()
 
   // Disarms button if we leave the button (when armed, that is while still pressing).
-  protected def mouseExited(@deprecated("unused","") e: MouseEvent): Unit =
+  protected def mouseExited(@unused e: MouseEvent): Unit =
     if (isArmed) disarm()
 
 }

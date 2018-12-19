@@ -6,6 +6,7 @@ import javafx.scene.control.{Cell, ListCell, Separator, TableCell}
 import javafx.scene.control.cell.CheckBoxListCell
 import suiryc.scala.concurrent.Cancellable
 import suiryc.scala.javafx.beans.value.RichObservableValue._
+import suiryc.scala.unused
 import suiryc.scala.util.I18NLocale
 
 /** Cell extension that knows how to update cell text/graphic. */
@@ -13,7 +14,7 @@ trait CellEx[A] extends Cell[A] {
 
   protected def itemText(item: A): String
   // scalastyle:off null
-  protected def itemGraphic(@deprecated("unused","") item: A): Node = null
+  protected def itemGraphic(@unused item: A): Node = null
   // scalastyle:on null
 
   // scalastyle:off null
@@ -63,7 +64,7 @@ trait CellWithSeparator[A] extends Cell[Option[A]] {
 
   protected def itemText(item: A): String
   // scalastyle:off null
-  protected def itemGraphic(@deprecated("unused","") item: A): Node = null
+  protected def itemGraphic(@unused item: A): Node = null
   // scalastyle:on null
 
   // scalastyle:off null
@@ -111,7 +112,7 @@ trait CheckBoxListCellWithInfo[A] extends CheckBoxListCell[A] {
   protected var propertyListener: Option[Cancellable] = None
 
   /** Whether there is an actual item. */
-  protected def hasActualItem(@deprecated("unused","") item: A): Boolean = true
+  protected def hasActualItem(@unused item: A): Boolean = true
 
   /** Gets cell info for a given item. */
   protected def getInfo(item: A): CellInfo
