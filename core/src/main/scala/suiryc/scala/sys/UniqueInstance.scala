@@ -7,7 +7,8 @@ import java.nio.ByteBuffer
 import java.nio.channels.{FileChannel, FileLock}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, StandardOpenOption}
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
 
@@ -68,6 +69,11 @@ import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
  * before Windows 10 build 17063), such kind of sockets are not generically
  * available in the JDK, hence the use of local socket server.
  *
+ * Even though we handle Future parameters from caller, the implementation does
+ * spawn a Thread for each incoming connection and e.g. does not use Akka IO
+ * possibilities. The reason being the resulting code is much shorter, and we
+ * don't expect to deal with so many interactions that it becomes a problem.
+ *
  * There si no need to wait for server/connections to finish before exiting
  * application (in any case upon stopping we return failure code, which is also
  * what we do on the client side if socket is unexpectedly closed).
@@ -114,7 +120,7 @@ object UniqueInstance extends LazyLogging {
    * @param streams system streams (in case they were replaced)
    * @return a Future completed when the arguments have been handled
    */
-  def start(appId: String, f: Array[String] ⇒ CommandResult, args: Array[String],
+  def start(appId: String, f: Array[String] ⇒ Future[CommandResult], args: Array[String],
     ready: Future[Unit], streams: SystemStreams = SystemStreams()): Future[Unit] =
   {
     try {
@@ -147,6 +153,18 @@ object UniqueInstance extends LazyLogging {
     }
   }
 
+  // Also starts instance, but with a blocking function.
+  def start(appId: String, f: Array[String] ⇒ CommandResult, args: Array[String],
+    ready: Future[Unit], streams: SystemStreams)(implicit d: DummyImplicit): Future[Unit] =
+  {
+    val f2: Array[String] ⇒ Future[CommandResult] = args ⇒ Future.successful(f(args))
+    start(appId, f2, args, ready, streams)
+  }
+
+  def start(appId: String, f: Array[String] ⇒ CommandResult, args: Array[String], ready: Future[Unit]): Future[Unit] = {
+    start(appId, f, args, ready, SystemStreams())
+  }
+
   /** Stops this unique instance. */
   def stop(): Unit = {
     _stopping = true
@@ -156,7 +174,7 @@ object UniqueInstance extends LazyLogging {
   /** Starts the (first) unique instance. */
   private def startUniqueInstance(lockPath: Path, channel: FileChannel,
     dataLock: FileLock, instanceLock: FileLock,
-    f: Array[String] ⇒ CommandResult, args: Array[String],
+    f: Array[String] ⇒ Future[CommandResult], args: Array[String],
     ready: Future[Unit], streams: SystemStreams): Future[Unit] =
   {
     // Add shutdown hook to clean resources before exiting
@@ -182,23 +200,24 @@ object UniqueInstance extends LazyLogging {
     channel.force(false)
     dataLock.release()
 
-    // Wait for caller to be ready
+    // Wait for caller to be ready.
+    // Upon failure, application is responsible for exiting when applicable.
+    import suiryc.scala.akka.CoreSystem.system.dispatcher
     val promise = Promise[Unit]()
     ready.onComplete {
       case Success(_) ⇒
         // Then run our command before starting serving other instances
-        try {
-          handleResultOutput(f(args), streams)
-        } finally {
+        f(args).andThen {
+          case Success(result) ⇒ handleResultOutput(result, streams)
+          case Failure(ex) ⇒ promise.tryFailure(ex)
+        }.onComplete { _ ⇒
           new ServerHandler(server, f).start()
           promise.trySuccess(())
-          ()
         }
 
       case Failure(ex) ⇒
-        // Do nothing (application is responsible for exiting when applicable)
         promise.tryFailure(ex)
-    }(suiryc.scala.akka.CoreSystem.system.dispatcher)
+    }
     promise.future
   }
 
@@ -286,7 +305,7 @@ object UniqueInstance extends LazyLogging {
   }
 
   /** Local server socket handler. */
-  private class ServerHandler(server: ServerSocket, f: Array[String] ⇒ CommandResult) extends Thread {
+  private class ServerHandler(server: ServerSocket, f: Array[String] ⇒ Future[CommandResult]) extends Thread {
 
     setDaemon(true)
 
@@ -316,7 +335,7 @@ object UniqueInstance extends LazyLogging {
   }
 
   /** Local server socket connection handler. */
-  private class SocketHandler(socket: Socket, f: Array[String] ⇒ CommandResult) extends Thread {
+  private class SocketHandler(socket: Socket, f: Array[String] ⇒ Future[CommandResult]) extends Thread {
 
     setDaemon(true)
 
@@ -348,7 +367,7 @@ object UniqueInstance extends LazyLogging {
 
     private def execute(args: Array[String]): CommandResult = {
       try {
-        if (!_stopping) f(args) else CommandResult(-1, Some("Program is stopping"))
+        if (!_stopping) Await.result(f(args), Duration.Inf) else CommandResult(-1, Some("Program is stopping"))
       } catch {
         case ex: Exception ⇒
           val message = s"Failed to process arguments: ${ex.getMessage}"
