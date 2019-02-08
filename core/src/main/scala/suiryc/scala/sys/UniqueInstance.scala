@@ -21,7 +21,7 @@ import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
  *
  * Relies on file locking and local socket listener. See JUnique for another
  * example implementation: http://www.sauronsoftware.it/projects/junique/
- * This implementation uses similar principles, but tries to be simpler/smaller.
+ * This implementation uses similar principles.
  *
  * Overview: a file is used as lock to check whether another instance is running
  * and its content indicates the local port to use as communication channel.
@@ -74,7 +74,22 @@ import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
  * possibilities. The reason being the resulting code is much shorter, and we
  * don't expect to deal with so many interactions that it becomes a problem.
  *
- * There si no need to wait for server/connections to finish before exiting
+ * In order to have a client more easily decide whether to re-try upon error, it
+ * may be tempting to define a dedicated error code to use when unique instance
+ * is stopping. However in practice it would be often (if not mostly) useless
+ * because:
+ *  - the stopping instance may not have the time to properly return it before
+ *    the program is really stopped: it would require to wait for the server and
+ *    connections to be done before exiting
+ *  - connections started right after the socket is closed and before the lock
+ *    is released (shutdown ongoing) won't benefit from it and will simply have
+ *    a connection failure
+ * So we simply have two kind of errors here:
+ *  - generic error: I/O, lock, connection issues
+ *  - command error: arguments processing issue
+ * Retrying only makes sense for generic or implementation-specific errors.
+ *
+ * There is no need to wait for server/connections to finish before exiting
  * application (in any case upon stopping we return failure code, which is also
  * what we do on the client side if socket is unexpectedly closed).
  * So set the associated threads as daemons.
@@ -86,6 +101,13 @@ object UniqueInstance extends LazyLogging {
     code: Int,
     output: Option[String] = None
   )
+
+  /** Result code: success. */
+  val CODE_SUCCESS: Int = 0
+  /** Result code: generic error. */
+  val CODE_ERROR: Int = -128
+  /** Result code: command error. */
+  val CODE_CMD_ERROR: Int = -129
 
   // Some constants (to fix code style warnings)
   /** Size (bytes) needed to write an Int */
@@ -149,7 +171,7 @@ object UniqueInstance extends LazyLogging {
     } catch {
       case ex: Exception ⇒
         logger.error(s"Failed to start instance: ${ex.getMessage}", ex)
-        sys.exit(-1)
+        sys.exit(CODE_ERROR)
     }
   }
 
@@ -263,7 +285,7 @@ object UniqueInstance extends LazyLogging {
     } catch {
       case ex: Exception ⇒
         logger.error(s"Failed to execute command on unique instance: ${ex.getMessage}", ex)
-        sys.exit(-1)
+        sys.exit(CODE_ERROR)
     }
   }
 
@@ -313,6 +335,8 @@ object UniqueInstance extends LazyLogging {
       @scala.annotation.tailrec
       def loop(): Unit = {
         val socketOpt = try {
+          // Note: IOException will be thrown upon 'accept' if underlying socket
+          // is closed.
           if (!_stopping) Some(server.accept())
           else None
         } catch {
@@ -361,18 +385,18 @@ object UniqueInstance extends LazyLogging {
         case ex: Exception ⇒
           val message = s"Failed to read arguments from socket: ${ex.getMessage}"
           logger.error(message)
-          done(CommandResult(-1, Some(message)))
+          done(CommandResult(CODE_ERROR, Some(message)))
       }
     }
 
     private def execute(args: Array[String]): CommandResult = {
       try {
-        if (!_stopping) Await.result(f(args), Duration.Inf) else CommandResult(-1, Some("Program is stopping"))
+        if (!_stopping) Await.result(f(args), Duration.Inf) else CommandResult(CODE_ERROR, Some("Program is stopping"))
       } catch {
         case ex: Exception ⇒
           val message = s"Failed to process arguments: ${ex.getMessage}"
           logger.error(message, ex)
-          CommandResult(-1, Some(message))
+          CommandResult(CODE_CMD_ERROR, Some(message))
       }
     }
 
