@@ -159,22 +159,23 @@ object SettingSnapshot {
       override protected def setValue(v: A): Unit = setting() = v
     }
 
-  /** Builds a snapshot from a (portable setting) object config entry. */
-  def apply[A >: Null](setting: ConfigEntry[A]): ConfigEntrySnapshot[A] =
-    new ConfigEntrySnapshot[A](setting) {
-      override protected def getValue: A = setting.opt.orNull
-      override protected def setValue(v: A): Unit = {
-        if (v == null) setting.reset()
-        else setting.set(v)
-      }
-    }
-
-  /** Builds a snapshot from a (portable setting) value config entry. */
-  // Variant for values that cannot be null (Int, etc).
-  def apply[A <: AnyVal](setting: ConfigEntry[A])(implicit d: DummyImplicit): ConfigEntrySnapshot[A] =
-    new ConfigEntrySnapshot[A](setting) {
+  /** Builds a snapshot from a (portable setting) config entry. */
+  def apply[A](setting: ConfigEntry[A]): ConfigStdEntrySnapshot[A] =
+    new ConfigStdEntrySnapshot[A](setting) {
       override protected def getValue: A = setting.get
       override protected def setValue(v: A): Unit = setting.set(v)
+    }
+
+  /** Builds a snapshot from an optional (portable setting) config entry. */
+  def opt[A](setting: ConfigEntry[A]): ConfigOptEntrySnapshot[A] =
+    new ConfigOptEntrySnapshot[A](setting) {
+      override protected def getValue: Option[A] = setting.opt
+      override protected def setValue(v: Option[A]): Unit = {
+        v match {
+          case Some(a) ⇒ setting.set(a)
+          case None ⇒ setting.reset()
+        }
+      }
     }
 
 }

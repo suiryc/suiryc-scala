@@ -11,7 +11,7 @@ import javafx.beans.property.SimpleObjectProperty
  * configured or changed is used as-is, instead of interpreting the values
  * (and altering the original visual representation).
  */
-abstract class ConfigEntrySnapshot[A](setting: ConfigEntry[A]) extends SettingSnapshot[A] {
+abstract class ConfigEntrySnapshot[Inner, Outer](setting: ConfigEntry[Inner]) extends SettingSnapshot[Outer] {
 
   /** Draft raw value (prepared to apply value change). */
   val rawDraft = new SimpleObjectProperty[ConfigValue]()
@@ -29,8 +29,6 @@ abstract class ConfigEntrySnapshot[A](setting: ConfigEntry[A]) extends SettingSn
     if (setting.refExists) Some(setting.settings.reference.getValue(setting.path))
     else None
   }
-  // Automatically get default reference value when applicable.
-  if (setting.refOpt.isDefined) withDefault(setting.refGet)
 
   /**
    * Sets draft raw value.
@@ -39,7 +37,7 @@ abstract class ConfigEntrySnapshot[A](setting: ConfigEntry[A]) extends SettingSn
    */
   def setRawDraft(v: Any): Unit = rawDraft.set(ConfigValueFactory.fromAnyRef(v))
 
-  override protected def applyChange(v: A): Unit = {
+  override protected def applyChange(v: Outer): Unit = {
     // First apply the change
     super.applyChange(v)
     // But actually force the raw value if applicable
@@ -68,4 +66,16 @@ abstract class ConfigEntrySnapshot[A](setting: ConfigEntry[A]) extends SettingSn
     else rawDraft.set(rawDefault.orNull)
   }
 
+}
+
+// Snapshot for value itself.
+abstract class ConfigStdEntrySnapshot[A](setting: ConfigEntry[A]) extends ConfigEntrySnapshot[A, A](setting) {
+  // Automatically get default reference value when applicable.
+  if (setting.refExists) withDefault(setting.refGet)
+}
+
+// Snapshot that works as optional value.
+abstract class ConfigOptEntrySnapshot[A](setting: ConfigEntry[A]) extends ConfigEntrySnapshot[A, Option[A]](setting) {
+  // Automatically get default reference value.
+  withDefault(setting.refOpt)
 }
