@@ -216,4 +216,18 @@ object RichFuture {
   def executeAllSequentially[A](stopOnError: Boolean, actions: Action[Unit, A]*)(implicit ec: ExecutionContext, d: DummyImplicit): Future[Seq[A]] =
     executeAllSequentially(stopOnError, actions)
 
+  /** Executes blocking code and make it async. */
+  def blockingAsync[A](f: ⇒ A): Future[A] = {
+    // Use the global context, but signal the code as blocking.
+    // See: https://docs.scala-lang.org/overviews/core/futures.html
+    import scala.concurrent.blocking
+    import scala.concurrent.ExecutionContext.Implicits.global
+
+    Future {
+      blocking {
+        f
+      }
+    }
+  }
+
 }
