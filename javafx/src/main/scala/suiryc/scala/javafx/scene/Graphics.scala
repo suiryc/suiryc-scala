@@ -3,7 +3,7 @@ package suiryc.scala.javafx.scene
 import javafx.geometry._
 import javafx.scene.image.{Image, WritableImage}
 import javafx.scene._
-import javafx.scene.control.{Labeled, MenuBar, TabPane}
+import javafx.scene.control._
 import javafx.scene.layout._
 import javafx.scene.paint.{Color, Paint}
 import javafx.scene.shape.SVGPath
@@ -387,16 +387,6 @@ object Graphics {
             }
             tail
 
-          case pane: Pane ⇒
-            val remaining = tail ::: pane.getChildrenUnmodifiable.asScala.toList
-            pane.getStyleClass.asScala.find(styleClassPredicate).foreach { styleClass ⇒
-              iconOpt(styleClass).foreach { icon ⇒
-                pane.getStyleClass.remove(styleClass)
-                pane.getChildren.add(icon)
-              }
-            }
-            remaining
-
           case tabPane: TabPane ⇒
             tail ::: tabPane.getTabs.asScala.toList.map { tab ⇒
               tab.getStyleClass.asScala.find(styleClassPredicate).foreach { styleClass ⇒
@@ -407,6 +397,22 @@ object Graphics {
               }
               tab.getContent
             }
+
+          case splitPane: SplitPane ⇒
+            tail ::: splitPane.getItems.asScala.toList
+
+          case scrollPane: ScrollPane ⇒
+            tail ::: List(scrollPane.getContent)
+
+          case pane: Pane ⇒
+            val remaining = tail ::: pane.getChildrenUnmodifiable.asScala.toList
+            pane.getStyleClass.asScala.find(styleClassPredicate).foreach { styleClass ⇒
+              iconOpt(styleClass).foreach { icon ⇒
+                pane.getStyleClass.remove(styleClass)
+                pane.getChildren.add(icon)
+              }
+            }
+            remaining
 
           case parent: Parent ⇒
             tail ::: parent.getChildrenUnmodifiable.asScala.toList
