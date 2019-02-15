@@ -18,6 +18,26 @@ object Util {
     Option(a).getOrElse(new Array[T](0))
 
   /**
+   * Finds array element index.
+   *
+   * @param arr array to search in
+   * @param a element to find
+   * @param offset offset to start search
+   * @param length length to search for
+   * @return index of first found element, or -1
+   */
+  def indexOf[A](arr: Array[A], a: A, offset: Int, length: Int): Int = {
+    val idxStart = math.max(0, offset)
+    val idxLimit = math.min(arr.length, offset + length)
+    def loop(idx: Int): Int = {
+      if (idx >= idxLimit) -1
+      else if (arr(idx) == a) idx
+      else loop(idx + 1)
+    }
+    loop(idxStart)
+  }
+
+  /**
    * Gets a class location.
    * Gets path for given class: parent folder of its jar, or the running folder.
    */
