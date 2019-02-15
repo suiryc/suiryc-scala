@@ -1,6 +1,8 @@
 package suiryc.scala.io
 
+import com.typesafe.scalalogging.Logger
 import java.io.{InputStream, PrintStream}
+import java.nio.charset.StandardCharsets
 
 /** System streams (stdin, stdout, stderr). */
 class SystemStreams(val in: InputStream, val out: PrintStream, val err: PrintStream)
@@ -8,7 +10,7 @@ class SystemStreams(val in: InputStream, val out: PrintStream, val err: PrintStr
 object SystemStreams {
 
   /** /dev/null output equivalent. */
-  val NullOutput = new PrintStream((_: Int) => {})
+  val NullOutput = new PrintStream((_: Int) ⇒ {})
 
   /** Gets current streams. */
   def apply(): SystemStreams =
@@ -16,6 +18,13 @@ object SystemStreams {
 
   def apply(in: InputStream, out: PrintStream, err: PrintStream): SystemStreams =
     new SystemStreams(in, out, err)
+
+  /** Creates a PrintStream that logs written lines. */
+  def loggerOutput(loggerName: String, error: Boolean = false): PrintStream = {
+    val logger = Logger(loggerName)
+    val out = new LineSplitterOutputStream(new LogLineWriter(logger, error), StandardCharsets.UTF_8)
+    new PrintStream(out, false, StandardCharsets.UTF_8)
+  }
 
   /**
    * Replace requested streams.
@@ -57,6 +66,13 @@ object SystemStreams {
   def restore(streams: SystemStreams): Unit = {
     replace(streams.in, streams.out, streams.err)
     ()
+  }
+
+  private class LogLineWriter(logger: Logger, error: Boolean) extends LineWriter {
+    override def write(line: String): Unit = {
+      if (error) logger.error("{}", line)
+      else logger.info("{}", line)
+    }
   }
 
 }
