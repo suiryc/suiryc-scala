@@ -102,12 +102,23 @@ object UniqueInstance extends LazyLogging {
     output: Option[String] = None
   )
 
+  // Notes:
+  // Depending on the OS and how the program is launched (directly or from a
+  // console), the exit code may be restricted to a range of values.
+  // e.g. on POSIX it usually is limited to 0-255 (modulo applied).
+  // In bash values 1, 2, 126, 127, 128-255 have a meaning.
+  // See:
+  //  https://en.wikipedia.org/wiki/Exit_status
+  //  https://www.gnu.org/software/bash/manual/html_node/Exit-Status.html
+  //  https://www.tldp.org/LDP/abs/html/exitcodes.html
+  // To avoid any confusion, try to use 'portable' values that are expected to
+  // *not* collide with either OS standards or the running application.
   /** Result code: success. */
   val CODE_SUCCESS: Int = 0
   /** Result code: generic error. */
-  val CODE_ERROR: Int = -128
+  val CODE_ERROR: Int = 100
   /** Result code: command error. */
-  val CODE_CMD_ERROR: Int = -129
+  val CODE_CMD_ERROR: Int = 101
 
   // Some constants (to fix code style warnings)
   /** Size (bytes) needed to write an Int */
