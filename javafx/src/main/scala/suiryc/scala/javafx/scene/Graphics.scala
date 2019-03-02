@@ -1,5 +1,6 @@
 package suiryc.scala.javafx.scene
 
+import javafx.css.Styleable
 import javafx.geometry._
 import javafx.scene.image.{Image, WritableImage}
 import javafx.scene._
@@ -346,40 +347,44 @@ object Graphics {
   }
 
   /**
-   * Sets (graphic) icon on matching node (and any sub-node).
+   * Sets (graphic) icon on matching element (and any sub-element).
    *
-   * Walks the node hierarchy to match elements by style class and set graphic
-   * where applicable.
+   * Walks the hierarchy to match elements by style class and set graphic where
+   * applicable.
    * The style class matcher does not need to be exact: only non-empty icon
-   * matters, in which case the matched style class is removed from the node and
-   * the icon set as graphic.
-   * Handles MenuBar, Labeled, Pane, TabPane and Parent.
+   * matters, in which case the matched style class is removed from the element
+   * and the icon set as graphic.
+   * Handles most styleable elements.
    *
-   * @param node root node to set icon(s) on
+   * @param element root element to set icon(s) on
    * @param styleClassPredicate style class matcher
    * @param iconOpt (graphic) icon to set where applicable
    */
   // scalastyle:off method.length
-  def setIcons(node: Node, styleClassPredicate: String ⇒ Boolean, iconOpt: String ⇒ Option[Node]): Unit = {
+  def setIcons(element: Styleable, styleClassPredicate: String ⇒ Boolean, iconOpt: String ⇒ Option[Node]): Unit = {
     @scala.annotation.tailrec
-    def loop(nodes: List[Node]): Unit = {
-      if (nodes.nonEmpty) {
-        val head = nodes.head
-        val tail = nodes.tail
+    def loop(elements: List[Styleable]): Unit = {
+      if (elements.nonEmpty) {
+        val head = elements.head
+        val tail = elements.tail
         val remaining = head match {
           case menuBar: MenuBar ⇒
-            menuBar.getMenus.asScala.flatMap(_.getItems.asScala).foreach { item ⇒
-              item.getStyleClass.asScala.find(styleClassPredicate).foreach { styleClass ⇒
-                iconOpt(styleClass).foreach { icon ⇒
-                  item.getStyleClass.remove(styleClass)
-                  item.setGraphic(icon)
-                }
+            tail ::: menuBar.getMenus.asScala.toList.flatMap(_.getItems.asScala)
+
+          case menuItem: CustomMenuItem ⇒
+            tail ::: List(menuItem.getContent)
+
+          case menuItem: MenuItem ⇒
+            menuItem.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
+              iconOpt(styleClass).foreach { icon ⇒
+                menuItem.getStyleClass.remove(styleClass)
+                menuItem.setGraphic(icon)
               }
             }
             tail
 
           case labeled: Labeled ⇒
-            labeled.getStyleClass.asScala.find(styleClassPredicate).foreach { styleClass ⇒
+            labeled.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
               iconOpt(styleClass).foreach { icon ⇒
                 labeled.getStyleClass.remove(styleClass)
                 labeled.setGraphic(icon)
@@ -389,7 +394,7 @@ object Graphics {
 
           case tabPane: TabPane ⇒
             tail ::: tabPane.getTabs.asScala.toList.map { tab ⇒
-              tab.getStyleClass.asScala.find(styleClassPredicate).foreach { styleClass ⇒
+              tab.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
                 iconOpt(styleClass).foreach { icon ⇒
                   tab.getStyleClass.remove(styleClass)
                   tab.setGraphic(icon)
@@ -405,8 +410,13 @@ object Graphics {
             tail ::: List(scrollPane.getContent)
 
           case pane: Pane ⇒
+            // Note: get the children right now.
+            // If the pane matches, we will inject a new child. In the worst
+            // case (injected icon is or contains another matching pane),
+            // determining children *after* injecting icon triggers an infinite
+            // loop here, and ultimately a StackOverflowError in JavaFX.
             val remaining = tail ::: pane.getChildrenUnmodifiable.asScala.toList
-            pane.getStyleClass.asScala.find(styleClassPredicate).foreach { styleClass ⇒
+            pane.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
               iconOpt(styleClass).foreach { icon ⇒
                 pane.getStyleClass.remove(styleClass)
                 pane.getChildren.add(icon)
@@ -424,7 +434,7 @@ object Graphics {
       }
     }
 
-    loop(List(node))
+    loop(List(element))
   }
   // scalastyle:on method.length
 
