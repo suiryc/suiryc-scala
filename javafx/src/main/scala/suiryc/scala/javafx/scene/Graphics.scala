@@ -61,6 +61,10 @@ object Graphics {
     svgSize: Double = -1,
     svgWidth: Double = -1,
     svgHeight: Double = -1,
+    // Translation to apply to original SVG
+    svgTranslate: Double = 0,
+    svgTranslateX: Double = 0,
+    svgTranslateY: Double = 0,
     // Whether to crop SVG shape (drop space around it)
     crop: Boolean = false,
     // Whether to keep ratio between width and height when scaling
@@ -178,6 +182,9 @@ object Graphics {
     // SVG top/left offset (padding, or none if cropped)
     private val svgOffsetTop = if (params.crop) 0 else svgPaddingTop
     private val svgOffsetLeft = if (params.crop) 0 else svgPaddingLeft
+    // Initial translation to apply on SVG
+    private val svgTranslateX = params.svgTranslate + params.svgTranslateX
+    private val svgTranslateY = params.svgTranslate + params.svgTranslateY
     // SVG group size (including offset)
     private val groupWidth = groupBounds.getWidth + svgOffsetLeft
     private val groupHeight = groupBounds.getHeight + svgOffsetTop
@@ -240,7 +247,7 @@ object Graphics {
     }
     // The actual translation also needs to apply the SVG offset (space between
     // the SVG group and the view top/left).
-    private val translateX = snapValue(params.snapToPixel, svgOffsetLeft + offsetLeft, scaleX)
+    private val translateX = snapValue(params.snapToPixel, svgOffsetLeft + offsetLeft + svgTranslateX, scaleX)
     // Vertical offset: similar to what is done for horizontal offset.
     private val offsetTop = if (paneHeight > scaledHeight) {
       val unscaledPadding = paneHeight / scaleY.getOrElse(1.0) - svgHeight
@@ -253,7 +260,7 @@ object Graphics {
     } else {
       0.0
     }
-    private val translateY = snapValue(params.snapToPixel, svgOffsetTop + offsetTop, scaleY)
+    private val translateY = snapValue(params.snapToPixel, svgOffsetTop + offsetTop + svgTranslateY, scaleY)
 
     // Scaling if any.
     private val scaleOpt = if (scaleX.isDefined || scaleY.isDefined) {
