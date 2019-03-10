@@ -78,7 +78,7 @@ object JFXSystem
   /** The dedicated JavaFX dispatcher. */
   val dispatcher: ExecutionContextExecutor = system.dispatchers.lookup("javafx.dispatcher")
   /** Scheduler running with JavaFX execution context. */
-  lazy val scheduler = Scheduler(dispatcher)
+  lazy val scheduler: Scheduler = Scheduler(dispatcher)
 
   /** Creates an actor using the JavaFX thread backed dispatcher. */
   def newJFXActor(props: Props): ActorRef =
@@ -104,8 +104,19 @@ object JFXSystem
    * Execution may be performed before other actions delegated through dedicated
    * actor.
    */
-  def runLater(action: => Unit): Unit =
+  @inline def runLater(action: => Unit): Unit =
     Platform.runLater(() => action)
+
+  /**
+   * Delegates action to JavaFX.
+   *
+   * Action is performed synchronously if we are in the JavaFX thread.
+   * Otherwise it is delegated through 'runLater'.
+   */
+  @inline def run(action: => Unit): Unit = {
+    if (Platform.isFxApplicationThread) action
+    else runLater(action)
+  }
 
   /** Delegates action to JavaFX using a Future, and waits for result. */
   def await[T](action: => T, logReentrant: Boolean = true): T = {
