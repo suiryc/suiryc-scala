@@ -2,15 +2,15 @@ import sbt._
 import Keys._
 
 lazy val versions = Map[String, String](
-  "akka"          -> "2.5.13",
+  "akka"          -> "2.5.21",
   "config"        -> "1.3.3",
   "logback"       -> "1.2.3",
-  "monix"         -> "3.0.0-RC1",
-  "scala"         -> "2.12.6",
-  "scala-logging" -> "3.9.0",
+  "monix"         -> "3.0.0-RC2",
+  "scala"         -> "2.12.8",
+  "scala-logging" -> "3.9.2",
   "scalatest"     -> "3.0.5",
-  "scopt"         -> "3.7.0",
-  "spray-json"    -> "1.3.4",
+  "scopt"         -> "3.7.1",
+  "spray-json"    -> "1.3.5",
   "suiryc-scala"  -> "0.0.3-SNAPSHOT"
 )
 
@@ -48,14 +48,14 @@ lazy val core = project.in(file("core")).
   settings(
     name := "suiryc-scala-core",
     libraryDependencies ++= Seq(
-      "com.github.scopt"           %% "scopt"          % versions("scopt"),
+      "com.github.scopt"           %% "scopt"          % versions("scopt")         % "provided",
       "com.typesafe"               %  "config"         % versions("config")        % "provided",
       "com.typesafe.akka"          %% "akka-actor"     % versions("akka")          % "provided",
       "com.typesafe.akka"          %% "akka-slf4j"     % versions("akka")          % "provided",
       "com.typesafe.akka"          %% "akka-testkit"   % versions("akka")          % "test",
-      "com.typesafe.scala-logging" %% "scala-logging"  % versions("scala-logging"),
+      "com.typesafe.scala-logging" %% "scala-logging"  % versions("scala-logging") % "provided",
       "io.monix"                   %% "monix"          % versions("monix")         % "provided",
-      "io.spray"                   %% "spray-json"     % versions("spray-json"),
+      "io.spray"                   %% "spray-json"     % versions("spray-json")    % "provided",
       "org.scalatest"              %% "scalatest"      % versions("scalatest")     % "test"
     )
   )
@@ -80,10 +80,12 @@ lazy val javaFX = project.in(file("javafx")).
   settings(
     name := "suiryc-scala-javafx",
     libraryDependencies ++= Seq(
-      "ch.qos.logback"    %  "logback-classic" % versions("logback") % "provided",
-      "ch.qos.logback"    %  "logback-core"    % versions("logback") % "provided",
-      "com.typesafe.akka" %% "akka-actor"      % versions("akka")    % "provided",
-      "io.monix"          %% "monix"           % versions("monix")   % "provided"
+      "ch.qos.logback"             %  "logback-classic" % versions("logback")       % "provided",
+      "ch.qos.logback"             %  "logback-core"    % versions("logback")       % "provided",
+      "com.typesafe.akka"          %% "akka-actor"      % versions("akka")          % "provided",
+      "com.typesafe.scala-logging" %% "scala-logging"   % versions("scala-logging") % "provided",
+      "io.monix"                   %% "monix"           % versions("monix")         % "provided",
+      "io.spray"                   %% "spray-json"      % versions("spray-json")    % "provided"
     )
   )
 
