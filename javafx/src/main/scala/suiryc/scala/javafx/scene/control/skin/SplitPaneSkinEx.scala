@@ -17,7 +17,11 @@ class SplitPaneSkinEx(pane: SplitPane) extends SplitPaneSkin(pane) {
   override protected def layoutChildren(x: Double, y: Double, w: Double, h: Double): Unit = {
     val saved = getSkinnable.getDividerPositions
     super.layoutChildren(x, y, w, h)
-    getSkinnable.setDividerPositions(saved:_*)
+    getSkinnable.setDividerPositions(saved: _*)
+    // Re-doing SplitPane layout when applicable appears necessary otherwise
+    // some of the children may remain 'frozen' (and trigger visual glitches)
+    // until we manually move the divider ...
+    if (getSkinnable.isNeedsLayout) getSkinnable.layout()
   }
 
 }
