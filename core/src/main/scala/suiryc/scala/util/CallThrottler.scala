@@ -96,7 +96,7 @@ private class CallsDurationThrottler(scheduler: Scheduler, duration: FiniteDurat
   import CallsThrottler._
 
   // Currently throttled codes (call done once throttling delay has elapsed)
-  private var calls = Set[() ⇒ Any]()
+  private var calls = Set.empty[() ⇒ Any]
   // Last time calls were done
   private var lastCall: Long = 0
   // Whether calls are being throttled right now

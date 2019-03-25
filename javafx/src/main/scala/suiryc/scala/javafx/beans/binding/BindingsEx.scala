@@ -215,6 +215,9 @@ object BindingsEx {
    * When given, the target value is updated inside the execution context of
    * the scheduler (also used upon throttling).
    *
+   * Side effects can be associated to the bindings: they will be executed once
+   * when all bindings are updated.
+   *
    * @param schedulerOpt optional scheduler to use upon throttling; target value
    *                     is also updated through its execution context
    * @param throttlerOpt optional calls throttler to use upon throttling; calls
@@ -224,6 +227,8 @@ object BindingsEx {
 
     // Bindings
     private val bindings = new jArrayList[() ⇒ Unit]()
+    // Extra side effect codes
+    private var sideEffects = Set.empty[() ⇒ Any]
 
     def this() {
       this(None, None)
@@ -240,7 +245,7 @@ object BindingsEx {
     // Actually updates the target value.
     // Execution is done in the scheduler execution context when applicable.
     @inline
-    private def update(inEC: Boolean): Unit = {
+    private def update(inEC: Boolean, withSideEffects: Boolean): Unit = {
       val it = bindings.iterator
       @scala.annotation.tailrec
       def loop(): Unit = {
@@ -249,8 +254,13 @@ object BindingsEx {
           loop()
         }
       }
-      if (inEC || schedulerOpt.isEmpty) loop()
-      else schedulerOpt.get.execute(() ⇒ loop())
+      @inline
+      def _update(): Unit = {
+        loop()
+        if (withSideEffects) sideEffects.foreach(_())
+      }
+      if (inEC || schedulerOpt.isEmpty) _update()
+      else schedulerOpt.get.execute(() ⇒ _update())
     }
 
     /**
@@ -277,6 +287,23 @@ object BindingsEx {
     }
 
     /**
+     * Adds a side effect.
+     *
+     * The function will be called after all bindings are updated.
+     * If a calls throttler has been passed, each side effect is registered as
+     * an independent call: if the same side effect is used in another binding
+     * with the same throttling, the side effect will only be applied once for
+     * all the bindings.
+     *
+     * @param f side effect code
+     * @return this builder
+     */
+    def sideEffect(f: () ⇒ Any): Builder = {
+      sideEffects += f
+      this
+    }
+
+    /**
      * Binds the targets.
      *
      * @param dependencies values to observe
@@ -284,9 +311,9 @@ object BindingsEx {
      */
     def bind(dependencies: Seq[ObservableValue[_]]): Cancellable = {
       val cancellable = RichObservableValue.listen[Any](dependencies) {
-        update(inEC = false)
+        update(inEC = false, withSideEffects = true)
       }
-      update(inEC = false)
+      update(inEC = false, withSideEffects = true)
       cancellable
     }
 
@@ -312,23 +339,27 @@ object BindingsEx {
      * @return Cancellable to stop observing values
      */
     def bind(throttle: FiniteDuration, dependencies: Seq[Observable]): Cancellable = {
-      val callThrottler = throttlerOpt match {
+      val callThrottlers = throttlerOpt match {
         case Some(throttler) ⇒
-          // Grouped code execution throttling
+          // Grouped code execution throttling.
+          // Side effects can be registered as independent calls so that if
+          // used with other bindings only one call will be performed.
           throttler.callThrottler(throttle) { () ⇒
-            update(inEC = true)
-          }
+            update(inEC = true, withSideEffects = false)
+          } :: sideEffects.toList.map(throttler.callThrottler(throttle))
 
         case None ⇒
-          // Single code execution throttling
-          CallThrottler(schedulerOpt.getOrElse(CoreSystem.scheduler), throttle) { inEC ⇒
-            update(inEC || schedulerOpt.isEmpty)
-          }
+          // Single code execution throttling.
+          List(CallThrottler(schedulerOpt.getOrElse(CoreSystem.scheduler), throttle) { inEC ⇒
+            update(inEC || schedulerOpt.isEmpty, withSideEffects = true)
+          })
       }
+      @inline
+      def _update(): Unit = callThrottlers.foreach(_.throttle())
       val cancellable = RichObservable.listen(dependencies) {
-        callThrottler.throttle()
+        _update()
       }
-      callThrottler.throttle()
+      _update()
       cancellable
     }
 
