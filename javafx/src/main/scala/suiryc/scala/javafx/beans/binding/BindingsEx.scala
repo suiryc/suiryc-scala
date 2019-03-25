@@ -13,7 +13,7 @@ import suiryc.scala.concurrent.Cancellable
 import suiryc.scala.javafx.beans.RichObservable
 import suiryc.scala.javafx.beans.value.RichObservableValue
 import suiryc.scala.javafx.concurrent.JFXSystem
-import suiryc.scala.util.CallThrottler
+import suiryc.scala.util.{CallThrottler, CallsThrottler}
 
 /**
  * Bindings helpers.
@@ -46,7 +46,9 @@ object BindingsEx {
   // target value update to the execution context).
   // When using throttling, it is on the contrary better to listen to Observable
   // so that invalidation is not reset by us until actual call is performed,
-  // which limits greatly the use of throttling if nothing else invalidates it.
+  // which limits greatly the use of throttling ('throttle' calls) if nothing
+  // else invalidates it: with an ObservableValue, since the invalidation is
+  // reset automatically, every value change would trigger a 'throttle' call.
 
   /**
    * Binding helper.
@@ -65,6 +67,11 @@ object BindingsEx {
    *
    * A real Binding is created: the target property is bound after this function
    * returns.
+   *
+   * Reminder: since dependencies are listened as Observables, it is expected
+   * that the given function callback resets its invalidation state (e.g. by
+   * getting the underlying value). Otherwise not all changes will be taken
+   * into account.
    *
    * @param target target property to update
    * @param dependencies values to observe
@@ -100,10 +107,10 @@ object BindingsEx {
    */
   def jfxBind[A](target: Property[A], dependencies: Seq[ObservableValue[_]])(f: ⇒ A): Cancellable = {
     val cancellable = RichObservableValue.listen[Any](dependencies) {
-      JFXSystem.schedule(target.setValue(f), logReentrant = false)
+      JFXSystem.run(target.setValue(f))
     }
     // With proper binding, initial value is pushed to target. Do it too.
-    JFXSystem.schedule(target.setValue(f), logReentrant = false)
+    JFXSystem.run(target.setValue(f))
     cancellable
   }
 
@@ -126,6 +133,11 @@ object BindingsEx {
    * throttling).
    * If a real Binding is necessary (in particular to make the target property
    * bound), the Builder can be used explicitly.
+   *
+   * Reminder: since dependencies are listened as Observables, it is expected
+   * that the given function callback resets its invalidation state (e.g. by
+   * getting the underlying value). Otherwise not all changes will be taken
+   * into account.
    *
    * @param target target property to update
    * @param throttle throttling duration
@@ -154,6 +166,48 @@ object BindingsEx {
   }
 
   /**
+   * Binds target with a throttled unidirection binding.
+   *
+   * Uses the Builder (with only our one target added).
+   * This function does not create a true Binding, mainly because throttling
+   * does not require it to update the target value, and this feature does not
+   * conform to a real Binding (intermediate value changes are ignored during
+   * throttling).
+   * If a real Binding is necessary (in particular to make the target property
+   * bound), the Builder can be used explicitly.
+   *
+   * Reminder: since dependencies are listened as Observables, it is expected
+   * that the given function callback resets its invalidation state (e.g. by
+   * getting the underlying value). Otherwise not all changes will be taken
+   * into account.
+   *
+   * @param target target property to update
+   * @param throttle throttling duration
+   * @param throttler calls throttler to use upon throttling
+   * @param dependencies values to observe
+   * @param f function to compute updated value
+   * @return Cancellable to stop observing values
+   */
+  def bind[A](target: Property[A], throttle: FiniteDuration, throttler: CallsThrottler,
+    dependencies: Seq[Observable])(f: ⇒ A): Cancellable =
+  {
+    new Builder(throttler) {
+      add(target)(f)
+    }.bind(throttle, dependencies:_*)
+  }
+
+  /**
+   * Binds target with a throttled unidirection binding.
+   *
+   * vararg variant.
+   */
+  def bind[A](target: Property[A], throttle: FiniteDuration, throttler: CallsThrottler,
+    dependencies: Observable*)(f: ⇒ A)(implicit d: DummyImplicit): Cancellable =
+  {
+    bind(target, throttle, throttler, dependencies)(f)
+  }
+
+  /**
    * Builder able to create multiple bindings with the same observed values.
    *
    * More than one target can be added for the same observed values.
@@ -163,18 +217,24 @@ object BindingsEx {
    *
    * @param schedulerOpt optional scheduler to use upon throttling; target value
    *                     is also updated through its execution context
+   * @param throttlerOpt optional calls throttler to use upon throttling; calls
+   *                     are grouped by throttling and executed together
    */
-  class Builder(schedulerOpt: Option[Scheduler]) {
+  class Builder(schedulerOpt: Option[Scheduler], throttlerOpt: Option[CallsThrottler]) {
 
     // Bindings
     private val bindings = new jArrayList[() ⇒ Unit]()
 
     def this() {
-      this(None)
+      this(None, None)
     }
 
     def this(scheduler: Scheduler) {
-      this(Some(scheduler))
+      this(Some(scheduler), None)
+    }
+
+    def this(throttler: CallsThrottler) {
+      this(None, Some(throttler))
     }
 
     // Actually updates the target value.
@@ -200,7 +260,7 @@ object BindingsEx {
      * Otherwise a simple function to update the target value is created.
      *
      * @param target target property to update
-     * @param direct whether to create a true Binding
+     * @param direct whether to directly update target, or create a true Binding
      * @param f function to compute updated value
      * @return this builder
      */
@@ -242,18 +302,33 @@ object BindingsEx {
     /**
      * Binds the targets using throttling.
      *
+     * Reminder: since dependencies are listened as Observables, it is expected
+     * that the associated function callbacks reset its invalidation state (e.g.
+     * by getting the underlying value). Otherwise not all changes will be taken
+     * into account.
+     *
      * @param throttle throttling duration
      * @param dependencies values to observe
      * @return Cancellable to stop observing values
      */
     def bind(throttle: FiniteDuration, dependencies: Seq[Observable]): Cancellable = {
-      val throttler = CallThrottler(schedulerOpt.getOrElse(CoreSystem.scheduler), throttle) { inEC ⇒
-        update(inEC || schedulerOpt.isEmpty)
+      val callThrottler = throttlerOpt match {
+        case Some(throttler) ⇒
+          // Grouped code execution throttling
+          throttler.callThrottler(throttle) { () ⇒
+            update(inEC = true)
+          }
+
+        case None ⇒
+          // Single code execution throttling
+          CallThrottler(schedulerOpt.getOrElse(CoreSystem.scheduler), throttle) { inEC ⇒
+            update(inEC || schedulerOpt.isEmpty)
+          }
       }
       val cancellable = RichObservable.listen(dependencies) {
-        throttler()
+        callThrottler.throttle()
       }
-      throttler()
+      callThrottler.throttle()
       cancellable
     }
 
