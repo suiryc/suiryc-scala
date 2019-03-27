@@ -21,6 +21,10 @@ object PathsEx {
   def filename(name: String): String =
     Paths.get(name).getFileName.toString
 
+  /** Rebuilds filename from 'atomic' name and extension. */
+  def filename(atomicName: String, extension: String): String =
+    if (extension.nonEmpty) s"$atomicName.$extension" else atomicName
+
   /** Gets 'atomic' name (filename without extension). */
   def atomicName(name: String): String = {
     val parts = filename(name).split('.')
