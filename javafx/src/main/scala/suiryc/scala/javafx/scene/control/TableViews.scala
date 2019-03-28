@@ -1,11 +1,14 @@
 package suiryc.scala.javafx.scene.control
 
+import com.sun.javafx.scene.control.VirtualScrollBar
 import javafx.collections.ObservableList
 import javafx.collections.transformation.SortedList
 import javafx.scene.control._
+import javafx.scene.layout.Region
 import scala.collection.JavaConverters._
 import scala.reflect._
 import spray.json._
+import suiryc.scala.javafx.beans.value.RichObservableValue
 
 /** TableView (and TreeTableView) helpers. */
 object TableViews {
@@ -41,6 +44,127 @@ object TableViews {
     table.setRoot(root)
     restoreSortOrder.foreach(table.getSortOrder.setAll(_))
   }
+
+  /**
+   * Automatically adjusts column width to fill the table size.
+   *
+   * The target column is expected to be one at the root of the table, not a
+   * nested one.
+   * Listeners are used to adjust width when other elements change.
+   *
+   * @param column the column to adjust
+   */
+  def autowidthColumn[S](column: TableColumn[S, _]): Unit = {
+    val tableView = column.getTableView
+    val otherColumns = tableView.getColumns.asScala.toList.filterNot(_ eq column)
+    autowidthColumn(tableView, column, otherColumns)
+  }
+
+  /**
+   * Automatically adjusts column width to fill the table size.
+   *
+   * The target column is expected to be one at the root of the table, not a
+   * nested one.
+   * Listeners are used to adjust width when other elements change.
+   *
+   * @param column the column to adjust
+   */
+  def autowidthColumn[S](column: TreeTableColumn[S, _]): Unit = {
+    val tableView = column.getTreeTableView
+    val otherColumns = tableView.getColumns.asScala.toList.filterNot(_ eq column)
+    autowidthColumn(tableView, column, otherColumns)
+  }
+
+  /**
+   * Automatically adjusts column width to fill the table size.
+   *
+   * The target column is expected to be one at the root of the table, not a
+   * nested one.
+   * Listeners are used to adjust width when other elements change.
+   *
+   * @param table the table owning the column
+   * @param column the column to adjust
+   * @param otherColumns the other columns
+   */
+  // scalastyle:off method.length
+  def autowidthColumn[S](table: Control, column: TableColumnBase[S, _], otherColumns: List[TableColumnBase[S, _]]): Unit = {
+    // Now what we want is for all columns to occupy the whole table width.
+    // Using a constrained resizing policy gets in the way of restoring the
+    // view, so a solution is to create a binding through which we set the
+    // target column (preferred) width according to the width of other
+    // elements:
+    //  columnWidth = tableWidth - tablePadding - otherColumnsWidth
+    // However the vertical scrollbar which may appear is not taken into
+    // account in table width. It is in the "clipped-container" that is a
+    // Region of the viewed content:
+    //  columnWidth = containerWidth - otherColumnsWidth
+    // (the container has 0 width when there is no content in the table)
+    //
+    // The table width is changed before the container one, which triggers
+    // glitches when resizing down using the second formula: the horizontal
+    // scrollbar appears (and disappears upon interaction or resizing up).
+    // Requesting layout (in 'runLater') makes it disappear right away.
+    //
+    // One solution, to apply correct width while preventing the horizontal
+    // scrollbar to appear, is to:
+    //  - listen to table width (changed before container one)
+    //  - take into account the scrollbar width when visible, similarly to
+    //    what is done for the container; eliminating the need to take into
+    //    account the container
+    // The scrollbar width happens to change the first time it appears;
+    // instead of listening for the scrollbar visibility and width, it is
+    // easier to listen to the container width.
+    // Belt and suspenders: we also keep the floor value of the target width,
+    // since it is a decimal value and rounding may make the scrollbar appear.
+    // Note: in some versions of JavaFX, it may have been necessary to also
+    // take into account the container in order to prevent the horizontal
+    // scrollbar from appearing in some corner cases.
+    //val tableView = column.getTableView
+    //val otherColumns = tableView.getColumns.asScala.toList.filterNot(_ eq column)
+
+    val clippedContainer = table.lookup(".clipped-container").asInstanceOf[Region]
+    val scrollBar = table.lookupAll(".scroll-bar").asScala.collect {
+      case scrollBar: VirtualScrollBar if scrollBar.getPseudoClassStates.asScala.map(_.getPseudoClassName).contains("vertical") ⇒ scrollBar
+    }.head
+
+    def updateColumnWidth(): Unit = {
+      val insets = table.getPadding
+      val padding = insets.getLeft + insets.getRight
+      val scrollbarWidth = if (!scrollBar.isVisible) 0 else scrollBar.getWidth
+      val viewWidth0 = table.getWidth - padding - scrollbarWidth
+      // It should not be necessary to take into account the container.
+      val viewWidth = viewWidth0
+      //val viewWidth =
+      //  if (clippedContainer.getWidth > 0) math.min(viewWidth0, clippedContainer.getWidth)
+      //  else viewWidth0
+      // Belt and suspenders: floor value to eliminate possible corner cases.
+      val columnWidth = (viewWidth - otherColumns.map(_.getWidth).sum).floor
+      // Setting max width helps applying target width in some cases (minimum
+      // width changed to a lower value after re-setting table items).
+      val columnMaxWidth = math.max(columnWidth, column.getMinWidth)
+      // Since current maxWidth may be lower than the one we want to apply, we
+      // need to update it first (otherwise the preferred width may not be
+      // applied as wanted).
+      // Note: *do not* delay setting width (e.g. through runLater) since it
+      // will make the scrollbar appear+disappear rapidly when resizing down.
+      column.setMaxWidth(columnMaxWidth)
+      column.setPrefWidth(columnWidth)
+    }
+
+    // Listening to the table and other columns width is necessary.
+    // We may also listen to the scrollbar visibility and width, but it's
+    // simpler to listen to the container width (impacted by both).
+    // Since the target column minimum width may change, listen to it to
+    // enforce value when necessary.
+    val listenTo = List(
+      table.widthProperty,
+      clippedContainer.widthProperty,
+      column.minWidthProperty
+    ) ::: otherColumns.map(_.widthProperty())
+    RichObservableValue.listen[AnyRef](listenTo)(updateColumnWidth())
+    updateColumnWidth()
+  }
+  // scalastyle:on method.length
 
   /**
    * Gets table columns view.
@@ -173,7 +297,6 @@ object TableViews {
       def read(value: JsValue): E = value match {
         case JsString(e) =>
           try {
-            import scala.reflect._
             Enum.valueOf(classTag[E].runtimeClass.asInstanceOf[Class[E]], e)
           } catch {
             case ex: Exception => deserializationError(s"Invalid ${classTag[E]} format: $e", ex)
