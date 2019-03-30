@@ -2,7 +2,11 @@ package suiryc.scala.javafx.stage
 
 import javafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty}
 import javafx.event.{Event, EventHandler}
+import javafx.stage.Stage
 import suiryc.scala.javafx.beans.value.RichObservableValue._
+import suiryc.scala.javafx.concurrent.JFXSystem
+import suiryc.scala.javafx.stage.Stages.StageLocation
+import suiryc.scala.settings.ConfigEntry
 
 /** Adds functions to persist and restore view. */
 trait StagePersistentView {
@@ -49,6 +53,65 @@ object StagePersistentView {
         }
         ()
       }
+    }
+  }
+
+}
+
+/**
+ * Simple view to persist/restore stage location.
+ *
+ * @param stageLocation persistent stage location value
+ * @param first whether this is the first (ever) stage to be shown
+ * @param setMinimumDimensions whether to set stage minimum dimensions
+ * @param setSize whether to set stage size
+ */
+abstract class StageLocationPersistentView(
+  stageLocation: ConfigEntry[StageLocation],
+  private var first: Boolean = false,
+  setMinimumDimensions: Boolean = true,
+  setSize: Boolean = true
+) extends StagePersistentView {
+
+  protected def stage: Stage
+
+  override protected def restoreView(): Unit = {
+    Stages.onStageReady(stage, first = first) {
+      restoreViewOnStageReady()
+    }(JFXSystem.dispatcher)
+    // This is not the first displayed stage anymore.
+    first = false
+  }
+
+  protected def restoreViewOnStageReady(): Unit = {
+    // Restore stage location
+    if (setMinimumDimensions) Stages.setMinimumDimensions(stage)
+    stageLocation.opt.foreach { loc ⇒
+      Stages.setLocation(stage, loc, setSize = setSize)
+    }
+  }
+
+  override protected def persistView(): Unit = {
+    // Persist stage location
+    // Note: if iconified, resets it
+    stageLocation.set(Stages.getLocation(stage).orNull)
+  }
+
+}
+
+object StageLocationPersistentView {
+
+  /** Builds a simple persistent view for an existing stage. */
+  def apply(
+    stage: Stage,
+    stageLocation: ConfigEntry[StageLocation],
+    first: Boolean = false,
+    setMinimumDimensions: Boolean = true,
+    setSize: Boolean = true): StageLocationPersistentView =
+  {
+    val stage0 = stage
+    new StageLocationPersistentView(stageLocation, first, setMinimumDimensions, setSize) {
+      protected val stage: Stage = stage0
     }
   }
 
