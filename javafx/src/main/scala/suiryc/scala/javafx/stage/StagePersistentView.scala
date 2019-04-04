@@ -1,5 +1,6 @@
 package suiryc.scala.javafx.stage
 
+import java.util.concurrent.atomic.AtomicBoolean
 import javafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty}
 import javafx.event.{Event, EventHandler}
 import javafx.stage.Stage
@@ -68,7 +69,7 @@ object StagePersistentView {
  */
 abstract class StageLocationPersistentView(
   stageLocation: ConfigEntry[StageLocation],
-  private var first: Boolean = false,
+  first: Boolean = false,
   setMinimumDimensions: Boolean = true,
   setSize: Boolean = true
 ) extends StagePersistentView {
@@ -76,11 +77,9 @@ abstract class StageLocationPersistentView(
   protected def stage: Stage
 
   override protected def restoreView(): Unit = {
-    Stages.onStageReady(stage, first = first) {
+    Stages.onStageReady(stage, first = first && StageLocationPersistentView.checkFirstStage) {
       restoreViewOnStageReady()
     }(JFXSystem.dispatcher)
-    // This is not the first displayed stage anymore.
-    first = false
   }
 
   protected def restoreViewOnStageReady(): Unit = {
@@ -100,6 +99,11 @@ abstract class StageLocationPersistentView(
 }
 
 object StageLocationPersistentView {
+
+  private val firstStage = new AtomicBoolean(true)
+
+  /** Checks this is the first stage (only first call succeeds). */
+  def checkFirstStage: Boolean = firstStage.compareAndSet(true, false)
 
   /** Builds a simple persistent view for an existing stage. */
   def apply(
