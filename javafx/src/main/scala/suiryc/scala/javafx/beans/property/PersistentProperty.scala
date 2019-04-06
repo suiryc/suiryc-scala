@@ -15,7 +15,7 @@ class PersistentProperty[T](val setting: PersistentSetting[T])
 {
 
   // Set initial value
-  reset()
+  refresh()
 
   // And save any value change
   this.listen { (_, _, newValue) =>
@@ -31,15 +31,15 @@ class PersistentProperty[T](val setting: PersistentSetting[T])
     set(value)
 
   /**
-   * Re-sets value.
+   * Refreshes (re-sets) value.
    *
    * Reads the setting value and sets the property one.
    */
-  def reset(): Unit =
+  def refresh(): Unit =
     set(setting())
 
   /** Resets value to default (setting). */
-  def resetDefault(): Unit =
+  def reset(): Unit =
     set(setting.default)
 
 }

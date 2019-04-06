@@ -15,7 +15,7 @@ class ConfigEntryProperty[A](entry: ConfigEntry[A])
 {
 
   // Set initial value
-  reset()
+  refresh()
 
   // And save any value change
   this.listen { (_, _, newValue) =>
@@ -23,17 +23,17 @@ class ConfigEntryProperty[A](entry: ConfigEntry[A])
   }
 
   /**
-   * Re-sets value.
+   * Refreshes (re-sets) value.
    *
    * Reads the setting value and sets the property one.
    */
-  def reset(): Unit =
+  def refresh(): Unit =
     set(entry.get)
 
   /** Resets value to default (setting). */
-  def resetDefault(): Unit = {
+  def reset(): Unit = {
     entry.reset()
-    reset()
+    refresh()
   }
 
 }
