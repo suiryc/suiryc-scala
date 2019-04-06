@@ -3,7 +3,6 @@ package suiryc.scala.settings
 import java.nio.file.Path
 import java.nio.file.Paths
 import suiryc.scala.RichEnumeration
-import suiryc.scala.misc.{Enumeration => sEnumeration}
 import suiryc.scala.settings.Preference._
 
 /**
@@ -100,14 +99,6 @@ class PersistentEnumerationSetting[T <: Enumeration](protected val settings: Bas
   override protected def configValue: T#Value = enum.byName(settings.config.getString(path))
 }
 
-/** Special Enumeration persistent setting. */
-class PersistentSEnumerationSetting[T <: sEnumeration](protected val settings: BaseSettings, override protected val path: String,
-  enum: T, override val default: T#Value)
-  extends SEnumerationPreference[T](settings, path, enum, default) with PersistentSetting[T#Value]
-{
-  override protected def configValue: T#Value = enum.withName(settings.config.getString(path))
-}
-
 /** Persistent setting builder. */
 trait PersistentSettingBuilder[T] {
   def build(settings: BaseSettings, path: String, default: T): PersistentSetting[T]
@@ -127,13 +118,6 @@ object PersistentSetting {
   /** Builds an Enumeration persistent setting. */
   def from[T <: Enumeration](settings: BaseSettings, path: String, enum: T, default: T#Value): PersistentSetting[T#Value] =
     new PersistentEnumerationSetting[T](settings, path, enum, default)
-
-  /** Builds a special Enumeration persistent setting. */
-  // Note: even though scala compiler works fine when the function definition
-  // is similar to the Enumeration one, IntelliJ editor shows an error - which
-  // is annoying - unless we use the dummy implicit parameter trick.
-  def from[T <: sEnumeration](settings: BaseSettings, path: String, enum: T, default: T#Value)(implicit d: DummyImplicit): PersistentSetting[T#Value] =
-    new PersistentSEnumerationSetting[T](settings, path, enum, default)
 
   /** Boolean persistent setting builder. */
   implicit val booleanBuilder: PersistentSettingBuilder[Boolean] =

@@ -5,7 +5,6 @@ import java.nio.file.Paths
 import java.util.prefs.Preferences
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import suiryc.scala.RichEnumeration
-import suiryc.scala.misc.{Enumeration => sEnumeration}
 import Preference._
 
 /**
@@ -119,14 +118,6 @@ class EnumerationPreference[T <: Enumeration](protected val prefsGetter: Prefere
   override protected def updateValue(v: T#Value): Unit = prefs.put(path, v.toString)
 }
 
-/** Special Enumeration preference. */
-class SEnumerationPreference[T <: sEnumeration](protected val prefsGetter: PreferencesGetter, protected val path: String, enum: T, val default: T#Value)
-  extends Preference[T#Value]
-{
-  override protected def prefsValue(default: T#Value): T#Value = enum.withName(prefs.get(path, default.toString))
-  override protected def updateValue(v: T#Value): Unit = prefs.put(path, v.toString)
-}
-
 /** Preference builder. */
 trait PreferenceBuilder[T] {
   def build(prefsGetter: PreferencesGetter, path: String, default: T): Preference[T]
@@ -148,13 +139,6 @@ object Preference {
   /** Builds an Enumeration preference. */
   def from[T <: Enumeration](prefsGetter: PreferencesGetter, path: String, enum: T, default: T#Value): Preference[T#Value] =
     new EnumerationPreference(prefsGetter, path, enum, default)
-
-  /** Builds a special Enumeration preference. */
-  // Note: even though scala compiler works fine when the function definition
-  // is similar to the Enumeration one, IntelliJ editor shows an error - which
-  // is annoying - unless we use the dummy implicit parameter trick.
-  def from[T <: sEnumeration](prefsGetter: PreferencesGetter, path: String, enum: T, default: T#Value)(implicit d: DummyImplicit): Preference[T#Value] =
-    new SEnumerationPreference(prefsGetter, path, enum, default)
 
   /** RecreatablePreferences getter. */
   implicit def recreatableToGetter(recreatable: RecreatablePreferences): PreferencesGetter = () => recreatable.prefs

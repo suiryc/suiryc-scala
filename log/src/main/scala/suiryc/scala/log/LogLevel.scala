@@ -1,26 +1,32 @@
 package suiryc.scala.log
 
 import ch.qos.logback.classic.Level
-import suiryc.scala.misc.Enumeration
+import suiryc.scala.misc.{CaseInsensitiveEnumeration, EnumerationWithAliases}
 
+/**
+ * Logback log level enumeration.
+ *
+ * Has short name aliases and case insensitive matching.
+ */
+object LogLevel extends EnumerationWithAliases with CaseInsensitiveEnumeration {
 
-object LogLevel extends Enumeration {
+  // Notes:
+  // We cannot override the original 'Value' class, but still shadow it for
+  // easier usage (we only have such values in this enumeration).
+  // We also cannot properly override 'values', so define 'levels' instead.
 
-  import Enumeration._
+  class Value(name: String, shortName: String, val level: Level)
+    extends ValWithAliases(name, Seq(shortName))
 
-  override protected val caseSensitive = false
+  private def newLevel(name: String, shortName: String, level: Level): Value =
+    new Value(name, shortName,level)
 
-  case class Value(name: String, shortName: String, level: Level)
-    extends BaseValue
-    with Aliased
-  {
-    override val aliases = List(shortName)
-  }
+  def levels: Set[Value] = values.asInstanceOf[Set[Value]]
 
-  val TRACE = Value("TRACE", "TRC", Level.TRACE)
-  val DEBUG = Value("DEBUG", "DBG", Level.DEBUG)
-  val INFO = Value("INFO", "INF", Level.INFO)
-  val WARNING = Value("WARNING", "WRN", Level.WARN)
-  val ERROR = Value("ERROR", "ERR", Level.ERROR)
+  val TRACE = newLevel("TRACE", "TRC", Level.TRACE)
+  val DEBUG = newLevel("DEBUG", "DBG", Level.DEBUG)
+  val INFO = newLevel("INFO", "INF", Level.INFO)
+  val WARNING = newLevel("WARNING", "WRN", Level.WARN)
+  val ERROR = newLevel("ERROR", "ERR", Level.ERROR)
 
 }

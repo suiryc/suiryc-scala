@@ -1,92 +1,46 @@
 package suiryc.scala.misc
 
-import scala.collection.SortedSet
-import scala.reflect.NameTransformer._
-import scala.util.matching.Regex
 
 /**
- * Tweaked from http://stackoverflow.com/a/4236489 to have helper functions
- * similar to scala.Enumeration (some code taken from original).
+ * Mark an enumeration as case-insensitive.
+ *
+ * This of course only matters for code here, there is not impact on original
+ * Enumeration behaviour.
  */
-abstract class Enumeration {
+trait CaseInsensitiveEnumeration extends scala.Enumeration
 
-  import Enumeration._
+/** Enumeration that can attach aliases to values. */
+trait EnumerationWithAliases extends scala.Enumeration {
 
-  protected val caseSensitive = true
+  // Notes:
+  // We cannot override the 'Value' class, so we will extend 'Val' to embed our
+  // aliases; this is enough since we don't plan to make the aliases visible.
+  // We also cannot override final method 'withName', so define our own.
 
-  type Value <: BaseValue
+  // Whether name and aliases are case insensitive.
+  private val caseInsensitive = this.isInstanceOf[CaseInsensitiveEnumeration]
 
-  protected trait BaseValue
-    extends Ordered[BaseValue]
-  { this: Value =>
+  // Normalizes value (lowercase when case-insensitive).
+  @inline
+  private def normalize(s: String): String = if (caseInsensitive) s.toLowerCase else s
 
-    val id: Int = nextId
-
-    val name: String
-
-    override def compare(that: BaseValue): Int =
-      if (this.id < that.id) -1
-      else if (this.id == that.id) 0
-      else 1
-
-    override def toString: String = name
-
-    nextId += 1
-    add(this)
-
+  protected class ValWithAliases(i: Int, name: String, val aliases: Set[String]) extends Val(i, name) {
+    def this(name: String, aliases: Seq[String]) = this(nextId, name, aliases.toSet)
+    val normalized: Set[String] = (aliases + name).map(normalize)
   }
 
-  protected object ValueOrdering extends Ordering[Value] {
-    def compare(x: Value, y: Value): Int = x compare y
-  }
-
-  type ValueSet = SortedSet[Value]
-
-  private var nextId = 0
-
-  def maxId: Int = nextId
-
-  protected def ordering: Ordering[Value] = ValueOrdering
-
-  private var _values: ValueSet = SortedSet[Value]()(ordering)
-
-  private def add(value: Value) = {
-    _values += value
-    value
-  }
-
-  def values: ValueSet = _values
-
-  def apply(n: Int): Value =
-    values.find(_.id == n).get
-
-  def apply(name: String): Value =
-    withName(name)
-
-  def withName(name: String): Value =
-    values.find { value =>
-      if (caseSensitive) value.name == name
-      else value.name.toLowerCase == name.toLowerCase
-    }.orElse { values.find {
-        case aliased: Aliased =>
-          if (caseSensitive) aliased.aliases.contains(name)
-          else aliased.aliases.map(_.toLowerCase).contains(name.toLowerCase)
-
-        case _ =>
-          false
-      }
-    }.get
-
-  override def toString: String =
-    ((getClass.getName stripSuffix MODULE_SUFFIX_STRING split '.').last split
-       Regex.quote(NAME_JOIN_STRING)).last
-
-}
-
-object Enumeration {
-
-  trait Aliased {
-    val aliases: List[String]
+  /**
+   * Finds value by name (or alias).
+   *
+   * Handles case-insensitive values when applicable.
+   */
+  def byName(s: String): Value = {
+    values.find {
+      case withAliases: ValWithAliases ⇒ withAliases.normalized.contains(normalize(s))
+      case v: Val ⇒ normalize(s) == normalize(v.toString)
+    }.getOrElse {
+      throw new NoSuchElementException(s"No value found for '$s'")
+    }
   }
 
 }

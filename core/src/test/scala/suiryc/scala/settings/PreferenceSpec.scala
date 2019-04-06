@@ -2,7 +2,6 @@ package suiryc.scala.settings
 
 import java.util.prefs.Preferences
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import suiryc.scala.misc.{Enumeration => sEnumeration}
 
 class PreferenceSpec extends WordSpec with Matchers with BeforeAndAfterEach {
 
@@ -27,14 +26,6 @@ class PreferenceSpec extends WordSpec with Matchers with BeforeAndAfterEach {
     val Test = Value
   }
 
-  private val KEY_SENUM = "key.senum"
-  object TestSEnumeration extends sEnumeration {
-    case class Value(name: String) extends BaseValue
-    val First = Value("first")
-    val Default = Value("default")
-    val Test = Value("test")
-  }
-
   private var prefs: Preferences = _
 
   override def beforeEach(): Unit = {
@@ -54,7 +45,6 @@ class PreferenceSpec extends WordSpec with Matchers with BeforeAndAfterEach {
       val long = Preference.from(prefs, KEY_LONG, VALUE_LONG + 1)
       val string = Preference.from(prefs, KEY_STRING, VALUE_STRING + " - new")
       val enum = Preference.from(prefs, KEY_ENUM, TestEnumeration, TestEnumeration.Default)
-      val senum = Preference.from(prefs, KEY_SENUM, TestSEnumeration, TestSEnumeration.Default)
 
       boolean.option shouldBe empty
       boolean() shouldBe !VALUE_BOOLEAN
@@ -66,15 +56,12 @@ class PreferenceSpec extends WordSpec with Matchers with BeforeAndAfterEach {
       string() shouldBe (VALUE_STRING + " - new")
       enum.option shouldBe empty
       enum() shouldBe TestEnumeration.Default
-      senum.option shouldBe empty
-      senum() shouldBe TestSEnumeration.Default
 
       boolean() = VALUE_BOOLEAN
       int() = VALUE_INT
       long() = VALUE_LONG
       string() = VALUE_STRING
       enum() = TestEnumeration.Test
-      senum() = TestSEnumeration.Test
 
       boolean.option should not be empty
       boolean() shouldBe VALUE_BOOLEAN
@@ -86,8 +73,6 @@ class PreferenceSpec extends WordSpec with Matchers with BeforeAndAfterEach {
       string() shouldBe VALUE_STRING
       enum.option should not be empty
       enum() shouldBe TestEnumeration.Test
-      senum.option should not be empty
-      senum() shouldBe TestSEnumeration.Test
     }
 
     "recreate its Preferences node when applicable" in {
@@ -98,14 +83,12 @@ class PreferenceSpec extends WordSpec with Matchers with BeforeAndAfterEach {
       val long = Preference.from(recreatable, KEY_LONG, VALUE_LONG + 1)
       val string = Preference.from(recreatable, KEY_STRING, VALUE_STRING + " - new")
       val enum = Preference.from(recreatable, KEY_ENUM, TestEnumeration, TestEnumeration.Default)
-      val senum = Preference.from(recreatable, KEY_SENUM, TestSEnumeration, TestSEnumeration.Default)
 
       boolean() = VALUE_BOOLEAN
       int() = VALUE_INT
       long() = VALUE_LONG
       string() = VALUE_STRING
       enum() = TestEnumeration.Test
-      senum() = TestSEnumeration.Test
 
       prefs.removeNode()
 
@@ -120,8 +103,6 @@ class PreferenceSpec extends WordSpec with Matchers with BeforeAndAfterEach {
       string() shouldBe (VALUE_STRING + " - new")
       enum.option shouldBe empty
       enum() shouldBe TestEnumeration.Default
-      senum.option shouldBe empty
-      senum() shouldBe TestSEnumeration.Default
     }
 
   }
