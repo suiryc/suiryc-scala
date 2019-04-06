@@ -39,7 +39,8 @@ lazy val commonSettings = Seq(
   ),
   resolvers += Resolver.mavenLocal,
   publishMavenStyle := true,
-  publishTo := Some(Resolver.mavenLocal)
+  publishTo := Some(Resolver.mavenLocal),
+  publishArtifact in packageDoc := false
 )
 
 
