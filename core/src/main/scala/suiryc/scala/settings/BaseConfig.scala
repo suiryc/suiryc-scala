@@ -24,9 +24,13 @@ class BaseConfig(val config: Config) extends BaseConfigImplicits {
 
 object BaseConfig {
 
+  import scala.language.implicitConversions
+
   def joinPath(path: Seq[String]): String = ConfigUtil.joinPath(path.asJava)
 
   def toDuration(v: java.time.Duration): FiniteDuration = Duration.fromNanos(v.toNanos)
+
+  implicit def toBaseConfig(config: Config): BaseConfig = new BaseConfig(config)
 
 }
 
