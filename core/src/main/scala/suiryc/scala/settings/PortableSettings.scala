@@ -269,14 +269,7 @@ object PortableSettings extends StrictLogging {
     defaultReference(path)
   }
 
-  /**
-   * Gets portable settings.
-   *
-   * If given file path cannot be parsed as a Config, backup path is used
-   * instead.
-   * In both cases, default reference is used as fallback.
-   */
-  def apply(filepath: Path, confpath: Seq[String]): PortableSettings = {
+  private def build(filepath: Path, fallback: Option[Config], confpath: Seq[String]): PortableSettings = {
     val backup = PathsEx.backupPath(filepath).toFile
     val appConfig = try {
       ConfigFactory.parseFile(filepath.toFile)
@@ -291,7 +284,37 @@ object PortableSettings extends StrictLogging {
         }
     }
     val ref = defaultReference(confpath)
-    new PortableSettings(filepath, appConfig, ref)
+    new PortableSettings(filepath, appConfig, fallback.map(ref.withFallback).getOrElse(ref))
+  }
+
+  /**
+   * Gets portable settings.
+   *
+   * If given file path cannot be parsed as a Config, backup path is used
+   * instead.
+   * In both cases, default reference is used as fallback.
+   * Given fallback is used as last.
+   */
+  def apply(filepath: Path, fallback: Config, confpath: Seq[String]): PortableSettings = {
+    build(filepath, Some(fallback), confpath)
+  }
+
+  /**
+   * Gets portable settings.
+   *
+   * vararg variant.
+   */
+  def apply(filepath: Path, fallback: Config, confpath: String*)(implicit d: DummyImplicit): PortableSettings = {
+    build(filepath, Some(fallback), confpath)
+  }
+
+  /**
+   * Gets portable settings.
+   *
+   * Variant with ony target file and reference configuration.
+   */
+  def apply(filepath: Path, confpath: Seq[String]): PortableSettings = {
+    build(filepath, None, confpath)
   }
 
   /**
