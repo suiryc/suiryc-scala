@@ -160,11 +160,17 @@ class TextFieldWithButton() extends Control {
   buttonsCountProperty.listen { (_, v0, v1) ⇒
     if (v1.intValue < v0.intValue) {
       // Removing last buttons
-      buttons = buttons.take(v1.intValue)
+      val (remaining, removed) = buttons.splitAt(v1.intValue)
+      removed.foreach { button ⇒
+        getChildren.remove(button.arrowButton)
+      }
+      buttons = remaining
     } else if (v1.intValue > v0.intValue) {
       // Adding buttons
       buttons = buttons ::: (v0.intValue until v1.intValue).toList.map { idx ⇒
-        new TextFieldButton(this, idx)
+        val button = new TextFieldButton(this, idx)
+        getChildren.add(button.arrowButton)
+        button
       }
     }
   }
