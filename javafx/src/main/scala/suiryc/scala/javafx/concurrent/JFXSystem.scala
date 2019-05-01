@@ -75,10 +75,20 @@ object JFXSystem
   /** JavaFX actor to which actions are delegated. */
   private val jfxActor = newJFXActor(Props[JFXActor], "JavaFX-dispatcher")
 
-  /** The dedicated JavaFX dispatcher. */
-  val dispatcher: ExecutionContextExecutor = system.dispatchers.lookup("javafx.dispatcher")
+  // Note:
+  // Even though a MessageDispatcher is also an ExecutionContext, we usually
+  // only need to directly use the JavaFX executor instead of using a JavaFX
+  // dispatcher. The dispatcher (at least the usual one built from Akka system)
+  // relies on BatchingExecutor and may trigger a 'silent' "requirement failed"
+  // error when concurrent code executions are delegated to JavaFX; this happens
+  // when creating more than one modal dialog and Await'ing its result from
+  // different threads.
+  // Thus we better only use the dispatcher for the dedicated JavaFX actor.
+  //val dispatcher: ExecutionContextExecutor = system.dispatchers.lookup("javafx.dispatcher")
+  /** The dedicated JavaFX execution context. */
+  lazy val executor: ExecutionContextExecutor = JFXExecutor.executor
   /** Scheduler running with JavaFX execution context. */
-  lazy val scheduler: Scheduler = Scheduler(dispatcher)
+  lazy val scheduler: Scheduler = Scheduler(executor)
 
   /** Creates an actor using the JavaFX thread backed dispatcher. */
   def newJFXActor(props: Props): ActorRef =
@@ -126,11 +136,10 @@ object JFXSystem
       // the same thread.
       if (logReentrant) reentrant()
       action
-    }
-    else {
+    } else {
       val f = Future {
         action
-      } (dispatcher)
+      } (executor)
 
       Await.ready(f, Duration.Inf).value match {
         case None =>
