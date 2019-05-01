@@ -12,6 +12,7 @@ import suiryc.scala.concurrent.RichFuture
 import suiryc.scala.concurrent.RichFuture._
 import suiryc.scala.javafx.beans.value.RichObservableValue
 import suiryc.scala.javafx.beans.value.RichObservableValue._
+import suiryc.scala.javafx.concurrent.JFXExecutor
 import suiryc.scala.settings.{BaseConfigImplicits, ConfigEntry, Preference, PreferenceBuilder}
 import suiryc.scala.sys.OS
 
@@ -81,7 +82,7 @@ object Stages {
    * @param f code to execute
    * @param ec execution context
    */
-  def onStageReady(stage: Stage, first: Boolean, timeout: FiniteDuration = 1.second)(f: ⇒ Unit)(implicit ec: ExecutionContext): Unit = {
+  def onStageReady(stage: Stage, first: Boolean, timeout: FiniteDuration = 1.second)(f: ⇒ Unit)(implicit ec: ExecutionContext = JFXExecutor.executor): Unit = {
     def call(): Unit = {
       if (first && OS.isLinux) {
         val promise = Promise[Unit]()

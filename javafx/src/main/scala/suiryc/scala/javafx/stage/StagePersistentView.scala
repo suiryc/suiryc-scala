@@ -5,7 +5,6 @@ import javafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty}
 import javafx.event.{Event, EventHandler}
 import javafx.stage.Stage
 import suiryc.scala.javafx.beans.value.RichObservableValue._
-import suiryc.scala.javafx.concurrent.JFXSystem
 import suiryc.scala.javafx.stage.Stages.StageLocation
 import suiryc.scala.settings.ConfigEntry
 
@@ -79,7 +78,7 @@ abstract class StageLocationPersistentView(
   override protected def restoreView(): Unit = {
     Stages.onStageReady(stage, first = first && StageLocationPersistentView.checkFirstStage) {
       restoreViewOnStageReady()
-    }(JFXSystem.dispatcher)
+    }
   }
 
   protected def restoreViewOnStageReady(): Unit = {

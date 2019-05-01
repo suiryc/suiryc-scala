@@ -187,7 +187,7 @@ object JFXSystem
   }
 
   /** Terminates the (core) system with JavaFX actors, then JavaFX. */
-  def terminate(implicit ec: ExecutionContext): Future[Terminated] = {
+  def terminate(implicit ec: ExecutionContext = executor): Future[Terminated] = {
     system.terminate().map { v =>
       Platform.exit()
       v
