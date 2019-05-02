@@ -4,6 +4,7 @@ import Keys._
 lazy val versions = Map[String, String](
   "akka"          -> "2.5.21",
   "config"        -> "1.3.3",
+  "javafx"        -> "12.0.1",
   "logback"       -> "1.2.3",
   "monix"         -> "3.0.0-RC2",
   "scala"         -> "2.12.8",
@@ -11,7 +12,7 @@ lazy val versions = Map[String, String](
   "scalatest"     -> "3.0.5",
   "scopt"         -> "3.7.1",
   "spray-json"    -> "1.3.5",
-  "suiryc-scala"  -> "0.0.3-SNAPSHOT"
+  "suiryc-scala"  -> "0.0.4-SNAPSHOT"
 )
 
 lazy val commonSettings = Seq(
@@ -57,6 +58,7 @@ lazy val core = project.in(file("core")).
       "com.typesafe.scala-logging" %% "scala-logging"  % versions("scala-logging") % "provided",
       "io.monix"                   %% "monix"          % versions("monix")         % "provided",
       "io.spray"                   %% "spray-json"     % versions("spray-json")    % "provided",
+      "org.openjfx"                %  "javafx-base"    % versions("javafx")        % "provided" classifier jfxPlatform,
       "org.scalatest"              %% "scalatest"      % versions("scalatest")     % "test"
     )
   )
@@ -86,7 +88,10 @@ lazy val javaFX = project.in(file("javafx")).
       "com.typesafe.akka"          %% "akka-actor"      % versions("akka")          % "provided",
       "com.typesafe.scala-logging" %% "scala-logging"   % versions("scala-logging") % "provided",
       "io.monix"                   %% "monix"           % versions("monix")         % "provided",
-      "io.spray"                   %% "spray-json"      % versions("spray-json")    % "provided"
+      "io.spray"                   %% "spray-json"      % versions("spray-json")    % "provided",
+      "org.openjfx"                %  "javafx-base"     % versions("javafx")        % "provided" classifier jfxPlatform,
+      "org.openjfx"                %  "javafx-controls" % versions("javafx")        % "provided" classifier jfxPlatform,
+      "org.openjfx"                %  "javafx-graphics" % versions("javafx")        % "provided" classifier jfxPlatform
     )
   )
 
@@ -101,3 +106,10 @@ lazy val root = project.in(file(".")).
     libraryDependencies := Seq.empty,
     publishArtifact in Compile := false
   )
+
+lazy val jfxPlatform = {
+  val osName = System.getProperty("os.name", "").toLowerCase
+  if (osName.startsWith("mac")) "mac"
+  else if (osName.startsWith("win")) "win"
+  else "linux"
+}
