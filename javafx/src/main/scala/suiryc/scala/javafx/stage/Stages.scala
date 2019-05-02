@@ -13,7 +13,7 @@ import suiryc.scala.concurrent.RichFuture._
 import suiryc.scala.javafx.beans.value.RichObservableValue
 import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.javafx.concurrent.JFXExecutor
-import suiryc.scala.settings.{BaseConfigImplicits, ConfigEntry, Preference, PreferenceBuilder}
+import suiryc.scala.settings.{BaseConfigImplicits, ConfigEntry}
 import suiryc.scala.sys.OS
 
 /** JavaFX Stage helpers. */
@@ -259,19 +259,11 @@ object Stages {
   }
 
   /**
-   * Stage location preference builder.
+   * Stage location serialization.
    *
    * Saves x/y/width/height/maximized information in a string using
    * "x=?;y=?;w=?;h=?;m=?" format.
    */
-  implicit val locationBuilder: PreferenceBuilder[StageLocation] = {
-    import Preference._
-    Preference.typeBuilder[StageLocation, String](
-      { l => Option(l).map(fromLocation).orNull },
-      { s => Option(s).map(toLocation).orNull }
-    )
-  }
-
   implicit val locationHandler: ConfigEntry.Handler[StageLocation] = new ConfigEntry.Handler[StageLocation] with BaseConfigImplicits {
     override def get(config: Config, path: String): StageLocation = toLocation(configGetString(config, path))
     override def getList(config: Config, path: String): List[StageLocation] = configGetStringList(config, path).map(toLocation)

@@ -138,25 +138,11 @@ trait SettingSnapshot[A] extends Snapshot {
 
 object SettingSnapshot {
 
-  /** Builds a snapshot from a Preference. */
-  def apply[A](preference: Preference[A]): SettingSnapshot[A] =
-    new SettingSnapshot[A] {
-      override protected def getValue: A = preference()
-      override protected def setValue(v: A): Unit = preference() = v
-    }
-
   /** Builds a snapshot from a property. */
   def apply[A](property: Property[A]): SettingSnapshot[A] =
     new SettingSnapshot[A] {
       override protected def getValue: A = property.getValue
       override protected def setValue(v: A): Unit = property.setValue(v)
-    }
-
-  /** Builds a snapshot from a persistent setting. */
-  def apply[A](setting: PersistentSetting[A]): SettingSnapshot[A] =
-    new SettingSnapshot[A] {
-      override protected def getValue: A = setting()
-      override protected def setValue(v: A): Unit = setting() = v
     }
 
   /** Builds a snapshot from a (portable setting) config entry. */
