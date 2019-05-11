@@ -4,6 +4,7 @@ import com.sun.javafx.scene.control.VirtualScrollBar
 import javafx.collections.ObservableList
 import javafx.collections.transformation.SortedList
 import javafx.scene.control._
+import javafx.scene.control.skin.{TableViewSkin, TreeTableViewSkin, VirtualFlow}
 import javafx.scene.layout.Region
 import scala.collection.JavaConverters._
 import scala.reflect._
@@ -43,6 +44,96 @@ object TableViews {
       else Some(sortOrder)
     table.setRoot(root)
     restoreSortOrder.foreach(table.getSortOrder.setAll(_))
+  }
+
+  /**
+   * Scrolls so that requested index is visible (in the view).
+   *
+   * If target row (+ padding) is already visible, nothing is done.
+   * Index outside the rows range is adjusted to see either first or last row.
+   *
+   * @param table table
+   * @param index row index (0-based) to make visible
+   * @param top whether the row is supposed to appear at the top (scroll up)
+   *            or at the bottom (scroll down)
+   * @param padding number of extra rows that should also be visible
+   */
+  def scrollTo(table: TableView[_], index: Int, top: Boolean, padding: Int): Unit = {
+    // To control scrolling, we need to access the VirtualFlow which is in the
+    // table skin (should be the first child, accessible once table is shown).
+    table.getSkin.asInstanceOf[TableViewSkin[_]].getChildren.asScala.find(_.isInstanceOf[VirtualFlow[_]]).foreach {
+      case flow: VirtualFlow[_] ⇒
+        scrollTo(flow.asInstanceOf[VirtualFlow[_ <: IndexedCell[_]]], table.getItems.size, index, top, padding)
+    }
+  }
+
+  /**
+   * Scrolls so that requested index is visible (in the view).
+   *
+   * If target row (+ padding) is already visible, nothing is done.
+   * Index outside the rows range is adjusted to see either first or last row.
+   *
+   * @param table table
+   * @param index row index (0-based) to make visible
+   * @param top whether the row is supposed to appear at the top (scroll up)
+   *            or at the bottom (scroll down)
+   * @param padding number of extra rows that should also be visible
+   */
+  def scrollTo(table: TreeTableView[_], index: Int, top: Boolean, padding: Int): Unit = {
+    table.getSkin.asInstanceOf[TreeTableViewSkin[_]].getChildren.asScala.find(_.isInstanceOf[VirtualFlow[_]]).foreach {
+      case flow: VirtualFlow[_] ⇒
+        scrollTo(flow.asInstanceOf[VirtualFlow[_ <: IndexedCell[_]]], table.getRoot.getChildren.size, index, top, padding)
+    }
+  }
+
+  private def scrollTo(flow: VirtualFlow[_ <: IndexedCell[_]], itemsCount: Int, index: Int, top: Boolean, padding: Int): Unit = {
+    // A row is considered visible starting with its very first pixel. We want
+    // most of the row to be seen, so the easiest solution is to make sure it is
+    // fully visible by targeting the row next to the one we want (+ padding).
+    // We determine two targets to see above (top) and below (bottom) the wanted
+    // one; padding is applied in the scrolling direction.
+    val targetTop = if (top) {
+      if (index > Int.MinValue + padding) index - (padding + 1) else Int.MinValue
+    } else {
+      index - 1
+    }
+    val targetBottom = if (top) {
+      index + 1
+    } else {
+      if (index < Int.MaxValue - padding) index + (padding + 1) else Int.MaxValue
+    }
+    @scala.annotation.tailrec
+    def adjust(top: Boolean, movedUp: Boolean, movedDown: Boolean): Unit = {
+      if (top) {
+        // Scroll up.
+        if (targetTop < 0) {
+          // Scroll to the top.
+          flow.scrollPixels(Double.MinValue)
+          ()
+        } else if (flow.getFirstVisibleCell.getIndex > targetTop) {
+          // Target row (first pixel) not yet visible: scroll 1px and loop.
+          flow.scrollPixels(-1)
+          adjust(top = top, movedUp = true, movedDown = movedDown)
+        } else if (!movedUp) {
+          // Now that top side is visible, switch to bottom side; ensure we did
+          // not scroll down yet (to prevent possible infinite loop).
+          adjust(top = !top, movedUp = true, movedDown = true)
+        }
+      } else {
+        // Scroll down.
+        if (targetBottom >= itemsCount) {
+          // Scroll to the bottom.
+          flow.scrollPixels(Double.MaxValue)
+          ()
+        } else if (flow.getLastVisibleCell.getIndex < targetBottom) {
+          flow.scrollPixels(1)
+          adjust(top = top, movedUp = movedUp, movedDown = true)
+        } else if (!movedDown) {
+          adjust(top = !top, movedUp = true, movedDown = true)
+        }
+      }
+    }
+    adjust(top = top, movedUp = false, movedDown = false)
   }
 
   /**
