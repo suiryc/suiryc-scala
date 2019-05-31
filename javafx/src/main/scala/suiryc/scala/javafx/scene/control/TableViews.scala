@@ -8,8 +8,11 @@ import javafx.scene.control.skin.{TableViewSkin, TreeTableViewSkin, VirtualFlow}
 import javafx.scene.layout.Region
 import scala.collection.JavaConverters._
 import scala.reflect._
+import scala.reflect.internal.util.WeakHashSet
 import spray.json._
 import suiryc.scala.javafx.beans.value.RichObservableValue
+import suiryc.scala.javafx.beans.value.RichObservableValue._
+import suiryc.scala.javafx.scene.Nodes
 
 /** TableView (and TreeTableView) helpers. */
 object TableViews {
@@ -256,6 +259,54 @@ object TableViews {
     updateColumnWidth()
   }
   // scalastyle:on method.length
+
+  /** User data key: table rows. */
+  val USERDATA_TABLE_ROWS = "suiryc-scala.table-rows"
+
+  /**
+   * Tracks table rows.
+   *
+   * Stores the rows created for a table in its user data.
+   * Sets the table row factory to follow rows creation. Wraps the existing
+   * factory if any.
+   * Row creation or item updating is passed to given callback.
+   *
+   * @param table table to track rows
+   * @param updateCb callback for row creation or item updating
+   */
+  def trackRows[A >: Null](table: TableView[A], updateCb: (TableRow[A], A, A) ⇒ Unit): Unit = {
+    // Notes:
+    // JavaFX only creates TableRows for visible (in view) rows. e.g. if view is
+    // resized up, new TableRows are created.
+    // Apparently when resizing down, the now unnecessary rows are not disposed
+    // of (and are re-used when applicable).
+    // To stay on the safe side, we still use a WeakHashSet so that if any row
+    // is GCed, we will stop tracking it automatically.
+    val rows = new WeakHashSet[TableRow[A]]
+    Nodes.setUserData(table, USERDATA_TABLE_ROWS, rows)
+
+    val rowFactory = Option(table.getRowFactory)
+    table.setRowFactory(tableView ⇒ {
+      val row = rowFactory.map(_.call(tableView)).getOrElse(new TableRow[A])
+      row.itemProperty.listen { (_, oldValue, newValue) ⇒
+        updateCb(row, oldValue, newValue)
+      }
+      rows.add(row)
+      // scalastyle:off null
+      updateCb(row, null, null)
+      // scalastyle:on null
+      row
+    })
+  }
+
+  /**
+   * Gets current table rows.
+   *
+   * Rows must be tracked.
+   */
+  def getRows[A](table: TableView[A]): collection.mutable.Set[TableRow[A]] = {
+    Nodes.getUserData[collection.mutable.Set[TableRow[A]]](table, USERDATA_TABLE_ROWS)
+  }
 
   /**
    * Gets table columns view.
