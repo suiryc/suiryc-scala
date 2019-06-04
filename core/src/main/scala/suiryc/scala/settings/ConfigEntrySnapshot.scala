@@ -35,7 +35,7 @@ abstract class ConfigEntrySnapshot[Inner, Outer](setting: ConfigEntry[Inner]) ex
    *
    * Caller is expected to also change the draft value.
    */
-  def setRawDraft(v: Any): Unit = rawDraft.set(ConfigValueFactory.fromAnyRef(v))
+  def setRawDraft(v: Any): Unit = rawDraft.set(Option(v).map(ConfigValueFactory.fromAnyRef).orNull)
 
   override protected def applyChange(v: Outer): Unit = {
     // First apply the change
