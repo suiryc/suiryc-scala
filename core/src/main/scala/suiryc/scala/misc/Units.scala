@@ -20,22 +20,32 @@ object Units {
 
     def units: List[List[Unit]] = Nil
 
+    def findUnit(s: String): Option[Unit] = {
+      Option(s).map(_.trim).filterNot(_.isEmpty).map { s ⇒
+        (unity :: units.flatten).find(_.label.equalsIgnoreCase(s))
+      }.getOrElse(Some(unity))
+    }
+
+    def toUnit(value: Long, unit: Unit, digits: Int = BigDecimals.SCALE_DIGITS_DEFAULT): BigDecimal = {
+      BigDecimals.scale(BigDecimal(value) / unit.factor, digits)
+    }
+
     def fromHumanReadable(value: String): Long = value match {
       case ValueRegexp(valueAmount, valueUnit) =>
         val lcunit = valueUnit.toLowerCase
         def get(units: List[Unit]): Option[Long] =
-          units find { unit =>
+          units.find { unit =>
             unit.label.toLowerCase == lcunit
-          } map { unit =>
+          }.map { unit =>
             valueAmount.toLong * unit.factor
           }
 
         if ((lcunit == "") || (lcunit == unityLabel.toLowerCase)) valueAmount.toLong
         else units.foldLeft(None:Option[Long]) { (result, units) =>
-          result orElse get(units)
-        } getOrElse(
+          result.orElse(get(units))
+        }.getOrElse {
           throw new IllegalArgumentException(s"Invalid value[$valueAmount]")
-        )
+        }
 
       case _ =>
         throw new IllegalArgumentException(s"Invalid value[$value]")
@@ -53,7 +63,7 @@ object Units {
       }
 
       val unit = loop(runits.reverse)
-      s"${BigDecimals.scale(BigDecimal(value) / unit.factor, digits)} ${unit.label}"
+      s"${toUnit(value, unit, digits)} ${unit.label}"
     }
 
     def format(value: Long): String = {
