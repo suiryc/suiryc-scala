@@ -10,6 +10,29 @@ import javafx.scene.Node
  */
 object Nodes {
 
+  /**
+   * Computes pixel (left/top) edge.
+   *
+   * @param v pixel x or y position
+   * @return pixel edge
+   */
+  def pixelEdge(v: Double): Double = math.floor(v)
+
+  /**
+   * Computes value to center on a pixel.
+   *
+   * See 'Coordinate System' section in JavaFX Node JavaDoc.<br>
+   * The center of a pixel is at 0.5 past its index; e.g. top-left pixel center
+   * is at x=0.5 and y=0.5 (and not x=0 y=0).
+   * This function helps to get the center of pixel provided its index. This
+   * is useful to draw sharp 1-pixel wide lines, otherwise antialiasing is used
+   * to draw it 2-pixels wide.
+   *
+   * @param v pixel x or y position
+   * @return pixel center
+   */
+  def pixelCenter(v: Double): Double = pixelEdge(v) + 0.5
+
   /** Sets key-value pair in user data map. */
   def setUserData[A](node: Node, key: String, data: A): Unit = {
     Option(node.getUserData) match {

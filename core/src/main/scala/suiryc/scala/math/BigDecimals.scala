@@ -5,13 +5,20 @@ import scala.math.BigDecimal.RoundingMode
 /** BigDecimal helpers. */
 object BigDecimals {
 
+  /** Rounds to long (default: half up). */
+  def round(v: BigDecimal): Long = roundHalfUp(v)
+
   /** Rounds to long (half up). */
-  def round(v: BigDecimal): Long =
+  def roundHalfUp(v: BigDecimal): Long =
     v.setScale(0, RoundingMode.HALF_UP).longValue
 
   /** Rounds to long (half even). */
   def roundHalfEven(v: BigDecimal): Long =
     v.setScale(0, RoundingMode.HALF_EVEN).longValue
+
+  /** Rounds to long (half down). */
+  def roundHalfDown(v: BigDecimal): Long =
+    v.setScale(0, RoundingMode.HALF_DOWN).longValue
 
   /** Rounds to long (floor). */
   def floor(v: BigDecimal): Long =
