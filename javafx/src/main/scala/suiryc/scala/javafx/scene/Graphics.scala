@@ -14,6 +14,10 @@ import scala.collection.JavaConverters._
 /** Graphics helpers. */
 object Graphics {
 
+  val CLASS_SVG_PANE = "svg-pane"
+  val CLASS_SVG_GROUP = "svg-group"
+  val CLASS_SVG_PATH = "svg-path"
+
   /** Standard icon size. */
   val iconSize = 16.0
 
@@ -35,7 +39,7 @@ object Graphics {
    */
   def svgPath(content: String, styleClass: List[String] = Nil, fill: Option[Paint] = None, style: Option[String] = None): SVGPath = {
     val path = new SVGPath
-    path.getStyleClass.add("svg-path")
+    path.getStyleClass.add(CLASS_SVG_PATH)
     styleClass.foreach(path.getStyleClass.add)
     fill.foreach(path.setFill)
     style.foreach(path.setStyle)
@@ -111,7 +115,7 @@ object Graphics {
   case class SVGGroup(params: SVGGroupParams, path: SVGPath*) {
 
     val group = new Group
-    group.getStyleClass.add("svg-group")
+    group.getStyleClass.add(CLASS_SVG_GROUP)
     params.groupStyle.foreach(group.setStyle)
     group.getChildren.addAll(path:_*)
     private val groupBounds = group.getBoundsInLocal
@@ -289,7 +293,7 @@ object Graphics {
     // (e.g. StackPane centers it)
     lazy val pane: Pane = {
       val pane = new FlowPane
-      pane.getStyleClass.add("svg-pane")
+      pane.getStyleClass.add(CLASS_SVG_PANE)
       params.styleClass.foreach(pane.getStyleClass.add)
       params.style.foreach(pane.setStyle)
       if (paneWidth > 0) {
@@ -312,7 +316,7 @@ object Graphics {
       val c = path.map { path ⇒
         svgPath(
           content = path.getContent,
-          styleClass = path.getStyleClass.asScala.toList.filterNot(_ == "svg-path"),
+          styleClass = path.getStyleClass.asScala.toList.filterNot(_ == CLASS_SVG_PATH),
           fill = Option(path.getFill),
           style = Option(path.getStyle)
         )
@@ -422,14 +426,22 @@ object Graphics {
             // case (injected icon is or contains another matching pane),
             // determining children *after* injecting icon triggers an infinite
             // loop here, and ultimately a StackOverflowError in JavaFX.
-            val remaining = tail ::: pane.getChildrenUnmodifiable.asScala.toList
-            pane.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
-              iconOpt(styleClass).foreach { icon ⇒
-                pane.getStyleClass.remove(styleClass)
-                pane.getChildren.add(icon)
+            // If the pane matches the SVG Pane we build (see above), ignore it.
+            val children = pane.getChildrenUnmodifiable.asScala.toList
+            val ignore = pane.getStyleClass.contains(CLASS_SVG_PANE) &&
+              (children.length == 1) &&
+              children.head.getStyleClass.contains(CLASS_SVG_GROUP)
+            if (ignore) {
+              tail
+            } else {
+              pane.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
+                iconOpt(styleClass).foreach { icon ⇒
+                  pane.getStyleClass.remove(styleClass)
+                  pane.getChildren.add(icon)
+                }
               }
+              tail ::: children
             }
-            remaining
 
           case parent: Parent ⇒
             tail ::: parent.getChildrenUnmodifiable.asScala.toList
