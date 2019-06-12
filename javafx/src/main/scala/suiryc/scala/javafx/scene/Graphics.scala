@@ -380,7 +380,15 @@ object Graphics {
         val tail = elements.tail
         val remaining = head match {
           case menuBar: MenuBar ⇒
-            tail ::: menuBar.getMenus.asScala.toList.flatMap(_.getItems.asScala)
+            tail ::: menuBar.getMenus.asScala.toList.flatMap { menu ⇒
+              menu.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
+                iconOpt(styleClass).foreach { icon ⇒
+                  menu.getStyleClass.remove(styleClass)
+                  menu.setGraphic(icon)
+                }
+              }
+              menu.getItems.asScala
+            }
 
           case menuItem: CustomMenuItem ⇒
             tail ::: List(menuItem.getContent)
