@@ -465,6 +465,38 @@ object Graphics {
   }
   // scalastyle:on method.length
 
+  /** Dumps elements hierarchy on stdout. */
+  def dumpHierarchy(element: Styleable): Unit = {
+    case class ElementData(element: Styleable, level: Int)
+
+    @scala.annotation.tailrec
+    def loop(elements: List[ElementData]): Unit = {
+      if (elements.nonEmpty) {
+        val head = elements.head
+        val element = head.element
+        val level = head.level
+        val tail = elements.tail
+        // scalastyle:off regex
+        println(s"${"  " * level}$element")
+        // scalastyle:on regex
+        val extra: List[Styleable] = element match {
+          case menuBar: MenuBar         ⇒ menuBar.getMenus.asScala.toList
+          case menu: Menu               ⇒ menu.getItems.asScala.toList
+          case menuItem: CustomMenuItem ⇒ List(menuItem.getContent)
+          case tabPane: TabPane         ⇒ tabPane.getTabs.asScala.toList
+          case tab: Tab                 ⇒ List(tab.getContent)
+          case splitPane: SplitPane     ⇒ splitPane.getItems.asScala.toList
+          case scrollPane: ScrollPane   ⇒ List(scrollPane.getContent)
+          case parent: Parent           ⇒ parent.getChildrenUnmodifiable.asScala.toList
+          case _                        ⇒ Nil
+        }
+        loop(extra.map(v ⇒ ElementData(v, level + 1)) ::: tail)
+      }
+    }
+
+    loop(List(ElementData(element, 0)))
+  }
+
   /** Simple function to build an SVGGroup */
   protected type BuilderFunc = (List[String], Double) ⇒ SVGGroup
 
