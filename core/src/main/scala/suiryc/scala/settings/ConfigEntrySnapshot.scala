@@ -17,10 +17,7 @@ abstract class ConfigEntrySnapshot[Inner, Outer](setting: ConfigEntry[Inner]) ex
   val rawDraft = new SimpleObjectProperty[ConfigValue]()
 
   /** Original raw value. */
-  protected val rawOriginal: Option[ConfigValue] = {
-    if (setting.exists) Some(setting.settings.config.getValue(setting.path))
-    else None
-  }
+  protected val rawOriginal: Option[ConfigValue] = setting.rawOpt
   // Set original raw value as draft raw value.
   rawOriginal.foreach(rawDraft.set)
 

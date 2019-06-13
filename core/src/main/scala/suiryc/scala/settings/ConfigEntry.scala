@@ -1,6 +1,6 @@
 package suiryc.scala.settings
 
-import com.typesafe.config.{Config, ConfigValueFactory}
+import com.typesafe.config.{Config, ConfigValue, ConfigValueFactory}
 import java.nio.file.{Path, Paths}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
@@ -12,7 +12,7 @@ import suiryc.scala.misc.Units
  *
  * Relies on portable settings to get/update config.
  */
-trait ConfigEntry[A] extends {
+trait ConfigEntry[A] {
   /** The portable settings (to track updated config) */
   val settings: PortableSettings
   /** The setting path */
@@ -26,6 +26,10 @@ trait ConfigEntry[A] extends {
 
   /** Gets whether entry exists. */
   def exists: Boolean = settings.config.hasPath(path)
+  /** Gets ConfigValue. */
+  def raw: ConfigValue = settings.config.getValue(path)
+  /** Gets optional ConfigValue. */
+  def rawOpt: Option[ConfigValue] = if (exists) Some(raw) else None
   /** Gets the entry as a single value. */
   def get: A = cached.flatten.getOrElse {
     val v = handler.get(settings.config, path)
@@ -61,6 +65,18 @@ trait ConfigEntry[A] extends {
       settings.withValue(path, ConfigValueFactory.fromAnyRef(handler.toInner(v)))
       cached = Some(Some(v))
       cachedList = None
+    }
+  }
+  /** Sets the entry raw value. */
+  def rawSet(v: Any): Unit = {
+    if (v == null) reset()
+    else {
+      settings.withValue(path, ConfigValueFactory.fromAnyRef(v))
+      cached = None
+      cachedList = None
+      // Now that the raw value has been set, we can check whether it matches
+      // the reference in which case we simply reset it.
+      if (refOpt.contains(get)) reset()
     }
   }
   /** Sets the entry as a list of values. */
