@@ -118,7 +118,7 @@ object Graphics {
     group.getStyleClass.add(CLASS_SVG_GROUP)
     params.groupStyle.foreach(group.setStyle)
     group.getChildren.addAll(path:_*)
-    private val groupBounds = group.getBoundsInLocal
+    val groupBounds: Bounds = group.getBoundsInLocal
 
     private def paramOrElse(v: Double, fb: Option[Double]) = if (v > 0) Some(v) else fb
     private def paramOrNone(v: Double) = paramOrElse(v, None)
@@ -225,9 +225,11 @@ object Graphics {
     } else None
     private val scaleX = scale.orElse(targetSvgWidth.map(_ / svgWidth)).orElse(ratio).orElse(widthRatio)
     private val scaleY = scale.orElse(targetSvgHeight.map(_ / svgHeight)).orElse(ratio).orElse(heightRatio)
+    def getScaleX: Double = scaleX.getOrElse(1.0)
+    def getScaleY: Double = scaleY.getOrElse(1.0)
     // The actual scaled SVG size
-    private val scaledWidth = svgWidth * scaleX.getOrElse(1.0)
-    private val scaledHeight = svgHeight * scaleY.getOrElse(1.0)
+    private val scaledWidth = svgWidth * getScaleX
+    private val scaledHeight = svgHeight * getScaleY
     // The pane size. Can be given, in which case we make sure it is consistent
     // with the scaled SVG size.
     private val paneWidth = max(scaledWidth, targetWidth)
@@ -240,7 +242,7 @@ object Graphics {
       // 3. right: the space between the parent pane and the SVG group
       // Pane size being the target (scaled) value, we need to get the initial
       // (unscaled) value when comparing it with the (also initial) SVG size.
-      val unscaledPadding = paneWidth / scaleX.getOrElse(1.0) - svgWidth
+      val unscaledPadding = paneWidth / getScaleX - svgWidth
       params.hpos match {
         case HPos.LEFT   => 0.0
         case HPos.CENTER => unscaledPadding / 2
@@ -254,7 +256,7 @@ object Graphics {
     private val translateX = snapValue(params.snapToPixel, svgOffsetLeft + offsetLeft + svgTranslateX, scaleX)
     // Vertical offset: similar to what is done for horizontal offset.
     private val offsetTop = if (paneHeight > scaledHeight) {
-      val unscaledPadding = paneHeight / scaleY.getOrElse(1.0) - svgHeight
+      val unscaledPadding = paneHeight / getScaleY - svgHeight
       params.vpos match {
         case VPos.TOP      => 0.0
         case VPos.CENTER   => unscaledPadding / 2
@@ -268,7 +270,7 @@ object Graphics {
 
     // Scaling if any.
     private val scaleOpt = if (scaleX.isDefined || scaleY.isDefined) {
-      Some(new Scale(scaleX.getOrElse(1), scaleY.getOrElse(1), svgLeft, svgTop))
+      Some(new Scale(getScaleX, getScaleY, svgLeft, svgTop))
     } else {
       None
     }
@@ -288,6 +290,7 @@ object Graphics {
 
     // The target bounds.
     val bounds = new BoundingBox(0.0, 0.0, paneWidth, paneHeight)
+    val groupBoundsInParent: Bounds = group.getBoundsInParent
 
     // Note: use a FlowPane to easily position group on top/left.
     // (e.g. StackPane centers it)
