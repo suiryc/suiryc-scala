@@ -244,4 +244,9 @@ object Dialogs {
     StagePersistentView.hookup(dialog.onCloseRequestProperty, dialog.showingProperty, view, persist, restore)
   }
 
+  /** Gets the default title for a given alert dialog. */
+  def getAlertTitle(kind: Alert.AlertType): String = {
+    new Alert(kind).getTitle
+  }
+
 }
