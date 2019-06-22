@@ -22,6 +22,12 @@ class Cached[A](compute: () ⇒ A) extends (() ⇒ A) {
     cached = None
   }
 
+  /** Re-computes value: invalidates and gets value. */
+  def recompute(): A = {
+    invalidate()
+    value
+  }
+
 }
 
 object Cached {
