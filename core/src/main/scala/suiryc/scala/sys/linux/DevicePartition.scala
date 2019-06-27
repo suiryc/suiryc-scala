@@ -54,7 +54,7 @@ class DevicePartition(val device: Device, val partNumber: Int)
 
   /* Note: UUID may be set or changed upon formatting partition */
   def uuid: Either[Exception, String] =
-    blkid("UUID").right.map(uuid => if (uuid == "") "<unknown-uuid>" else uuid)
+    blkid("UUID").map(uuid => if (uuid == "") "<unknown-uuid>" else uuid)
 
   def label: Either[Exception, String] =
     blkid("LABEL")

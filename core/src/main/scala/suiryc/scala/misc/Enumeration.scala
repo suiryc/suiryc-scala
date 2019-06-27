@@ -36,8 +36,8 @@ trait EnumerationWithAliases extends scala.Enumeration {
    */
   def byName(s: String): Value = {
     values.find {
-      case withAliases: ValWithAliases ⇒ withAliases.normalized.contains(normalize(s))
-      case v: Val ⇒ normalize(s) == normalize(v.toString)
+      case withAliases: ValWithAliases => withAliases.normalized.contains(normalize(s))
+      case v: Val => normalize(s) == normalize(v.toString)
     }.getOrElse {
       throw new NoSuchElementException(s"No value found for '$s'")
     }

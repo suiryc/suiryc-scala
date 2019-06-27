@@ -17,7 +17,7 @@ object Panes extends LazyLogging {
       val positions = dividerPositions.split(';').map(_.toDouble)
       pane.setDividerPositions(positions: _*)
     } catch {
-      case ex: Exception ⇒ logger.warn(s"Could not restore SplitPane divider positions=<$dividerPositions>: ${ex.getMessage}")
+      case ex: Exception => logger.warn(s"Could not restore SplitPane divider positions=<$dividerPositions>: ${ex.getMessage}")
     }
   }
 

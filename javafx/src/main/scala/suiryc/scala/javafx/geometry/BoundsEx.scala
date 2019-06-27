@@ -87,7 +87,7 @@ object BoundsEx {
     val contentWidth = contentBounds.getWidth
     val viewportWidth = viewportBounds.getWidth
     if ((contentWidth > viewportWidth) && ((hmax - hmin) > 0)) {
-      x.foreach { x ⇒
+      x.foreach { x =>
         scrollPane.setHvalue(math.min(hmax, hmin + x * (hmax - hmin) / (contentWidth - viewportWidth)))
       }
     }
@@ -97,7 +97,7 @@ object BoundsEx {
     val contentHeight = contentBounds.getHeight
     val viewportHeight = viewportBounds.getHeight
     if ((contentHeight > viewportHeight) && ((vmax - vmin) > 0)) {
-      y.foreach { y ⇒
+      y.foreach { y =>
         scrollPane.setVvalue(math.min(vmax, vmin + y * (vmax - vmin) / (contentHeight - viewportHeight)))
       }
     }

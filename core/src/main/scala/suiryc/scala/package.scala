@@ -11,11 +11,11 @@ package object scala {
 
     private type WithAliases = A with EnumerationWithAliases
     private def withAliases: Option[WithAliases] = enum match {
-      case v: EnumerationWithAliases ⇒ Some(v.asInstanceOf[WithAliases])
-      case _ ⇒ None
+      case v: EnumerationWithAliases => Some(v.asInstanceOf[WithAliases])
+      case _ => None
     }
 
-    def byName(s: String): A#Value = withAliases.map(v ⇒ v.byName(s):A#Value).getOrElse {
+    def byName(s: String): A#Value = withAliases.map(v => v.byName(s):A#Value).getOrElse {
       enum.values.find(_.toString.toLowerCase == s.toLowerCase).getOrElse {
         throw new NoSuchElementException(s"No value found for '$s'")
       }

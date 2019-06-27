@@ -78,16 +78,16 @@ trait JFXApplication extends Application {
 //    val module = runtimeMirror.staticModule(objectName)
 //    val obj = runtimeMirror.reflectModule(module)
 //    val targetName = universe.TermName("main")
-//    val method = obj.symbol.info.baseClasses.flatMap { cls ⇒
-//      cls.info.decls.find { s ⇒
+//    val method = obj.symbol.info.baseClasses.flatMap { cls =>
+//      cls.info.decls.find { s =>
 //        lazy val m = s.asMethod
 //        s.isMethod && (m.name == targetName) && {
-//          m.paramLists.headOption.exists { p ⇒
+//          m.paramLists.headOption.exists { p =>
 //            (p.size == 1) && (p.head.typeSignature =:= universe.typeOf[Array[String]])
 //          }
 //        }
 //      }
-//    }.headOption.map { s ⇒
+//    }.headOption.map { s =>
 //      runtimeMirror.reflect(obj.instance).reflectMethod(s.asMethod)
 //    }.getOrElse {
 //      throw new Exception(s"Could not find method=<$targetName> in object=<$objectName>")

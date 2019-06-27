@@ -11,7 +11,7 @@ class UsingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
 
       "return result when there is no issue" in {
         val resource = new DummyResource()
-        val r = Using(resource) { _ ⇒
+        val r = Using(resource) { _ =>
           1
         }
         r shouldBe Success(1)
@@ -21,7 +21,7 @@ class UsingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
       "return issue when code fails" in {
         val resource = new DummyResource()
         val ex = new Exception
-        val r = Using(resource) { _ ⇒
+        val r = Using(resource) { _ =>
           throw ex
         }
         r shouldBe Failure(ex)
@@ -31,7 +31,7 @@ class UsingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
       "return closing issue when code succeeds" in {
         val ex = new Exception
         val resource = new DummyResource(fail = Some(ex))
-        val r = Using(resource) { _ ⇒
+        val r = Using(resource) { _ =>
         }
         r shouldBe Failure(ex)
         Dummy.get shouldBe List(resource)
@@ -41,7 +41,7 @@ class UsingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
         val ex1 = new Exception
         val resource = new DummyResource(fail = Some(ex1))
         val ex2 = new Exception
-        val r = Using(resource) { _ ⇒
+        val r = Using(resource) { _ =>
           throw ex2
         }
         r shouldBe Failure(ex2)
@@ -51,7 +51,7 @@ class UsingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
       "handle resource creation issue" in {
         val ex = new Exception
         def resource: AutoCloseable = throw ex
-        val r = Using(resource) { _ ⇒
+        val r = Using(resource) { _ =>
         }
         r shouldBe Failure(ex)
         Dummy.get shouldBe empty
@@ -65,7 +65,7 @@ class UsingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
         val resource1 = new DummyResource()
         val resource2 = new DummyResource()
         val resource3 = new DummyResource()
-        val r = Using.Manager { use ⇒
+        val r = Using.Manager { use =>
           use(resource1)
           use(resource2)
           use(resource3)
@@ -80,7 +80,7 @@ class UsingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
         val resource2 = new DummyResource()
         val resource3 = new DummyResource()
         val ex = new Exception
-        val r = Using.Manager { use ⇒
+        val r = Using.Manager { use =>
           use(resource1)
           use(resource2)
           use(resource3)
@@ -95,7 +95,7 @@ class UsingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
         val resource1 = new DummyResource()
         def resource2: AutoCloseable = throw ex
         val resource3 = new DummyResource()
-        val r = Using.Manager { use ⇒
+        val r = Using.Manager { use =>
           use(resource1)
           use(resource2)
           use(resource3)
@@ -111,7 +111,7 @@ class UsingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
         val resource1 = new DummyResource(Some(ex1))
         val resource2 = new DummyResource(Some(ex2))
         val resource3 = new DummyResource(Some(ex3))
-        val r = Using.Manager { use ⇒
+        val r = Using.Manager { use =>
           use(resource1)
           use(resource2)
           use(resource3)
@@ -128,7 +128,7 @@ class UsingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
         val resource1 = new DummyResource(Some(ex1))
         val resource2 = new DummyResource(Some(ex2))
         val resource3 = new DummyResource(Some(ex3))
-        val r = Using.Manager { use ⇒
+        val r = Using.Manager { use =>
           use(resource1)
           use(resource2)
           use(resource3)

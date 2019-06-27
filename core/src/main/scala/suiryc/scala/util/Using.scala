@@ -8,6 +8,7 @@ import scala.util.{Failure, Try}
  * Inspired by scala 2.13 features (not yet released), reduced to the bare
  * minimum.
  */
+// TODO: drop in favor of native scala.util.Using in scala 2.13 ?
 object Using {
 
   /**
@@ -21,7 +22,7 @@ object Using {
       resource.close()
       result
     } catch {
-      case ex: Throwable ⇒
+      case ex: Throwable =>
         if (result.isFailure) result
         else Failure(ex)
     }
@@ -33,7 +34,7 @@ object Using {
    * Executes code and closes resource before returning result.
    * If code or closing fails, the issue is returned.
    */
-  def apply[A <: AutoCloseable, B](resource: ⇒ A)(f: A ⇒ B): Try[B] = {
+  def apply[A <: AutoCloseable, B](resource: => A)(f: A => B): Try[B] = {
     val actualResource = Try(resource)
     val r = actualResource.map(f)
     actualResource.map(close(_, r)).getOrElse(r)
@@ -51,7 +52,7 @@ object Using {
 
     /** Closes resources in reverse order compared to opening. */
     protected def cleanup[A](result: Try[A]): Try[A] = {
-      managed.foldLeft(result) { (result, resource) ⇒
+      managed.foldLeft(result) { (result, resource) =>
         close(resource, result)
       }
     }
@@ -68,7 +69,7 @@ object Using {
      * If code or closing fails, the issue is returned. All resources are closed
      * even upon issue.
      */
-    def apply[A](f: Manager ⇒ A): Try[A] = {
+    def apply[A](f: Manager => A): Try[A] = {
       val manager = new Manager
       val r = Try(f(manager))
       manager.cleanup(r)

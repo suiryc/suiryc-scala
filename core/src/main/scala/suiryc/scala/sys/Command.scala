@@ -168,7 +168,7 @@ object Command
     def _filterOutput(
       input: InputStream,
       outputs: Iterable[Stream[OutputStream]]
-    ) {
+    ): Unit = {
       val buffer = new Array[Byte](bufferSize)
 
       Stream.continually(input.read(buffer)).takeWhile { read =>
@@ -185,7 +185,7 @@ object Command
     }
 
     def filterOutput(sink: Iterable[Stream[OutputStream]], buffer: Option[StringBuffer])
-      (input: InputStream)
+      (input: InputStream): Unit =
     {
       val tee = buffer.map { _ =>
         new Stream(new ByteArrayOutputStream(bufferSize), true)
@@ -198,11 +198,11 @@ object Command
       }
     }
 
-    def filterInput(input: Stream[InputStream], output: OutputStream) {
+    def filterInput(input: Stream[InputStream], output: OutputStream): Unit = {
       val buffer = new Array[Byte](bufferSize)
 
       @scala.annotation.tailrec
-      def loop() {
+      def loop(): Unit = {
         val read = input.stream.read(buffer)
         if (read == -1) {
           if (input.close) input.stream.close()

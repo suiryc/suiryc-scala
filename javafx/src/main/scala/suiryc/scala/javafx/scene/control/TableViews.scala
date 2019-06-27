@@ -65,7 +65,7 @@ object TableViews {
     // To control scrolling, we need to access the VirtualFlow which is in the
     // table skin (should be the first child, accessible once table is shown).
     table.getSkin.asInstanceOf[TableViewSkin[_]].getChildren.asScala.find(_.isInstanceOf[VirtualFlow[_]]).foreach {
-      case flow: VirtualFlow[_] ⇒
+      case flow: VirtualFlow[_] =>
         scrollTo(flow.asInstanceOf[VirtualFlow[_ <: IndexedCell[_]]], table.getItems.size, index, top, padding)
     }
   }
@@ -84,7 +84,7 @@ object TableViews {
    */
   def scrollTo(table: TreeTableView[_], index: Int, top: Boolean, padding: Int): Unit = {
     table.getSkin.asInstanceOf[TreeTableViewSkin[_]].getChildren.asScala.find(_.isInstanceOf[VirtualFlow[_]]).foreach {
-      case flow: VirtualFlow[_] ⇒
+      case flow: VirtualFlow[_] =>
         scrollTo(flow.asInstanceOf[VirtualFlow[_ <: IndexedCell[_]]], table.getRoot.getChildren.size, index, top, padding)
     }
   }
@@ -218,7 +218,7 @@ object TableViews {
 
     val clippedContainer = table.lookup(".clipped-container").asInstanceOf[Region]
     val scrollBar = table.lookupAll(".scroll-bar").asScala.collect {
-      case scrollBar: VirtualScrollBar if scrollBar.getPseudoClassStates.asScala.map(_.getPseudoClassName).contains("vertical") ⇒ scrollBar
+      case scrollBar: VirtualScrollBar if scrollBar.getPseudoClassStates.asScala.map(_.getPseudoClassName).contains("vertical") => scrollBar
     }.head
 
     def updateColumnWidth(): Unit = {
@@ -274,7 +274,7 @@ object TableViews {
    * @param table table to track rows
    * @param updateCb callback for row creation or item updating
    */
-  def trackRows[A >: Null](table: TableView[A], updateCb: (TableRow[A], A, A) ⇒ Unit): Unit = {
+  def trackRows[A >: Null](table: TableView[A], updateCb: (TableRow[A], A, A) => Unit): Unit = {
     // Notes:
     // JavaFX only creates TableRows for visible (in view) rows. e.g. if view is
     // resized up, new TableRows are created.
@@ -286,9 +286,9 @@ object TableViews {
     Nodes.setUserData(table, USERDATA_TABLE_ROWS, rows)
 
     val rowFactory = Option(table.getRowFactory)
-    table.setRowFactory(tableView ⇒ {
+    table.setRowFactory(tableView => {
       val row = rowFactory.map(_.call(tableView)).getOrElse(new TableRow[A])
-      row.itemProperty.listen { (_, oldValue, newValue) ⇒
+      row.itemProperty.listen { (_, oldValue, newValue) =>
         updateCb(row, oldValue, newValue)
       }
       rows.add(row)
@@ -493,7 +493,7 @@ object TableViews {
   }
 
   /** TreeTableView handler. */
-  implicit class TreeTableViewDesc[A](table: TreeTableView[A]) extends ViewHandler[TreeTableColumn[A,_ ]] {
+  implicit class TreeTableViewDesc[A](table: TreeTableView[A]) extends ViewHandler[TreeTableColumn[A, _]] {
     type SortType = TreeTableColumn.SortType
     val defaultSortType = TreeTableColumn.SortType.ASCENDING
     override def getColumns: ObservableList[Column] = table.getColumns

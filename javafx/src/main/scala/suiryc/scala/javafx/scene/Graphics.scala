@@ -316,7 +316,7 @@ object Graphics {
     }
 
     def copy(params: SVGGroupParams = params): SVGGroup = {
-      val c = path.map { path ⇒
+      val c = path.map { path =>
         svgPath(
           content = path.getContent,
           styleClass = path.getStyleClass.asScala.toList.filterNot(_ == CLASS_SVG_PATH),
@@ -354,7 +354,7 @@ object Graphics {
     // scalastyle:on null
     val img = new WritableImage(image0.getPixelReader, math.round(image0.getWidth).toInt, math.round(image0.getHeight).toInt)
     // Reset the node parent if necessary.
-    parentOpt.foreach { parent ⇒
+    parentOpt.foreach { parent =>
       parent.getChildren.clear()
     }
     img
@@ -375,17 +375,17 @@ object Graphics {
    * @param iconOpt (graphic) icon to set where applicable
    */
   // scalastyle:off method.length
-  def setIcons(element: Styleable, styleClassPredicate: String ⇒ Boolean, iconOpt: String ⇒ Option[Node]): Unit = {
+  def setIcons(element: Styleable, styleClassPredicate: String => Boolean, iconOpt: String => Option[Node]): Unit = {
     @scala.annotation.tailrec
     def loop(elements: List[Styleable]): Unit = {
       if (elements.nonEmpty) {
         val head = elements.head
         val tail = elements.tail
         val remaining = head match {
-          case menuBar: MenuBar ⇒
-            tail ::: menuBar.getMenus.asScala.toList.flatMap { menu ⇒
-              menu.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
-                iconOpt(styleClass).foreach { icon ⇒
+          case menuBar: MenuBar =>
+            tail ::: menuBar.getMenus.asScala.toList.flatMap { menu =>
+              menu.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass =>
+                iconOpt(styleClass).foreach { icon =>
                   menu.getStyleClass.remove(styleClass)
                   menu.setGraphic(icon)
                 }
@@ -393,31 +393,31 @@ object Graphics {
               menu.getItems.asScala
             }
 
-          case menuItem: CustomMenuItem ⇒
+          case menuItem: CustomMenuItem =>
             tail ::: List(menuItem.getContent)
 
-          case menuItem: MenuItem ⇒
-            menuItem.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
-              iconOpt(styleClass).foreach { icon ⇒
+          case menuItem: MenuItem =>
+            menuItem.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass =>
+              iconOpt(styleClass).foreach { icon =>
                 menuItem.getStyleClass.remove(styleClass)
                 menuItem.setGraphic(icon)
               }
             }
             tail
 
-          case labeled: Labeled ⇒
-            labeled.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
-              iconOpt(styleClass).foreach { icon ⇒
+          case labeled: Labeled =>
+            labeled.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass =>
+              iconOpt(styleClass).foreach { icon =>
                 labeled.getStyleClass.remove(styleClass)
                 labeled.setGraphic(icon)
               }
             }
             tail
 
-          case tabPane: TabPane ⇒
-            tail ::: tabPane.getTabs.asScala.toList.map { tab ⇒
-              tab.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
-                iconOpt(styleClass).foreach { icon ⇒
+          case tabPane: TabPane =>
+            tail ::: tabPane.getTabs.asScala.toList.map { tab =>
+              tab.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass =>
+                iconOpt(styleClass).foreach { icon =>
                   tab.getStyleClass.remove(styleClass)
                   tab.setGraphic(icon)
                 }
@@ -425,13 +425,13 @@ object Graphics {
               tab.getContent
             }
 
-          case splitPane: SplitPane ⇒
+          case splitPane: SplitPane =>
             tail ::: splitPane.getItems.asScala.toList
 
-          case scrollPane: ScrollPane ⇒
+          case scrollPane: ScrollPane =>
             tail ::: List(scrollPane.getContent)
 
-          case pane: Pane ⇒
+          case pane: Pane =>
             // Note: get the children right now.
             // If the pane matches, we will inject a new child. In the worst
             // case (injected icon is or contains another matching pane),
@@ -445,8 +445,8 @@ object Graphics {
             if (ignore) {
               tail
             } else {
-              pane.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass ⇒
-                iconOpt(styleClass).foreach { icon ⇒
+              pane.getStyleClass.asScala.filter(styleClassPredicate).foreach { styleClass =>
+                iconOpt(styleClass).foreach { icon =>
                   pane.getStyleClass.remove(styleClass)
                   pane.getChildren.add(icon)
                 }
@@ -454,10 +454,10 @@ object Graphics {
               tail ::: children
             }
 
-          case parent: Parent ⇒
+          case parent: Parent =>
             tail ::: parent.getChildrenUnmodifiable.asScala.toList
 
-          case _ ⇒
+          case _ =>
             tail
         }
         loop(remaining)
@@ -483,17 +483,17 @@ object Graphics {
         println(s"${"  " * level}$element")
         // scalastyle:on regex
         val extra: List[Styleable] = element match {
-          case menuBar: MenuBar         ⇒ menuBar.getMenus.asScala.toList
-          case menu: Menu               ⇒ menu.getItems.asScala.toList
-          case menuItem: CustomMenuItem ⇒ List(menuItem.getContent)
-          case tabPane: TabPane         ⇒ tabPane.getTabs.asScala.toList
-          case tab: Tab                 ⇒ List(tab.getContent)
-          case splitPane: SplitPane     ⇒ splitPane.getItems.asScala.toList
-          case scrollPane: ScrollPane   ⇒ List(scrollPane.getContent)
-          case parent: Parent           ⇒ parent.getChildrenUnmodifiable.asScala.toList
-          case _                        ⇒ Nil
+          case menuBar: MenuBar         => menuBar.getMenus.asScala.toList
+          case menu: Menu               => menu.getItems.asScala.toList
+          case menuItem: CustomMenuItem => List(menuItem.getContent)
+          case tabPane: TabPane         => tabPane.getTabs.asScala.toList
+          case tab: Tab                 => List(tab.getContent)
+          case splitPane: SplitPane     => splitPane.getItems.asScala.toList
+          case scrollPane: ScrollPane   => List(scrollPane.getContent)
+          case parent: Parent           => parent.getChildrenUnmodifiable.asScala.toList
+          case _                        => Nil
         }
-        loop(extra.map(v ⇒ ElementData(v, level + 1)) ::: tail)
+        loop(extra.map(v => ElementData(v, level + 1)) ::: tail)
       }
     }
 
@@ -501,7 +501,7 @@ object Graphics {
   }
 
   /** Simple function to build an SVGGroup */
-  protected type BuilderFunc = (List[String], Double) ⇒ SVGGroup
+  protected type BuilderFunc = (List[String], Double) => SVGGroup
 
   /**
    * Simple SVGGroup builder with default parameters.

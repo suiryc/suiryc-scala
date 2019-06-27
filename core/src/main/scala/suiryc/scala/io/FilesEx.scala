@@ -35,12 +35,12 @@ object FilesEx
     owner: Option[Owner] = None,
     options: List[CopyOption] = List(StandardCopyOption.COPY_ATTRIBUTES, LinkOption.NOFOLLOW_LINKS)
   ): Unit = {
-    def copy(sourceRoot: Path, source: Option[Path], targetRoot: Path) {
+    def copy(sourceRoot: Path, source: Option[Path], targetRoot: Path): Unit = {
       import RichFile._
 
       source match {
-        case Some(source) =>
-          val sourcePath = sourceRoot.resolve(source)
+        case Some(srcPath) =>
+          val sourcePath = sourceRoot.resolve(srcPath)
           val sourceRealPath =
             if (followLinks) sourcePath.getParent.toRealPath().resolve(sourcePath.toFile.getName)
             else sourcePath
@@ -51,7 +51,7 @@ object FilesEx
             val pathTarget = targetRoot.resolve(sourceReal)
             if (!pathTarget.exists) {
               // first make sure parent exists (both real and possible link)
-              copy(sourceRoot, Option(source.getParent), targetRoot)
+              copy(sourceRoot, Option(srcPath.getParent), targetRoot)
               if (followLinks) copy(sourceRoot, Option(sourceReal.getParent), targetRoot)
               // then copy source to target
               if (Files.isRegularFile(sourceRealPath) || Files.isSymbolicLink(sourceRealPath) || Files.isDirectory(sourceRealPath)) {

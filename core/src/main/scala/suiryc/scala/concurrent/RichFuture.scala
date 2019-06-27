@@ -155,7 +155,7 @@ object RichFuture {
    * Vararg variant.
    */
   def executeSequentially[A, B](actions: Action[A, B]*)(implicit ec: ExecutionContext, d: DummyImplicit): Future[Seq[ActionTry[A, B]]] =
-    executeSequentially(actions)
+    executeSequentially(actions.toSeq)
 
   /**
    * Executes futures sequentially.
@@ -214,10 +214,10 @@ object RichFuture {
    * Vararg variant.
    */
   def executeAllSequentially[A](stopOnError: Boolean, actions: Action[Unit, A]*)(implicit ec: ExecutionContext, d: DummyImplicit): Future[Seq[A]] =
-    executeAllSequentially(stopOnError, actions)
+    executeAllSequentially(stopOnError, actions.toSeq)
 
   /** Executes blocking code and make it async. */
-  def blockingAsync[A](f: ⇒ A): Future[A] = {
+  def blockingAsync[A](f: => A): Future[A] = {
     // Use the global context, but signal the code as blocking.
     // See: https://docs.scala-lang.org/overviews/core/futures.html
     import scala.concurrent.blocking

@@ -61,7 +61,7 @@ class LineSplitterOutputStream(
 
   protected def process(bb: ByteBuffer, flush: Boolean): Unit = {
     @scala.annotation.tailrec
-    def loop(f: () ⇒ CoderResult) {
+    def loop(f: () => CoderResult): Unit = {
       val result = f()
       // Process decoded content if any.
       if (charBuffer.position() > 0) processBuffer()
@@ -71,17 +71,17 @@ class LineSplitterOutputStream(
     }
 
     // Decode input buffer.
-    loop(() ⇒ decoder.decode(bb, charBuffer, flush))
+    loop(() => decoder.decode(bb, charBuffer, flush))
     if (flush) {
       // Flush decoder and process decoded content if any.
-      loop(() ⇒ decoder.flush(charBuffer))
+      loop(() => decoder.flush(charBuffer))
       if (charBuffer.position() > 0) processBuffer()
       // Write pending chars if any.
       if (line.nonEmpty) writeLine()
     }
   }
 
-  protected def writeLine() {
+  protected def writeLine(): Unit = {
     if (line.endsWith("\r")) line.setLength(line.length - 1)
     writer.write(line.toString())
     line.clear()

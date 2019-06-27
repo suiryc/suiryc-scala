@@ -24,7 +24,7 @@ object Bench {
    * @tparam T result type
    * @return code result
    */
-  def warmup[T](n: Int = WARMUP_LOOPS_DEFAULT, duration: Option[FiniteDuration] = Some(1.seconds))(f: ⇒ T): T = {
+  def warmup[T](n: Int = WARMUP_LOOPS_DEFAULT, duration: Option[FiniteDuration] = Some(1.seconds))(f: => T): T = {
     time(None, n, duration)(f)
   }
 
@@ -42,11 +42,11 @@ object Bench {
    * @tparam T result type
    * @return code result
    */
-  def time[T](label: String, n: Int = TIME_LOOPS_DEFAULT, duration: Option[FiniteDuration] = Some(2.seconds))(f: ⇒ T): T = {
+  def time[T](label: String, n: Int = TIME_LOOPS_DEFAULT, duration: Option[FiniteDuration] = Some(2.seconds))(f: => T): T = {
     time(Some(label), n, duration)(f)
   }
 
-  @inline private def time[T](label: Option[String], n: Int, duration: Option[FiniteDuration])(f: ⇒ T): T = {
+  @inline private def time[T](label: Option[String], n: Int, duration: Option[FiniteDuration])(f: => T): T = {
     @inline def getTime: Long = System.nanoTime
     val timeScaleSecond = 1000000000L
     val timeScaleMillisecond = 1000000L
@@ -86,7 +86,9 @@ object Bench {
       } else {
         BigDecimal(0)
       }
+      // scalastyle:off regex
       println(s"$label: looped=<$looped> elapsed=<$elapsed> perLoop=<$perLoop> perLoopNs=<$perLoopNs> perSecond=<$rate>")
+      // scalastyle:on regex
     }
     r
   }

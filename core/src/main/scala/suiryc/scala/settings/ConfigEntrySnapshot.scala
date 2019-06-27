@@ -38,7 +38,7 @@ abstract class ConfigEntrySnapshot[Inner, Outer](setting: ConfigEntry[Inner]) ex
     // First apply the change
     super.applyChange(v)
     // But actually force the raw value if applicable
-    Option(rawDraft.get).foreach { raw ⇒
+    Option(rawDraft.get).foreach { raw =>
       // Do not change raw value if either:
       //  - the real value is the same as the default one: the underlying config
       //    entry did 'reset' itself

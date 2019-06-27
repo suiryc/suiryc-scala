@@ -1,7 +1,7 @@
 package suiryc.scala.javafx.beans.binding
 
-import java.lang.{Boolean ⇒ jBoolean}
-import java.util.{ArrayList ⇒ jArrayList}
+import java.lang.{Boolean => jBoolean}
+import java.util.{ArrayList => jArrayList}
 import javafx.beans.Observable
 import javafx.beans.binding.{Binding, Bindings}
 import javafx.beans.property.Property
@@ -59,7 +59,7 @@ object BindingsEx {
    * and/or automatically call the appropriate Bindings.createXXXBinding.
    */
   trait Linker[A, B] {
-    def create(f: () ⇒ A, dependencies: Seq[Observable]): Binding[B]
+    def create(f: () => A, dependencies: Seq[Observable]): Binding[B]
   }
 
   /**
@@ -79,8 +79,8 @@ object BindingsEx {
    * @param linker creates the actual Binding; links the function value to the
    *               target property
    */
-  def bind[A, B](target: Property[B], dependencies: Seq[Observable])(f: ⇒ A)(implicit linker: Linker[A, B]): Unit = {
-    target.bind(linker.create(() ⇒ f, dependencies))
+  def bind[A, B](target: Property[B], dependencies: Seq[Observable])(f: => A)(implicit linker: Linker[A, B]): Unit = {
+    target.bind(linker.create(() => f, dependencies))
   }
 
   /**
@@ -88,8 +88,8 @@ object BindingsEx {
    *
    * vararg variant.
    */
-  def bind[A, B](target: Property[B], dependencies: Observable*)(f: ⇒ A)(implicit linker: Linker[A, B], d: DummyImplicit): Unit = {
-    bind(target, dependencies)(f)
+  def bind[A, B](target: Property[B], dependencies: Observable*)(f: => A)(implicit linker: Linker[A, B], d: DummyImplicit): Unit = {
+    bind(target, dependencies.toSeq)(f)
   }
 
   /**
@@ -105,7 +105,7 @@ object BindingsEx {
    * @param f function to compute updated value
    * @return Cancellable to stop observing values
    */
-  def jfxBind[A](target: Property[A], dependencies: Seq[ObservableValue[_]])(f: ⇒ A): Cancellable = {
+  def jfxBind[A](target: Property[A], dependencies: Seq[ObservableValue[_]])(f: => A): Cancellable = {
     val cancellable = RichObservableValue.listen[Any](dependencies) {
       JFXSystem.run(target.setValue(f))
     }
@@ -119,8 +119,8 @@ object BindingsEx {
    *
    * vararg variant.
    */
-  def jfxBind[A](target: Property[A], dependencies: ObservableValue[_]*)(f: ⇒ A)(implicit d: DummyImplicit): Cancellable = {
-    jfxBind(target, dependencies)(f)
+  def jfxBind[A](target: Property[A], dependencies: ObservableValue[_]*)(f: => A)(implicit d: DummyImplicit): Cancellable = {
+    jfxBind(target, dependencies.toSeq)(f)
   }
 
   /**
@@ -147,7 +147,7 @@ object BindingsEx {
    * @return Cancellable to stop observing values
    */
   def bind[A](target: Property[A], throttle: FiniteDuration, scheduler: Scheduler,
-    dependencies: Seq[Observable])(f: ⇒ A): Cancellable =
+    dependencies: Seq[Observable])(f: => A): Cancellable =
   {
     new Builder(scheduler) {
       add(target)(f)
@@ -160,9 +160,9 @@ object BindingsEx {
    * vararg variant.
    */
   def bind[A](target: Property[A], throttle: FiniteDuration, scheduler: Scheduler,
-    dependencies: Observable*)(f: ⇒ A)(implicit d: DummyImplicit): Cancellable =
+    dependencies: Observable*)(f: => A)(implicit d: DummyImplicit): Cancellable =
   {
-    bind(target, throttle, scheduler, dependencies)(f)
+    bind(target, throttle, scheduler, dependencies.toSeq)(f)
   }
 
   /**
@@ -189,7 +189,7 @@ object BindingsEx {
    * @return Cancellable to stop observing values
    */
   def bind[A](target: Property[A], throttle: FiniteDuration, throttler: CallsThrottler,
-    dependencies: Seq[Observable])(f: ⇒ A): Cancellable =
+    dependencies: Seq[Observable])(f: => A): Cancellable =
   {
     new Builder(throttler) {
       add(target)(f)
@@ -202,9 +202,9 @@ object BindingsEx {
    * vararg variant.
    */
   def bind[A](target: Property[A], throttle: FiniteDuration, throttler: CallsThrottler,
-    dependencies: Observable*)(f: ⇒ A)(implicit d: DummyImplicit): Cancellable =
+    dependencies: Observable*)(f: => A)(implicit d: DummyImplicit): Cancellable =
   {
-    bind(target, throttle, throttler, dependencies)(f)
+    bind(target, throttle, throttler, dependencies.toSeq)(f)
   }
 
   /**
@@ -226,9 +226,9 @@ object BindingsEx {
   class Builder(schedulerOpt: Option[Scheduler], throttlerOpt: Option[CallsThrottler]) {
 
     // Bindings
-    private val bindings = new jArrayList[() ⇒ Unit]()
+    private val bindings = new jArrayList[() => Unit]()
     // Extra side effect codes
-    private var sideEffects = Set.empty[() ⇒ Any]
+    private var sideEffects = Set.empty[() => Any]
 
     def this() {
       this(None, None)
@@ -260,7 +260,7 @@ object BindingsEx {
         if (withSideEffects) sideEffects.foreach(_())
       }
       if (inEC || schedulerOpt.isEmpty) _update()
-      else schedulerOpt.get.execute(() ⇒ _update())
+      else schedulerOpt.get.execute(() => _update())
     }
 
     /**
@@ -274,13 +274,13 @@ object BindingsEx {
      * @param f function to compute updated value
      * @return this builder
      */
-    def add[A](target: Property[A], direct: Boolean = true)(f: ⇒ A): Builder = {
+    def add[A](target: Property[A], direct: Boolean = true)(f: => A): Builder = {
       if (direct) {
-        bindings.add(() ⇒ target.setValue(f))
+        bindings.add(() => target.setValue(f))
         ()
       } else {
-        val binding = Bindings.createObjectBinding[A](() ⇒ f)
-        bindings.add(() ⇒ binding.invalidate())
+        val binding = Bindings.createObjectBinding[A](() => f)
+        bindings.add(() => binding.invalidate())
         target.bind(binding)
       }
       this
@@ -298,7 +298,7 @@ object BindingsEx {
      * @param f side effect code
      * @return this builder
      */
-    def sideEffect(f: () ⇒ Any): Builder = {
+    def sideEffect(f: () => Any): Builder = {
       sideEffects += f
       this
     }
@@ -323,7 +323,7 @@ object BindingsEx {
      * vararg variant.
      */
     def bind(dependencies: ObservableValue[_]*)(implicit d: DummyImplicit): Cancellable = {
-      bind(dependencies)
+      bind(dependencies.toSeq)
     }
 
     /**
@@ -340,17 +340,17 @@ object BindingsEx {
      */
     def bind(throttle: FiniteDuration, dependencies: Seq[Observable]): Cancellable = {
       val callThrottlers = throttlerOpt match {
-        case Some(throttler) ⇒
+        case Some(throttler) =>
           // Grouped code execution throttling.
           // Side effects can be registered as independent calls so that if
           // used with other bindings only one call will be performed.
-          throttler.callThrottler(throttle) { () ⇒
+          throttler.callThrottler(throttle) { () =>
             update(inEC = true, withSideEffects = false)
           } :: sideEffects.toList.map(throttler.callThrottler(throttle))
 
-        case None ⇒
+        case None =>
           // Single code execution throttling.
-          List(CallThrottler(schedulerOpt.getOrElse(CoreSystem.scheduler), throttle) { inEC ⇒
+          List(CallThrottler(schedulerOpt.getOrElse(CoreSystem.scheduler), throttle) { inEC =>
             update(inEC || schedulerOpt.isEmpty, withSideEffects = true)
           })
       }
@@ -369,31 +369,31 @@ object BindingsEx {
      * vararg variant.
      */
     def bind(throttle: FiniteDuration, dependencies: Observable*)(implicit d: DummyImplicit): Cancellable = {
-      bind(throttle, dependencies)
+      bind(throttle, dependencies.toSeq)
     }
 
   }
 
   // Simple binding linker from scala to java Boolean
   implicit val booleanLinker: Linker[Boolean, jBoolean] =
-    (f: () ⇒ Boolean, dependencies: Seq[Observable]) ⇒ Bindings.createBooleanBinding(() ⇒ f(), dependencies:_*)
+    (f: () => Boolean, dependencies: Seq[Observable]) => Bindings.createBooleanBinding(() => f(), dependencies:_*)
   // Simple binding linker from scala to java Double
   implicit val doubleLinker: Linker[Double, Number] =
-    (f: () ⇒ Double, dependencies: Seq[Observable]) ⇒ Bindings.createDoubleBinding(() ⇒ f(), dependencies:_*)
+    (f: () => Double, dependencies: Seq[Observable]) => Bindings.createDoubleBinding(() => f(), dependencies:_*)
   // Simple binding linker from scala to java Float
   implicit val floatLinker: Linker[Float, Number] =
-    (f: () ⇒ Float, dependencies: Seq[Observable]) ⇒ Bindings.createFloatBinding(() ⇒ f(), dependencies:_*)
+    (f: () => Float, dependencies: Seq[Observable]) => Bindings.createFloatBinding(() => f(), dependencies:_*)
   // Simple binding linker from scala to java Int
   implicit val integerLinker: Linker[Int, Number] =
-    (f: () ⇒ Int, dependencies: Seq[Observable]) ⇒ Bindings.createIntegerBinding(() ⇒ f(), dependencies:_*)
+    (f: () => Int, dependencies: Seq[Observable]) => Bindings.createIntegerBinding(() => f(), dependencies:_*)
   // Simple binding linker from scala to java Long
   implicit val longLinker: Linker[Long, Number] =
-    (f: () ⇒ Long, dependencies: Seq[Observable]) ⇒ Bindings.createLongBinding(() ⇒ f(), dependencies:_*)
+    (f: () => Long, dependencies: Seq[Observable]) => Bindings.createLongBinding(() => f(), dependencies:_*)
   // Simple binding linker for string values
   implicit val stringLinker: Linker[String, String] =
-    (f: () ⇒ String, dependencies: Seq[Observable]) ⇒ Bindings.createStringBinding(() ⇒ f(), dependencies:_*)
+    (f: () => String, dependencies: Seq[Observable]) => Bindings.createStringBinding(() => f(), dependencies:_*)
   // Simple binding linker for object values
   implicit def objectLinker[A <: B, B]: Linker[A, B] =
-    (f: () ⇒ A, dependencies: Seq[Observable]) ⇒ Bindings.createObjectBinding[B](() ⇒ f(), dependencies:_*)
+    (f: () => A, dependencies: Seq[Observable]) => Bindings.createObjectBinding[B](() => f(), dependencies:_*)
 
 }

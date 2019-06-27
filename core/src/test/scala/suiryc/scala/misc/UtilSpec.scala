@@ -10,7 +10,7 @@ class UtilSpec extends WordSpec with Matchers {
     "find present element" in {
       val arr = "ABCDEF".toArray
       arr.zipWithIndex.foreach {
-        case (c, idx) ⇒
+        case (c, idx) =>
           Util.indexOf(arr, c, 0, arr.length) shouldBe idx
           Util.indexOf(arr, c, idx, 1) shouldBe idx
       }

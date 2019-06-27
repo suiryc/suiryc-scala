@@ -1,6 +1,6 @@
 package suiryc.scala.io
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import suiryc.scala.akka.CoreSystem
 
 /** Writer expecting full lines. */
@@ -20,9 +20,9 @@ class ProxyLineWriter(_writers: Seq[LineWriter] = Seq.empty, async: Boolean = fa
  extends LineWriter
 {
 
-  protected var writers = _writers.toSet
+  protected var writers: Set[LineWriter] = _writers.toSet
 
-  protected val system = CoreSystem.system
+  protected val system: ActorSystem = CoreSystem.system
   protected val actor: Option[ActorRef] =
     if (!async) None
     else Some(system.actorOf(Props(new ProxyActor).withDispatcher("dispatcher")))
@@ -52,7 +52,7 @@ class ProxyLineWriter(_writers: Seq[LineWriter] = Seq.empty, async: Boolean = fa
     }
   }
 
-  @inline private def write(writers: Set[LineWriter], line: String) {
+  @inline private def write(writers: Set[LineWriter], line: String): Unit = {
     writers.foreach(_.write(line))
   }
 

@@ -10,7 +10,7 @@ class SystemStreams(val in: InputStream, val out: PrintStream, val err: PrintStr
 object SystemStreams {
 
   /** /dev/null output equivalent. */
-  val NullOutput = new PrintStream((_: Int) ⇒ {})
+  val NullOutput = new PrintStream((_: Int) => {})
 
   /** Gets current streams. */
   def apply(): SystemStreams =
@@ -38,11 +38,11 @@ object SystemStreams {
     val previous = SystemStreams()
 
     in.foreach(System.setIn)
-    out.foreach { out ⇒
+    out.foreach { out =>
       System.out.flush()
       System.setOut(out)
     }
-    err.foreach { err ⇒
+    err.foreach { err =>
       System.err.flush()
       System.setErr(err)
     }

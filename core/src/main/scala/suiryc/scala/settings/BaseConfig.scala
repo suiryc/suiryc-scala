@@ -94,7 +94,7 @@ trait BaseConfigImplicits {
     try {
       Util.parseDuration(config.getString(path)).asInstanceOf[FiniteDuration]
     } catch {
-      case _: Exception ⇒ BaseConfig.toDuration(config.getDuration(path))
+      case _: Exception => BaseConfig.toDuration(config.getDuration(path))
     }
   }
 
@@ -105,7 +105,7 @@ trait BaseConfigImplicits {
     try {
       config.getStringList(path).asScala.toList.map(Util.parseDuration(_).asInstanceOf[FiniteDuration])
     } catch {
-      case _: Exception ⇒ config.getDurationList(path).asScala.toList.map(BaseConfig.toDuration)
+      case _: Exception => config.getDurationList(path).asScala.toList.map(BaseConfig.toDuration)
     }
   }
 

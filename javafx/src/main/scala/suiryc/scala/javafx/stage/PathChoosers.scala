@@ -20,7 +20,7 @@ object PathChoosers {
     @scala.annotation.tailrec
     def loop(folderOpt: Option[File]): Option[File] = {
       folderOpt match {
-        case Some(folder) ⇒
+        case Some(folder) =>
           // DirectoryChooser/FileChooser will fail if we don't give it an actual folder
           if (folder.isDirectory) {
             Some(folder)
@@ -29,7 +29,7 @@ object PathChoosers {
             loop(Option(folder.getParentFile))
           }
 
-        case None ⇒
+        case None =>
           // No valid folder
           None
       }

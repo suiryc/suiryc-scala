@@ -257,8 +257,8 @@ object ConfigEntry extends BaseConfigImplicits {
     new Basic(settings, BaseConfig.joinPath(path), handler)
 
   /** Builds a config entry for a type with implicit handler. */
-  def from[A](settings: PortableSettings, path: String*)(implicit handler: Handler[A], d: DummyImplicit = new DummyImplicit): ConfigEntry[A] =
-    from(settings, path)
+  def from[A](settings: PortableSettings, path: String*)(implicit handler: Handler[A], d: DummyImplicit): ConfigEntry[A] =
+    from(settings, path.toSeq)
 
   /** Builds a config entry for a given Enumeration. */
   def from[A <: Enumeration](settings: PortableSettings, enum: A, path: Seq[String]): ConfigEntry[A#Value] =
@@ -266,7 +266,7 @@ object ConfigEntry extends BaseConfigImplicits {
 
   /** Builds a config entry for a given Enumeration. */
   def from[A <: Enumeration](settings: PortableSettings, enum: A, path: String*)(implicit d: DummyImplicit): ConfigEntry[A#Value] =
-    from(settings, enum, path)
+    from(settings, enum, path.toSeq)
 
   /** Boolean entry handler. */
   implicit val booleanHandler: Handler[Boolean] = baseHandler[Boolean]
@@ -299,12 +299,12 @@ object ConfigEntry extends BaseConfigImplicits {
   }
 
   // Basic handler implementation (relying on getters from BaseConfigImplicits)
-  private class BaseHandler[A](implicit _get: (Config, String) ⇒ A, _getList: (Config, String) ⇒ List[A]) extends Handler[A] {
+  private class BaseHandler[A](implicit _get: (Config, String) => A, _getList: (Config, String) => List[A]) extends Handler[A] {
     override def get(config: Config, path: String): A = _get(config, path)
     override def getList(config: Config, path: String): List[A] = _getList(config, path)
   }
 
-  private def baseHandler[A](implicit _get: (Config, String) ⇒ A, _getList: (Config, String) ⇒ List[A]): Handler[A] =
+  private def baseHandler[A](implicit _get: (Config, String) => A, _getList: (Config, String) => List[A]): Handler[A] =
     new BaseHandler[A]
 
   /** Enumeration entry handler. */

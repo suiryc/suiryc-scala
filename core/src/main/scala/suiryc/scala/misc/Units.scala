@@ -21,7 +21,7 @@ object Units {
     def units: List[List[Unit]] = Nil
 
     def findUnit(s: String): Option[Unit] = {
-      Option(s).map(_.trim).filterNot(_.isEmpty).map { s ⇒
+      Option(s).map(_.trim).filterNot(_.isEmpty).map { s =>
         (unity :: units.flatten).find(_.label.equalsIgnoreCase(s))
       }.getOrElse(Some(unity))
     }

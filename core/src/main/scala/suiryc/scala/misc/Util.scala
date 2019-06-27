@@ -72,8 +72,8 @@ object Util {
     // as it does not retain the original unit but only the value separated in
     // seconds and nanoseconds.
     s.trim match {
-      case FINITE_DURATION_REGEXP(length, unit) ⇒ Duration(length.toLong, unit)
-      case _ ⇒ Duration(s)
+      case FINITE_DURATION_REGEXP(length, unit) => Duration(length.toLong, unit)
+      case _ => Duration(s)
     }
   }
 

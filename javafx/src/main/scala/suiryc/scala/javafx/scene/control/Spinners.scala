@@ -30,26 +30,26 @@ object Spinners {
     // Actually non-editable spinners already properly handle the up/down keys.
     // Only editable ones don't increment/decrement but move the cursor inside
     // the editor field.
-    List(spinner, spinner.getEditor).foreach { control ⇒
-      control.addEventHandler(KeyEvent.KEY_PRESSED, (event: KeyEvent) ⇒ {
+    List(spinner, spinner.getEditor).foreach { control =>
+      control.addEventHandler(KeyEvent.KEY_PRESSED, (event: KeyEvent) => {
         event.getCode match {
-          case KeyCode.PAGE_UP ⇒
+          case KeyCode.PAGE_UP =>
             event.consume()
             spinner.increment(pageSteps)
 
-          case KeyCode.UP ⇒
+          case KeyCode.UP =>
             event.consume()
             spinner.increment()
 
-          case KeyCode.DOWN ⇒
+          case KeyCode.DOWN =>
             event.consume()
             spinner.decrement()
 
-          case KeyCode.PAGE_DOWN ⇒
+          case KeyCode.PAGE_DOWN =>
             event.consume()
             spinner.decrement(pageSteps)
 
-          case _ ⇒
+          case _ =>
         }
       })
     }
@@ -106,7 +106,7 @@ class IntSpinnerValueFactory(spinner: Spinner[Option[Int]], initialValue: Option
   // This ensures that we eventually store and display the correct value: if
   // value needs to be corrected, since we change it, we store the corrected
   // value, and its representation will be updated accordingly.
-  valueProperty.listen { (_, oldValue, newValue) ⇒
+  valueProperty.listen { (_, oldValue, newValue) =>
     val actual = cleanValue(oldValue, newValue)
     // If value needs to be corrected, change it (which means we will eventually
     // recursively ends up here again).
@@ -139,7 +139,7 @@ class IntSpinnerValueFactory(spinner: Spinner[Option[Int]], initialValue: Option
         try {
           Option(s).filterNot(_.trim.isEmpty).map(_.toInt)
         } catch {
-          case _: Exception ⇒
+          case _: Exception =>
             spinner.cancelEdit()
             getValue
         }
@@ -183,7 +183,7 @@ class FiniteDurationSpinnerValueFactory(spinner: Spinner[Option[FiniteDuration]]
         min
       } else value1
     } else {
-      max.filter(_ < value).map { v ⇒
+      max.filter(_ < value).map { v =>
         // Ensure minimum value when applicable, and try to keep the requested
         // time unit.
         val value1 = FiniteDuration(math.round(v.toUnit(unit)), unit)
@@ -213,7 +213,7 @@ class FiniteDurationSpinnerValueFactory(spinner: Spinner[Option[FiniteDuration]]
 
   setValue(cleanValue(None, initialValue))
 
-  valueProperty.listen { (_, oldValue, newValue) ⇒
+  valueProperty.listen { (_, oldValue, newValue) =>
     val actual = cleanValue(oldValue, newValue)
     if (actual != newValue) setValue(actual)
   }
@@ -221,9 +221,9 @@ class FiniteDurationSpinnerValueFactory(spinner: Spinner[Option[FiniteDuration]]
   setConverter {
     new StringConverter[Option[FiniteDuration]] {
       override def toString(v: Option[FiniteDuration]): String = {
-        v.map { v ⇒
+        v.map { v =>
           // Keep raw unit or fallback to short representation.
-          rawUnit.map { unit ⇒
+          rawUnit.map { unit =>
             s"${v.length}$unit"
           }.getOrElse {
             s"${v.length}${Durations.shortUnit(v.unit)}"
@@ -233,7 +233,7 @@ class FiniteDurationSpinnerValueFactory(spinner: Spinner[Option[FiniteDuration]]
       override def fromString(s: String): Option[FiniteDuration] = {
         if (Option(s).forall(_.trim.isEmpty)) None
         else {
-          Durations.parseFinite(s).map { value ⇒
+          Durations.parseFinite(s).map { value =>
             // Value is valid: extract raw unit if possible.
             rawUnit = Option(s.trim.replaceFirst("^[+-]?[0-9]+", "")).filter(_.nonEmpty)
             Some(value)
@@ -304,7 +304,7 @@ class ByteSizeSpinnerValueFactory(spinner: Spinner[Option[Long]], initialValue: 
   def setUnit(unit: Units.Unit): Unit = {
     if (unit != this.unit) {
       this.unit = unit
-      getValue.foreach { v ⇒
+      getValue.foreach { v =>
         setValue(Some(clampValue(Units.storage.toUnit(v, unit, 0).toLong * unit.factor)))
       }
     }
@@ -319,7 +319,7 @@ class ByteSizeSpinnerValueFactory(spinner: Spinner[Option[Long]], initialValue: 
 
   setValue(cleanValue(None, initialValue))
 
-  valueProperty.listen { (_, oldValue, newValue) ⇒
+  valueProperty.listen { (_, oldValue, newValue) =>
     val actual = cleanValue(oldValue, newValue)
     if (actual != newValue) setValue(actual)
   }
@@ -327,13 +327,13 @@ class ByteSizeSpinnerValueFactory(spinner: Spinner[Option[Long]], initialValue: 
   setConverter {
     new StringConverter[Option[Long]] {
       override def toString(v: Option[Long]): String = {
-        v.map { v ⇒
+        v.map { v =>
           s"${Units.storage.toUnit(v, unit, 0)}$infix${unit.label}"
         }.getOrElse("")
       }
       override def fromString(s: String): Option[Long] = {
         try {
-          Option(s).filterNot(_.isEmpty).map { s ⇒
+          Option(s).filterNot(_.isEmpty).map { s =>
             val value = Units.storage.fromHumanReadable(s)
             val s1 = s.replaceFirst("^[+-]?[0-9]+", "")
             unit = Units.storage.findUnit(s1.trim).get
@@ -341,7 +341,7 @@ class ByteSizeSpinnerValueFactory(spinner: Spinner[Option[Long]], initialValue: 
             value
           }
         } catch {
-          case _: Exception ⇒
+          case _: Exception =>
             spinner.cancelEdit()
             getValue
         }

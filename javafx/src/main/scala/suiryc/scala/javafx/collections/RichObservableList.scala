@@ -1,6 +1,6 @@
 package suiryc.scala.javafx.collections
 
-import javafx.{collections ⇒ jfxc}
+import javafx.{collections => jfxc}
 import javafx.collections.ObservableList
 import suiryc.scala.concurrent.Cancellable
 
@@ -26,7 +26,7 @@ class RichObservableList[A](val underlying: ObservableList[A]) extends AnyVal {
    * @param fn listening function
    * @return subscription of listening code
    */
-  def listen2(fn: (Cancellable, jfxc.ListChangeListener.Change[_ <: A]) ⇒ Unit): Cancellable = {
+  def listen2(fn: (Cancellable, jfxc.ListChangeListener.Change[_ <: A]) => Unit): Cancellable = {
     // We need to create a subscription to give to the listening code. To do so
     // we need to create a listener, which is based on the listening code and
     // thus needs the subscription.
@@ -50,8 +50,8 @@ class RichObservableList[A](val underlying: ObservableList[A]) extends AnyVal {
   }
 
   /** Listens change with auto subscription. */
-  def listen2(fn: Cancellable ⇒ Unit): Cancellable =
-    listen2((s, _) ⇒ fn(s))
+  def listen2(fn: Cancellable => Unit): Cancellable =
+    listen2((s, _) => fn(s))
 
   /**
    * Listens change.
@@ -59,7 +59,7 @@ class RichObservableList[A](val underlying: ObservableList[A]) extends AnyVal {
    * @param fn listening function
    * @return subscription of listening code
    */
-  def listen(fn: jfxc.ListChangeListener.Change[_ <: A] ⇒ Unit): Cancellable = {
+  def listen(fn: jfxc.ListChangeListener.Change[_ <: A] => Unit): Cancellable = {
     val listener = ListChangeListener[A](fn)
     underlying.addListener(listener)
 
@@ -72,8 +72,8 @@ class RichObservableList[A](val underlying: ObservableList[A]) extends AnyVal {
   }
 
   /** Listens change. */
-  def listen(fn: ⇒ Unit): Cancellable =
-    listen((_: jfxc.ListChangeListener.Change[_]) ⇒ fn)
+  def listen(fn: => Unit): Cancellable =
+    listen((_: jfxc.ListChangeListener.Change[_]) => fn)
 
 }
 
@@ -94,14 +94,14 @@ object RichObservableList {
    * @param fn listening code
    * @return subscription
    */
-  def listen2[A](observables: Seq[ObservableList[_ <: A]])(fn: Cancellable ⇒ Unit): Cancellable = {
+  def listen2[A](observables: Seq[ObservableList[_ <: A]])(fn: Cancellable => Unit): Cancellable = {
     val subscription = new CancellableListener[A] {
       override def cancel() {
         observables.foreach(_.removeListener(listener))
         super.cancel()
       }
     }
-    val listener = ListChangeListener[A](_ ⇒ fn(subscription))
+    val listener = ListChangeListener[A](_ => fn(subscription))
 
     subscription.listener = listener
     observables.foreach(_.addListener(listener))
@@ -114,8 +114,8 @@ object RichObservableList {
    *
    * vararg variant.
    */
-  def listen2[A](observables: ObservableList[_ <: A]*)(fn: Cancellable ⇒ Unit)(implicit d: DummyImplicit): Cancellable = {
-    listen2[A](observables)(fn)
+  def listen2[A](observables: ObservableList[_ <: A]*)(fn: Cancellable => Unit)(implicit d: DummyImplicit): Cancellable = {
+    listen2[A](observables.toSeq)(fn)
   }
 
   /**
@@ -127,8 +127,8 @@ object RichObservableList {
    * @param fn listening code
    * @return subscription
    */
-  def listen(observables: Seq[ObservableList[_ <: Object]])(fn: ⇒ Unit): Cancellable = {
-    val listener = ListChangeListener[Object](_ ⇒ fn)
+  def listen(observables: Seq[ObservableList[_ <: Object]])(fn: => Unit): Cancellable = {
+    val listener = ListChangeListener[Object](_ => fn)
     observables.foreach(_.addListener(listener))
 
     new Cancellable {
@@ -144,8 +144,8 @@ object RichObservableList {
    *
    * vararg variant.
    */
-  def listen(observables: ObservableList[_ <: Object]*)(fn: ⇒ Unit)(implicit d: DummyImplicit): Cancellable = {
-    listen(observables)(fn)
+  def listen(observables: ObservableList[_ <: Object]*)(fn: => Unit)(implicit d: DummyImplicit): Cancellable = {
+    listen(observables.toSeq)(fn)
   }
 
   /** Dummy subscription used for auto subscription. */

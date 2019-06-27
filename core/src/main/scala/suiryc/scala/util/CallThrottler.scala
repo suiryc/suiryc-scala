@@ -35,7 +35,7 @@ trait CallThrottler {
  * @param f code to call; the parameter indicates whether the call is being done
  *          through the scheduler execution context
  */
-class SingleCallThrottler(scheduler: Scheduler, duration: FiniteDuration, f: Boolean ⇒ Any) extends CallThrottler {
+class SingleCallThrottler(scheduler: Scheduler, duration: FiniteDuration, f: Boolean => Any) extends CallThrottler {
 
   // Last time the code was called
   private var lastCall: Long = 0
@@ -96,7 +96,7 @@ private class CallsDurationThrottler(scheduler: Scheduler, duration: FiniteDurat
   import CallsThrottler._
 
   // Currently throttled codes (call done once throttling delay has elapsed)
-  private var calls = Set.empty[() ⇒ Any]
+  private var calls = Set.empty[() => Any]
   // Last time calls were done
   private var lastCall: Long = 0
   // Whether calls are being throttled right now
@@ -115,7 +115,7 @@ private class CallsDurationThrottler(scheduler: Scheduler, duration: FiniteDurat
    * Each code, passed as a function callback parameter, is identified by its
    * hashcode: if passed twice in the same period, only one call will be done.
    */
-  def throttle(f: () ⇒ Any): Unit = this.synchronized {
+  def throttle(f: () => Any): Unit = this.synchronized {
     if (!throttling) {
       val now = System.currentTimeMillis
       val delay = math.max(
@@ -144,7 +144,7 @@ private class CallsDurationThrottler(scheduler: Scheduler, duration: FiniteDurat
 }
 
 /** Code throttler as part of a group (sharing same duration). */
-class GroupedCallThrottler(group: CallsDurationThrottler, f: () ⇒ Any) extends CallThrottler {
+class GroupedCallThrottler(group: CallsDurationThrottler, f: () => Any) extends CallThrottler {
   /**
    * Throttles code execution.
    *
@@ -172,14 +172,14 @@ class CallsThrottler(scheduler: Scheduler) {
   private def getThrottler(duration: FiniteDuration): CallsDurationThrottler = this.synchronized {
     val delay = duration.toMillis
     throttlers.get(delay) match {
-      case Some(throttler) ⇒
+      case Some(throttler) =>
         // Use existing group
         throttler
 
-      case None ⇒
+      case None =>
         // Create a new group for this duration
         val throttler = new CallsDurationThrottler(scheduler, duration)
-        throttlers += (delay → throttler)
+        throttlers += (delay -> throttler)
         throttler
     }
   }
@@ -193,7 +193,7 @@ class CallsThrottler(scheduler: Scheduler) {
    * @param duration period of time to wait between code calls
    * @param f code to call
    */
-  def callThrottler(duration: FiniteDuration)(f: () ⇒ Any): CallThrottler = {
+  def callThrottler(duration: FiniteDuration)(f: () => Any): CallThrottler = {
     new GroupedCallThrottler(getThrottler(duration), f)
   }
 
@@ -202,7 +202,7 @@ class CallsThrottler(scheduler: Scheduler) {
 object CallThrottler {
 
   /** Builds a (single code) call throttler. */
-  def apply(scheduler: Scheduler, duration: FiniteDuration)(f: Boolean ⇒ Any): CallThrottler =
+  def apply(scheduler: Scheduler, duration: FiniteDuration)(f: Boolean => Any): CallThrottler =
     new SingleCallThrottler(scheduler, duration, f)
 
 }

@@ -26,7 +26,7 @@ class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal 
    * @param fn listening function
    * @return subscription of listening code
    */
-  def listen2(fn: (Cancellable, ObservableValue[_ <: A], A, A) ⇒ Unit): Cancellable = {
+  def listen2(fn: (Cancellable, ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
     // We need to create a subscription to give to the listening code. To do so
     // we need to create a listener, which is based on the listening code and
     // thus needs the subscription.
@@ -50,12 +50,12 @@ class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal 
   }
 
   /** Listens change with auto subscription. */
-  def listen2(fn: (Cancellable, A) ⇒ Unit): Cancellable =
-    listen2((s, _, _, v) ⇒ fn(s, v))
+  def listen2(fn: (Cancellable, A) => Unit): Cancellable =
+    listen2((s, _, _, v) => fn(s, v))
 
   /** Listens change with auto subscription. */
-  def listen2(fn: Cancellable ⇒ Unit): Cancellable =
-    listen2((s, _, _, _) ⇒ fn(s))
+  def listen2(fn: Cancellable => Unit): Cancellable =
+    listen2((s, _, _, _) => fn(s))
 
   /**
    * Listens change.
@@ -63,7 +63,7 @@ class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal 
    * @param fn listening function
    * @return subscription of listening code
    */
-  def listen(fn: (ObservableValue[_ <: A], A, A) ⇒ Unit): Cancellable = {
+  def listen(fn: (ObservableValue[_ <: A], A, A) => Unit): Cancellable = {
     val listener = ChangeListener[A](fn)
     underlying.addListener(listener)
 
@@ -76,12 +76,12 @@ class RichObservableValue[A](val underlying: ObservableValue[A]) extends AnyVal 
   }
 
   /** Listens change. */
-  def listen(fn: A ⇒ Unit): Cancellable =
-    listen((_, _, v) ⇒ fn(v))
+  def listen(fn: A => Unit): Cancellable =
+    listen((_, _, v) => fn(v))
 
   /** Listens change. */
-  def listen(fn: ⇒ Unit): Cancellable =
-    listen((_, _, _) ⇒ fn)
+  def listen(fn: => Unit): Cancellable =
+    listen((_, _, _) => fn)
 
 }
 
@@ -102,14 +102,14 @@ object RichObservableValue {
    * @param fn listening code
    * @return subscription
    */
-  def listen2[A](observables: Seq[ObservableValue[_ <: A]])(fn: Cancellable ⇒ Unit): Cancellable = {
+  def listen2[A](observables: Seq[ObservableValue[_ <: A]])(fn: Cancellable => Unit): Cancellable = {
     val subscription = new CancellableListener[A] {
       override def cancel() {
         observables.foreach(_.removeListener(listener))
         super.cancel()
       }
     }
-    val listener = ChangeListener[A]((_, _, _) ⇒ fn(subscription))
+    val listener = ChangeListener[A]((_, _, _) => fn(subscription))
 
     subscription.listener = listener
     observables.foreach(_.addListener(listener))
@@ -122,8 +122,8 @@ object RichObservableValue {
    *
    * vararg variant.
    */
-  def listen2[A](observables: ObservableValue[_ <: A]*)(fn: Cancellable ⇒ Unit)(implicit d: DummyImplicit): Cancellable = {
-    listen2[A](observables)(fn)
+  def listen2[A](observables: ObservableValue[_ <: A]*)(fn: Cancellable => Unit)(implicit d: DummyImplicit): Cancellable = {
+    listen2[A](observables.toSeq)(fn)
   }
 
   /**
@@ -135,8 +135,8 @@ object RichObservableValue {
    * @param fn listening code
    * @return subscription
    */
-  def listen[A](observables: Seq[ObservableValue[_ <: A]])(fn: ⇒ Unit): Cancellable = {
-    val listener = ChangeListener[A]((_, _, _) ⇒ fn)
+  def listen[A](observables: Seq[ObservableValue[_ <: A]])(fn: => Unit): Cancellable = {
+    val listener = ChangeListener[A]((_, _, _) => fn)
     observables.foreach(_.addListener(listener))
 
     new Cancellable {
@@ -152,8 +152,8 @@ object RichObservableValue {
    *
    * vararg variant.
    */
-  def listen[A](observables: ObservableValue[_ <: A]*)(fn: ⇒ Unit)(implicit d: DummyImplicit): Cancellable = {
-    listen[A](observables)(fn)
+  def listen[A](observables: ObservableValue[_ <: A]*)(fn: => Unit)(implicit d: DummyImplicit): Cancellable = {
+    listen[A](observables.toSeq)(fn)
   }
 
   /** Dummy subscription used for auto subscription. */

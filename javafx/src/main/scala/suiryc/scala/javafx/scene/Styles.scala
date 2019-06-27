@@ -67,26 +67,26 @@ trait StylesFeat {
    */
   def toggleTooltip(node: Node, active: Boolean, msg: String): Unit = {
     val controlOpt = node match {
-      case control: Control ⇒ Some(control)
-      case _ ⇒ Option.empty[Control]
+      case control: Control => Some(control)
+      case _ => Option.empty[Control]
     }
     val current = controlOpt.map(_.getTooltip).getOrElse {
       node.getProperties.get(TOOLTIP_PROP_KEY).asInstanceOf[Tooltip]
     }
     val original = current match {
-      case d: DummyTooltip ⇒ d.originalTooltip
-      case v ⇒ v
+      case d: DummyTooltip => d.originalTooltip
+      case v => v
     }
     val next =
       if (active) new DummyTooltip(msg, original)
       else original
     if (!(next eq current)) {
       controlOpt match {
-        case Some(control) ⇒
+        case Some(control) =>
           // We can replace control tooltip in one step
           control.setTooltip(next)
 
-        case None ⇒
+        case None =>
           // For other nodes, we first uninstall the current tooltip before
           // installing the next one.
           // (uninstalling/installing a null tooltip is a noop)

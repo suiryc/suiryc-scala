@@ -27,7 +27,7 @@ class Cancellable {
    * @param cleanup code to execute if we had been cancelled
    * @throws Cancelled if we had been cancelled
    */
-  def check(cleanup: ⇒ Unit = {}): Unit = {
+  def check(cleanup: => Unit = {}): Unit = {
     if (cancelled) {
       cleanup
       throw Cancelled()
@@ -53,6 +53,6 @@ object Cancellable {
    *
    * vararg variant.
    */
-  def apply(cancellables: Cancellable*)(implicit d: DummyImplicit): Cancellable = Cancellable(cancellables)
+  def apply(cancellables: Cancellable*)(implicit d: DummyImplicit): Cancellable = Cancellable(cancellables.toSeq)
 
 }

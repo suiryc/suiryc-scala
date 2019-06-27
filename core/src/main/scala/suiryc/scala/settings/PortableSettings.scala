@@ -75,7 +75,7 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
   }
 
   /** Delay saving while executing code. */
-  def delayedSave[A](f: ⇒ A): A = {
+  def delayedSave[A](f: => A): A = {
     setDelaySave(delay = true)
     try {
       f
@@ -101,11 +101,11 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
   /** Actual config saving (given file path). */
   protected def save(path: Path, backup: Boolean): Unit = {
     clean(_configStandalone) match {
-      case Some(cleanedConfig) ⇒
+      case Some(cleanedConfig) =>
         val renderOptions = ConfigRenderOptions.defaults.setOriginComments(false).setJson(false)
         Files.write(path, cleanedConfig.root.render(renderOptions).getBytes(StandardCharsets.UTF_8))
 
-      case None ⇒
+      case None =>
         // We could delete the configuration as there is no change from the
         // reference. But it's more user-friendly to simply say so in the file.
         // We only delete the backup file in this case.
@@ -136,10 +136,10 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
         val head = path.head
         val tail = path.tail
         Option(value.asInstanceOf[ConfigObject].get(head)) match {
-          case Some(obj) ⇒
+          case Some(obj) =>
             loop(obj, tail)
 
-          case None ⇒
+          case None =>
             // Should not happen: we checked that the path existed
             direct()
         }
@@ -165,18 +165,18 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
         val obj = head._2
         // Get this object content, adding simple values to entries to return
         // and objects to those left to process.
-        val (entries2, objs2) = obj.entrySet.asScala.toList.foldLeft((entries, tail)) { case ((entries0, objs0), entry) ⇒
+        val (entries2, objs2) = obj.entrySet.asScala.toList.foldLeft((entries, tail)) { case ((entries0, objs0), entry) =>
           val key = entry.getKey
           val path2 = path :+ key
           val value = entry.getValue
-          if (value.valueType != ConfigValueType.OBJECT) (entries0 + (ConfigUtil.joinPath(path2:_*) → value), objs0)
-          else (entries0, objs0 :+ (path2 → value.asInstanceOf[ConfigObject]))
+          if (value.valueType != ConfigValueType.OBJECT) (entries0 + (ConfigUtil.joinPath(path2:_*) -> value), objs0)
+          else (entries0, objs0 :+ (path2 -> value.asInstanceOf[ConfigObject]))
         }
         loop(entries2, objs2)
       }
     }
 
-    loop(Map.empty, List(Nil → obj))
+    loop(Map.empty, List(Nil -> obj))
   }
 
   // Gets whether an object is empty.
@@ -228,7 +228,7 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
           else clean(config.withoutPath(BaseConfig.joinPath(head.path)), tail)
         } else {
           // Adds children objects for next.
-          val newEntries = head.value.entrySet.asScala.toList.filter(_.getValue.valueType == ConfigValueType.OBJECT).map { entry ⇒
+          val newEntries = head.value.entrySet.asScala.toList.filter(_.getValue.valueType == ConfigValueType.OBJECT).map { entry =>
             ObjectEntry(
               path = head.path :+ entry.getKey,
               value = entry.getValue.asInstanceOf[ConfigObject]
@@ -241,7 +241,7 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
 
     // We first remove unchanged values.
     // Take care of null values too.
-    val cleaned1 = findPaths(config.root).foldLeft(config) { (acc, entry) ⇒
+    val cleaned1 = findPaths(config.root).foldLeft(config) { (acc, entry) =>
       val key = entry._1
       val value = entry._2
       if (reference.hasPathOrNull(key) && (getValue(reference, key) == value)) acc.withoutPath(key)
@@ -266,7 +266,7 @@ object PortableSettings extends StrictLogging {
 
   /** Gets the Config default reference (for the given config path). */
   def defaultReference(path: String*)(implicit d: DummyImplicit): Config = {
-    defaultReference(path)
+    defaultReference(path.toSeq)
   }
 
   private def build(filepath: Path, fallback: Option[Config], confpath: Seq[String]): PortableSettings = {
@@ -274,12 +274,12 @@ object PortableSettings extends StrictLogging {
     val appConfig = try {
       ConfigFactory.parseFile(filepath.toFile)
     } catch {
-      case ex: Exception if backup.exists ⇒
+      case ex: Exception if backup.exists =>
         logger.error(s"Failed to load configuration=<$filepath>, switching to backup: ${ex.getMessage}", ex)
         try {
           ConfigFactory.parseFile(backup)
         } catch {
-          case _: Exception ⇒
+          case _: Exception =>
             throw ex
         }
     }
@@ -305,7 +305,7 @@ object PortableSettings extends StrictLogging {
    * vararg variant.
    */
   def apply(filepath: Path, fallback: Config, confpath: String*)(implicit d: DummyImplicit): PortableSettings = {
-    build(filepath, Some(fallback), confpath)
+    build(filepath, Some(fallback), confpath.toSeq)
   }
 
   /**
@@ -323,7 +323,7 @@ object PortableSettings extends StrictLogging {
    * vararg variant.
    */
   def apply(filepath: Path, confpath: String*)(implicit d: DummyImplicit): PortableSettings = {
-    apply(filepath, confpath)
+    apply(filepath, confpath.toSeq)
   }
 
 }

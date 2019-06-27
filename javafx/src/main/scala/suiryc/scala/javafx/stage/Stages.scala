@@ -82,7 +82,7 @@ object Stages {
    * @param f code to execute
    * @param ec execution context
    */
-  def onStageReady(stage: Stage, first: Boolean, timeout: FiniteDuration = 1.second)(f: ⇒ Unit)(implicit ec: ExecutionContext = JFXExecutor.executor): Unit = {
+  def onStageReady(stage: Stage, first: Boolean, timeout: FiniteDuration = 1.second)(f: => Unit)(implicit ec: ExecutionContext = JFXExecutor.executor): Unit = {
     def call(): Unit = {
       if (first && OS.isLinux) {
         val promise = Promise[Unit]()
@@ -104,7 +104,7 @@ object Stages {
 
     if (stage.isShowing) call()
     else {
-      stage.showingProperty.listen2 { (cancellable, showing) ⇒
+      stage.showingProperty.listen2 { (cancellable, showing) =>
         if (showing) {
           cancellable.cancel()
           call()
@@ -185,12 +185,12 @@ object Stages {
   def initOwner(stage: Stage, owner: Window): Unit = {
     stage.initOwner(owner)
     for {
-      scene1 ← Option(stage.getScene)
-      scene2 ← Option(owner.getScene)
+      scene1 <- Option(stage.getScene)
+      scene2 <- Option(owner.getScene)
     } scene1.getStylesheets.setAll(scene2.getStylesheets)
     owner match {
-      case owner: Stage ⇒ stage.getIcons.setAll(owner.getIcons)
-      case _ ⇒
+      case owner: Stage => stage.getIcons.setAll(owner.getIcons)
+      case _ =>
     }
     ()
   }
@@ -227,12 +227,12 @@ object Stages {
         // above). There does not seem to be a sure way to know when this is the
         // right moment to set the dimension. The easiest way is to force the
         // dimension to remain the same for a little while.
-        def reset(v: Double, prop: ReadOnlyDoubleProperty, set: Double ⇒ Unit): Unit = {
+        def reset(v: Double, prop: ReadOnlyDoubleProperty, set: Double => Unit): Unit = {
           set(v)
-          val cancellable = prop.listen { changed ⇒
+          val cancellable = prop.listen { changed =>
             if (changed.doubleValue() != v) set(v)
           }
-          RichFuture.timeout(500.millis).onComplete { _ ⇒
+          RichFuture.timeout(500.millis).onComplete { _ =>
             cancellable.cancel()
           }(CoreSystem.system.dispatcher)
         }

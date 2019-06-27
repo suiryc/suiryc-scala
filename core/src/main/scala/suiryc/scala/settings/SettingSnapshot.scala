@@ -39,10 +39,10 @@ trait SettingSnapshot[A] extends Snapshot {
   protected var defaultValue: A = originalValue
 
   /** Code to execute upon actual value change (side-effect). */
-  protected var onChange: Option[A ⇒ Unit] = None
+  protected var onChange: Option[A => Unit] = None
 
   /** Code to execute to refresh draft value (from external input). */
-  protected var onRefreshDraft: Option[() ⇒ A] = None
+  protected var onRefreshDraft: Option[() => A] = None
 
   /** Draft value (prepared to apply value change). */
   val draft = new SimpleObjectProperty[A](originalValue)
@@ -70,14 +70,14 @@ trait SettingSnapshot[A] extends Snapshot {
   }
 
   /** Sets code to execute upon actual value change. */
-  def setOnChange(f: A ⇒ Unit): this.type = {
+  def setOnChange(f: A => Unit): this.type = {
     onChange = Some(f)
     this
   }
 
   /** Sets code to execute to refresh draft value (form external input). */
-  def setOnRefreshDraft(f: ⇒ A): this.type = {
-    onRefreshDraft = Some(() ⇒ f)
+  def setOnRefreshDraft(f: => A): this.type = {
+    onRefreshDraft = Some(() => f)
     this
   }
 
@@ -120,7 +120,7 @@ trait SettingSnapshot[A] extends Snapshot {
   }
 
   /** Refreshes draft value. */
-  override def refreshDraft(): Unit = onRefreshDraft.foreach(f ⇒ draft.set(f()))
+  override def refreshDraft(): Unit = onRefreshDraft.foreach(f => draft.set(f()))
 
   /**
    * Sets draft to original or default value.
@@ -158,8 +158,8 @@ object SettingSnapshot {
       override protected def getValue: Option[A] = setting.opt
       override protected def setValue(v: Option[A]): Unit = {
         v match {
-          case Some(a) ⇒ setting.set(a)
-          case None ⇒ setting.reset()
+          case Some(a) => setting.set(a)
+          case None => setting.reset()
         }
       }
     }
@@ -224,7 +224,7 @@ class Snapshots[A <: Snapshot] extends Snapshot {
   def add(others: Seq[A]): Unit = snapshots ++= others.toList
 
   /** Adds setting snapshots. (vararg variant) */
-  def add(others: A*)(implicit d: DummyImplicit): Unit = add(others)
+  def add(others: A*)(implicit d: DummyImplicit): Unit = add(others.toSeq)
 
   /** Gets whether any snapshot changed. */
   override def changed(): Boolean = snapshots.exists(_.changed())
@@ -241,7 +241,7 @@ class Snapshots[A <: Snapshot] extends Snapshot {
     snapshots.exists(_.isDraftChanged(original, refreshed))
 
   /** Refreshes, applies drafts values and returns whether any was changed. */
-  override def applyDraft(): Boolean = snapshots.foldLeft(false) { (changed, snapshot) ⇒
+  override def applyDraft(): Boolean = snapshots.foldLeft(false) { (changed, snapshot) =>
     // Note: always apply draft, then merge 'changed' result
     snapshot.applyDraft() || changed
   }

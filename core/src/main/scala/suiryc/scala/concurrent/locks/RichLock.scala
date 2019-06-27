@@ -9,7 +9,7 @@ import java.util.concurrent.locks.Lock
  */
 class RichLock(val underlying: Lock) extends AnyVal {
 
-  def withLock[A](f: ⇒ A): A = {
+  def withLock[A](f: => A): A = {
     underlying.lock()
     try {
       f

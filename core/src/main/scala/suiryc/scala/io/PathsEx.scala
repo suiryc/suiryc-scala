@@ -28,7 +28,7 @@ object PathsEx {
   /** Gets 'atomic' name (filename without extension). */
   def atomicName(name: String): String = {
     val parts = filename(name).split('.')
-    if (parts.length > 1) parts.view(0, parts.length - 1).mkString(".")
+    if (parts.length > 1) parts.view.slice(0, parts.length - 1).mkString(".")
     else parts.head
   }
 
@@ -161,7 +161,7 @@ object PathsEx {
       } else if (isFile) {
         val (base, ext) = path.toFile.baseAndExt
         val extOpt = Some(ext).filterNot(_.isEmpty)
-        path.resolveSibling(s"$base ($n)${extOpt.map(v ⇒ s".$v").getOrElse("")}")
+        path.resolveSibling(s"$base ($n)${extOpt.map(v => s".$v").getOrElse("")}")
       } else {
         val name = path.name
         path.resolveSibling(s"$name ($n)")

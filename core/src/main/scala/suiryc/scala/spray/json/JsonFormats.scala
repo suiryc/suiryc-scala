@@ -25,14 +25,14 @@ trait JsonFormats {
     def write(uuid: UUID): JsValue = JsString(uuid.toString)
 
     def read(value: JsValue): UUID = value match {
-      case JsString(uuid) ⇒
+      case JsString(uuid) =>
         try {
           UUID.fromString(uuid)
         } catch {
-          case ex: Exception ⇒ deserializationError(s"Invalid UUID format: $uuid", ex)
+          case ex: Exception => deserializationError(s"Invalid UUID format: $uuid", ex)
         }
 
-      case _ ⇒ deserializationError(s"Expected UUID as JsString. Got $value")
+      case _ => deserializationError(s"Expected UUID as JsString. Got $value")
     }
 
   }
@@ -43,14 +43,14 @@ trait JsonFormats {
       JsString(uri.toString)
 
     def read(value: JsValue): URI = value match {
-      case JsString(uri) ⇒
+      case JsString(uri) =>
         try {
           new URI(uri)
         } catch {
-          case ex: Exception ⇒ deserializationError(s"Invalid URI format: $uri", ex)
+          case ex: Exception => deserializationError(s"Invalid URI format: $uri", ex)
         }
 
-      case _ ⇒ deserializationError(s"Expected URI as JsString. Got: $value")
+      case _ => deserializationError(s"Expected URI as JsString. Got: $value")
     }
 
   }
@@ -61,14 +61,14 @@ trait JsonFormats {
       JsString(path.toString)
 
     def read(value: JsValue): Path = value match {
-      case JsString(path) ⇒
+      case JsString(path) =>
         try {
           Paths.get(path)
         } catch {
-          case ex: Exception ⇒ deserializationError(s"Invalid Path format: $path", ex)
+          case ex: Exception => deserializationError(s"Invalid Path format: $path", ex)
         }
 
-      case _ ⇒ deserializationError(s"Expected URI as JsString. Got: $value")
+      case _ => deserializationError(s"Expected URI as JsString. Got: $value")
     }
 
   }
@@ -80,14 +80,14 @@ trait JsonFormats {
     def write(date: LocalDate): JsValue = JsString(date.toString)
 
     def read(value: JsValue): LocalDate = value match {
-      case JsString(dateS) ⇒
+      case JsString(dateS) =>
         try {
           LocalDate.parse(dateS)
         } catch {
-          case ex: Exception ⇒ deserializationError(s"Invalid LocalDate format: $dateS", ex)
+          case ex: Exception => deserializationError(s"Invalid LocalDate format: $dateS", ex)
         }
 
-      case _ ⇒ deserializationError(s"Expected LocalDate as JsString. Got $value")
+      case _ => deserializationError(s"Expected LocalDate as JsString. Got $value")
     }
 
   }
@@ -107,14 +107,14 @@ trait JsonFormats {
     def write(date: Date): JsValue = JsString(formatter.format(date.toInstant))
 
     def read(value: JsValue): Date = value match {
-      case JsString(dateS) ⇒
+      case JsString(dateS) =>
         try {
           Date.from(Instant.from(formatter.parse(dateS)))
         } catch {
-          case ex: Exception ⇒ deserializationError(s"Invalid Date format: $dateS", ex)
+          case ex: Exception => deserializationError(s"Invalid Date format: $dateS", ex)
         }
 
-      case _ ⇒ deserializationError(s"Expected Date as JsString. Got $value")
+      case _ => deserializationError(s"Expected Date as JsString. Got $value")
     }
 
     // ISO date formatter.

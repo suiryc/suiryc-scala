@@ -34,7 +34,7 @@ object StagePersistentView {
     if (persist) {
       // Wrap current onCloseRequest handler and prepend persistence.
       val onCloseRequest = Option(onCloseRequestProperty.get)
-      onCloseRequestProperty.set { event ⇒
+      onCloseRequestProperty.set { event =>
         view.persistView()
         onCloseRequest.foreach(_.handle(event))
       }
@@ -45,7 +45,7 @@ object StagePersistentView {
       if (showingProperty.get) {
         view.restoreView()
       } else {
-        showingProperty.listen2 { (cancellable, showing) ⇒
+        showingProperty.listen2 { (cancellable, showing) =>
           if (showing) {
             cancellable.cancel()
             view.restoreView()
@@ -84,7 +84,7 @@ abstract class StageLocationPersistentView(
   protected def restoreViewOnStageReady(): Unit = {
     // Restore stage location
     if (setMinimumDimensions) Stages.setMinimumDimensions(stage)
-    stageLocation.opt.foreach { loc ⇒
+    stageLocation.opt.foreach { loc =>
       Stages.setLocation(stage, loc, setSize = setSize)
     }
   }

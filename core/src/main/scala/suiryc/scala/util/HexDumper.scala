@@ -2,7 +2,7 @@ package suiryc.scala.util
 
 import java.io._
 import java.nio.ByteBuffer
-import java.nio.charset.Charset
+import java.nio.charset.{Charset, CharsetDecoder}
 import suiryc.scala.io.FilesEx
 import suiryc.scala.RichEnumeration
 
@@ -58,19 +58,20 @@ class HexDumper(settings: HexDumper.Settings) {
 
   import HexDumper._
 
+  // scala 2.13: scala.collection.IndexedSeqView[Byte]
   protected type BytesView = scala.collection.IterableView[Byte, Array[Byte]]
 
-  protected val decoder = settings.charset.newDecoder().replaceWith(".")
+  protected val decoder: CharsetDecoder = settings.charset.newDecoder().replaceWith(".")
 
   /** How many bytes per section in hexadecimal view. */
-  protected val hexSectionBytes = HexDumper.hexSectionBytes(settings.hexViewMode)
+  protected val hexSectionBytes: Int = HexDumper.hexSectionBytes(settings.hexViewMode)
 
   /** How many bytes in the last hexadecimal section. */
-  protected val hexLastSectionBytes =
+  protected val hexLastSectionBytes: Int =
     ((settings.viewBytes - 1) % hexSectionBytes) + 1
 
   /** How many hexadecimal sections. */
-  protected val hexSectionCount =
+  protected val hexSectionCount: Int =
     (settings.viewBytes + hexSectionBytes - 1) / hexSectionBytes
 
   protected def computeHexSectionSize(bytes: Int): Int =
@@ -104,12 +105,12 @@ class HexDumper(settings: HexDumper.Settings) {
   protected var bufferLength = 0
 
   /** Padding. */
-  protected def ensureLength(str: String, len: Int) =
+  protected def ensureLength(str: String, len: Int): String =
     if (str.length >= len) str
     else str + " " * (len - str.length)
 
   /** Produces the hexadecimal representation. */
-  protected def processHexSection(section: BytesView) = {
+  protected def processHexSection(section: BytesView): String = {
     val bytes = section.map("%02X".format(_))
     settings.hexViewMode match {
       case HexadecimalViewMode.Large   => bytes.mkString(" ")
@@ -135,7 +136,7 @@ class HexDumper(settings: HexDumper.Settings) {
       val sectionSize =
         if (index == hexSectionCount - 1) hexLastSectionSize
         else hexSectionSize
-      (data.view(from, until), sectionSize)
+      (data.view.slice(from, until), sectionSize)
     }
 
     sectionsWithSize.foldLeft(0) { case (index, (section, sectionSize)) =>
@@ -149,10 +150,10 @@ class HexDumper(settings: HexDumper.Settings) {
   /** Processes ASCII view. */
   protected def processAscii(data: Array[Byte], dataOffset: Int, dataLength: Int): Unit = {
     // Filter ISO-8859 non-visible characters
-    val filtered = data.view(dataOffset, dataOffset + dataLength).map { c =>
+    val filtered = data.view.slice(dataOffset, dataOffset + dataLength).map { c =>
       if (((c >= 0x00) && (c <= 0x1F)) || (c == 0x7F) || ((c >= 0x80.toByte) && (c <= 0x9F.toByte))) 0x2E.asInstanceOf[Byte]
       else c
-    }.force
+    }.toArray
     // Decode to ASCII
     val asciiSectionsWithSize = settings.asciiViewMode match {
       case AsciiViewMode.Undivided => List((filtered, settings.viewBytes))
@@ -170,7 +171,7 @@ class HexDumper(settings: HexDumper.Settings) {
             if (index == asciiSectionCount - 1) asciiLastSectionSize
             else asciiSectionSize
           (section, sectionSize)
-        }
+        }.toSeq
     }
     val ascii = asciiSectionsWithSize.map { case (section, sectionSize) =>
       ensureLength(decoder.decode(ByteBuffer.wrap(section)).toString, sectionSize)

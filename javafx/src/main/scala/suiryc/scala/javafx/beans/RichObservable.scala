@@ -30,7 +30,7 @@ class RichObservable(val underlying: Observable) extends AnyVal {
    * @param fn listening function
    * @return subscription of listening code
    */
-  def listen2(fn: (Cancellable, Observable) ⇒ Unit): Cancellable = {
+  def listen2(fn: (Cancellable, Observable) => Unit): Cancellable = {
     // We need to create a subscription to give to the listening code. To do so
     // we need to create a listener, which is based on the listening code and
     // thus needs the subscription.
@@ -43,7 +43,7 @@ class RichObservable(val underlying: Observable) extends AnyVal {
         super.cancel()
       }
     }
-    val listener: InvalidationListener = o ⇒ fn(subscription, o)
+    val listener: InvalidationListener = o => fn(subscription, o)
 
     // Note: it is important to set the listener before listening to value
     // changes.
@@ -59,8 +59,8 @@ class RichObservable(val underlying: Observable) extends AnyVal {
    * @param fn listening function
    * @return subscription of listening code
    */
-  def listen(fn: Observable ⇒ Unit): Cancellable = {
-    val listener: InvalidationListener = o ⇒ fn(o)
+  def listen(fn: Observable => Unit): Cancellable = {
+    val listener: InvalidationListener = o => fn(o)
     underlying.addListener(listener)
 
     new Cancellable {
@@ -90,14 +90,14 @@ object RichObservable {
    * @param fn listening code
    * @return subscription
    */
-  def listen2(observables: Seq[Observable])(fn: Cancellable ⇒ Unit): Cancellable = {
+  def listen2(observables: Seq[Observable])(fn: Cancellable => Unit): Cancellable = {
     val subscription = new CancellableListener {
       override def cancel() {
         observables.foreach(_.removeListener(listener))
         super.cancel()
       }
     }
-    val listener: InvalidationListener = _ ⇒ fn(subscription)
+    val listener: InvalidationListener = _ => fn(subscription)
 
     subscription.listener = listener
     observables.foreach(_.addListener(listener))
@@ -110,8 +110,8 @@ object RichObservable {
    *
    * vararg variant.
    */
-  def listen2(observables: Observable*)(fn: Cancellable ⇒ Unit)(implicit d: DummyImplicit): Cancellable = {
-    listen2(observables)(fn)
+  def listen2(observables: Observable*)(fn: Cancellable => Unit)(implicit d: DummyImplicit): Cancellable = {
+    listen2(observables.toSeq)(fn)
   }
 
   /**
@@ -123,8 +123,8 @@ object RichObservable {
    * @param fn listening code
    * @return subscription
    */
-  def listen(observables: Seq[Observable])(fn: ⇒ Unit): Cancellable = {
-    val listener: InvalidationListener = _ ⇒ fn
+  def listen(observables: Seq[Observable])(fn: => Unit): Cancellable = {
+    val listener: InvalidationListener = _ => fn
     observables.foreach(_.addListener(listener))
 
     new Cancellable {
@@ -140,8 +140,8 @@ object RichObservable {
    *
    * vararg variant.
    */
-  def listen(observables: Observable*)(fn: ⇒ Unit)(implicit d: DummyImplicit): Cancellable = {
-    listen(observables)(fn)
+  def listen(observables: Observable*)(fn: => Unit)(implicit d: DummyImplicit): Cancellable = {
+    listen(observables.toSeq)(fn)
   }
 
   /** Dummy subscription used for auto subscription. */
