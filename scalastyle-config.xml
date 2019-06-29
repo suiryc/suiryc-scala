@@ -117,6 +117,5 @@
  <check level="warning" class="org.scalastyle.scalariform.WhileChecker" enabled="true"></check>
  <check level="warning" class="org.scalastyle.scalariform.VarFieldChecker" enabled="false"></check>
  <check level="warning" class="org.scalastyle.scalariform.VarLocalChecker" enabled="false"></check>
- <check level="warning" class="org.scalastyle.scalariform.NoWhitespaceBeforeLeftBracketChecker" enabled="true"/>
  <check level="warning" class="org.scalastyle.scalariform.NoWhitespaceBeforeRightBracketChecker" enabled="true"/>
 </scalastyle>
