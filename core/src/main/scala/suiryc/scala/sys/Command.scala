@@ -1,7 +1,7 @@
 package suiryc.scala.sys
 
 import com.typesafe.scalalogging.StrictLogging
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, IOException, InputStream, OutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, InputStream, IOException, OutputStream}
 import scala.collection.mutable
 import scala.sys.process
 import scala.sys.process.{BasicIO, Process, ProcessIO}
@@ -44,11 +44,11 @@ object Command
   /** Command output type. */
   object OutputType extends Enumeration {
     /** stdout output */
-    val stdout = Value
+    val stdout: OutputType.Value = Value
     /** stderr output */
-    val stderr = Value
+    val stderr: OutputType.Value = Value
     /** stdout and stderr output */
-    val both = Value
+    val both: OutputType.Value = Value
   }
 
   /** Command input/output stream. */
@@ -153,18 +153,17 @@ object Command
    */
   // scalastyle:off method.length parameter.number
   def execute(
-      cmd: Seq[String],
-      workingDirectory: Option[File] = None,
-      envf: Option[java.util.Map[String, String] => Unit] = None,
-      stdinSource: Option[Stream[InputStream]] = fromStdin,
-      stdoutSink: Iterable[Stream[OutputStream]] = None,
-      captureStdout: Boolean = true,
-      stderrSink: Iterable[Stream[OutputStream]] = None,
-      captureStderr: Boolean = true,
-      trim: Boolean = true,
-      skipResult: Boolean = true
-    ): CommandResult =
-  {
+    cmd: Seq[String],
+    workingDirectory: Option[File] = None,
+    envf: Option[java.util.Map[String, String] => Unit] = None,
+    stdinSource: Option[Stream[InputStream]] = fromStdin,
+    stdoutSink: Iterable[Stream[OutputStream]] = None,
+    captureStdout: Boolean = true,
+    stderrSink: Iterable[Stream[OutputStream]] = None,
+    captureStderr: Boolean = true,
+    trim: Boolean = true,
+    skipResult: Boolean = true
+  ): CommandResult = {
     def _filterOutput(
       input: InputStream,
       outputs: Iterable[Stream[OutputStream]]

@@ -18,13 +18,12 @@ trait ThresholdLogWriter
 
   protected var threshold: Level = Level.TRACE
 
-  def setThreshold(level: Level) {
+  def setThreshold(level: Level): Unit = {
     threshold = level
   }
 
-  abstract override def write(event: ILoggingEvent) {
-    if (event.getLevel.isGreaterOrEqual(threshold))
-      super.write(event)
+  abstract override def write(event: ILoggingEvent): Unit = {
+    if (event.getLevel.isGreaterOrEqual(threshold)) super.write(event)
   }
 
 }
@@ -39,13 +38,13 @@ trait LogLinePatternWriter
   patternLayout.setContext(Loggers.loggerContext)
   patternLayout.start()
 
-  def setPattern(pattern: String) {
+  def setPattern(pattern: String): Unit = {
     patternLayout.stop()
     patternLayout.setPattern(pattern)
     patternLayout.start()
   }
 
-  override def write(event: ILoggingEvent) {
+  override def write(event: ILoggingEvent): Unit = {
     write(patternLayout.doLayout(event).stripLineEnd)
   }
 

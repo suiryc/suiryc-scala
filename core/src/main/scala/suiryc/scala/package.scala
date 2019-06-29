@@ -15,7 +15,7 @@ package object scala {
       case _ => None
     }
 
-    def byName(s: String): A#Value = withAliases.map(v => v.byName(s):A#Value).getOrElse {
+    def byName(s: String): A#Value = withAliases.map(v => v.byName(s): A#Value).getOrElse {
       enum.values.find(_.toString.toLowerCase == s.toLowerCase).getOrElse {
         throw new NoSuchElementException(s"No value found for '$s'")
       }

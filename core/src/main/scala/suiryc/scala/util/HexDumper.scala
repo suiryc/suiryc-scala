@@ -1,10 +1,11 @@
 package suiryc.scala.util
 
+// scalastyle:off non.ascii.character.disallowed
 import java.io._
 import java.nio.ByteBuffer
 import java.nio.charset.{Charset, CharsetDecoder}
-import suiryc.scala.io.FilesEx
 import suiryc.scala.RichEnumeration
+import suiryc.scala.io.FilesEx
 
 /**
  * Hexadecimal data dumper.
@@ -548,17 +549,18 @@ object HexDumper {
   /** Hexadecimal view modes. */
   object HexadecimalViewMode extends Enumeration {
     /** Large: one space every byte, one more space every 8 bytes. */
-    val Large = Value
+    val Large: HexadecimalViewMode.Value = Value
     /** Compact: one space every 2 bytes, one more space every 16 bytes. */
-    val Compact = Value
+    val Compact: HexadecimalViewMode.Value = Value
   }
 
   /** ASCII view modes. */
   object AsciiViewMode extends Enumeration {
     /** Undivided: whole sequence shown. */
-    val Undivided = Value
+    val Undivided: AsciiViewMode.Value = Value
     /** Divided: '|' separation every 16 bytes. */
-    val Divided = Value
+    val Divided: AsciiViewMode.Value = Value
   }
 
 }
+// scalastyle:on non.ascii.character.disallowed

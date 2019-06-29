@@ -1,20 +1,11 @@
 package suiryc.scala.javafx.concurrent
 
-import akka.dispatch.{
-  DispatcherPrerequisites,
-  ExecutorServiceConfigurator,
-  ExecutorServiceFactory
-}
+import akka.dispatch.{DispatcherPrerequisites, ExecutorServiceConfigurator, ExecutorServiceFactory}
 import com.typesafe.config.Config
 import java.util.{Collections, List => jList}
-import java.util.concurrent.{
-  AbstractExecutorService,
-  ExecutorService,
-  ThreadFactory,
-  TimeUnit
-}
+import java.util.concurrent.{AbstractExecutorService, ExecutorService, ThreadFactory, TimeUnit}
 import javafx.application.Platform
-import scala.concurrent.{ExecutionContextExecutor, ExecutionContext}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 
 // See:

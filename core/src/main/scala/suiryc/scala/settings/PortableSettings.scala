@@ -20,7 +20,7 @@ import suiryc.scala.io.PathsEx
 class PortableSettings(filepath: Path, private var _config: Config, val reference: Config) {
 
   /** The standalone config (without reference fallback). */
-  private var _configStandalone: Config = updateStandalone(_config)
+  private var configStandalone: Config = updateStandalone(_config)
 
   /** Whether config was already backuped. */
   private var backupDone = false
@@ -29,10 +29,10 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
   private var needSave = Option.empty[Boolean]
 
   private def updateStandalone(c: Config): Config = {
-    _configStandalone = c
+    configStandalone = c
     // We always keep reference as fallback
-    _config = _configStandalone.withFallback(reference).resolve()
-    _configStandalone
+    _config = configStandalone.withFallback(reference).resolve()
+    configStandalone
   }
 
   /** The underlying config. */
@@ -48,7 +48,7 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
       val actual =
         if (reference.hasPathOrNull(path)) value.withOrigin(getValue(reference, path).origin)
         else value
-      updateStandalone(_configStandalone.withValue(path, actual))
+      updateStandalone(configStandalone.withValue(path, actual))
       save()
     }
   }
@@ -56,9 +56,9 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
   /** Removes a path (but still fallbacks to the reference). */
   def withoutPath(path: String): Unit = {
     // Do nothing if path was already absent
-    if (_configStandalone.hasPathOrNull(path)) {
+    if (configStandalone.hasPathOrNull(path)) {
       backup()
-      updateStandalone(_configStandalone.withoutPath(path))
+      updateStandalone(configStandalone.withoutPath(path))
       save()
     }
   }
@@ -100,7 +100,7 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
 
   /** Actual config saving (given file path). */
   protected def save(path: Path, backup: Boolean): Unit = {
-    clean(_configStandalone) match {
+    clean(configStandalone) match {
       case Some(cleanedConfig) =>
         val renderOptions = ConfigRenderOptions.defaults.setOriginComments(false).setJson(false)
         Files.write(path, cleanedConfig.root.render(renderOptions).getBytes(StandardCharsets.UTF_8))
@@ -169,7 +169,7 @@ class PortableSettings(filepath: Path, private var _config: Config, val referenc
           val key = entry.getKey
           val path2 = path :+ key
           val value = entry.getValue
-          if (value.valueType != ConfigValueType.OBJECT) (entries0 + (ConfigUtil.joinPath(path2:_*) -> value), objs0)
+          if (value.valueType != ConfigValueType.OBJECT) (entries0 + (ConfigUtil.joinPath(path2: _*) -> value), objs0)
           else (entries0, objs0 :+ (path2 -> value.asInstanceOf[ConfigObject]))
         }
         loop(entries2, objs2)

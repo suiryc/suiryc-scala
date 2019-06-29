@@ -17,7 +17,7 @@ trait LineWriter {
 
 
 class ProxyLineWriter(_writers: Seq[LineWriter] = Seq.empty, async: Boolean = false)
- extends LineWriter
+  extends LineWriter
 {
 
   protected var writers: Set[LineWriter] = _writers.toSet

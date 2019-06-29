@@ -4,6 +4,7 @@ import java.nio.file.{Files, Path, Paths}
 import suiryc.scala.io.RichFile._
 
 /** Path (and filename) helpers. */
+// scalastyle:off non.ascii.character.disallowed
 object PathsEx {
 
   /** Gets path (resolves leading '~' as user home). */
@@ -174,3 +175,4 @@ object PathsEx {
   }
 
 }
+// scalastyle:on non.ascii.character.disallowed

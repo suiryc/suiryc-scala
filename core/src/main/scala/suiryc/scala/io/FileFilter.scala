@@ -24,9 +24,9 @@ trait FileFilterOps {
    * other.
    */
   def |(filter: FileFilter): FileFilter =
-    new SimpleFileFilter( file =>
+    new SimpleFileFilter({ file =>
       accept(file) || filter.accept(file)
-    )
+    })
 
   /**
    * Logical AND.
@@ -34,9 +34,9 @@ trait FileFilterOps {
    * other.
    */
   def &(filter: FileFilter): FileFilter =
-    new SimpleFileFilter( file =>
+    new SimpleFileFilter({ file =>
       accept(file) && filter.accept(file)
-    )
+    })
 
   /**
    * Subtraction.
@@ -44,18 +44,18 @@ trait FileFilterOps {
    * the other.
    */
   def -(filter: FileFilter): FileFilter =
-    new SimpleFileFilter( file =>
+    new SimpleFileFilter({ file =>
       accept(file) && !filter.accept(file)
-    )
+    })
 
   /**
    * Negation.
    * Creates a new filter which accepts files that do not match this filter.
    */
   def unary_- : FileFilter =
-    new SimpleFileFilter( file =>
+    new SimpleFileFilter({ file =>
       !accept(file)
-    )
+    })
 
 }
 // scalastyle:on method.name

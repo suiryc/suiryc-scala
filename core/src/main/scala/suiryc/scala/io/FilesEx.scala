@@ -44,9 +44,9 @@ object FilesEx
           val sourceRealPath =
             if (followLinks) sourcePath.getParent.toRealPath().resolve(sourcePath.toFile.getName)
             else sourcePath
-          if (followLinks && !sourceRealPath.startsWith(sourceRoot))
+          if (followLinks && !sourceRealPath.startsWith(sourceRoot)) {
             logger.warn(s"Real path[$sourceRealPath] is outside root path[$sourceRoot], skipping")
-          else {
+          } else {
             val sourceReal = sourceRoot.relativize(sourceRealPath)
             val pathTarget = targetRoot.resolve(sourceReal)
             if (!pathTarget.exists) {
@@ -56,8 +56,7 @@ object FilesEx
               // then copy source to target
               if (Files.isRegularFile(sourceRealPath) || Files.isSymbolicLink(sourceRealPath) || Files.isDirectory(sourceRealPath)) {
                 logger.trace(s"Copying source[$sourceRealPath] to[$pathTarget]")
-                Files.copy(sourceRealPath, pathTarget,
-                  options:_*)
+                Files.copy(sourceRealPath, pathTarget, options: _*)
               } else {
                 logger.warn(s"Real path[$sourceRealPath] is not a regular file/directory, skipping")
               }

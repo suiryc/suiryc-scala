@@ -59,7 +59,7 @@ class Device(val block: Path) {
       v.toInt != 0
     }
 
-  protected[linux] def partitionInfix = {
+  protected[linux] def partitionInfix: String = {
     val sysName = block.getFileName.toString
     if (sysName(sysName.length - 1).isDigit) "p"
     else ""
@@ -67,7 +67,7 @@ class Device(val block: Path) {
 
   val partitions: Set[DevicePartition] = {
     val devName = dev.getFileName.toString
-    (block * s"""$devName$partitionInfix[0-9]+""".r).get.map { path =>
+    (block * s"""$devName$partitionInfix[0-9]+""".r).get().map { path =>
       DevicePartition(this, path.getName.substring(devName.length() + partitionInfix.length()).toInt)
     }
   }
@@ -145,21 +145,18 @@ object Device
   def fromPartition(path: Path): Option[Device] = {
     val sysBlock = Paths.get("/sys", "block")
 
-    if (path.startsWith(sysBlock))
+    if (path.startsWith(sysBlock)) {
       Some(Device(path.getParent))
-    else {
+    } else {
       val finder = PathFinder(sysBlock) * AllPassFileFilter * path.getFileName.toString
       finder.get().headOption map(file => Device(file.toPath.getParent))
     }
   }
 
   def apply(block: Path): Device =
-    if (block.getFileName.toString.startsWith("nbd"))
-      new NetworkBlockDevice(block)
-    else if (block.getFileName.toString.startsWith("loop"))
-      new LoopbackDevice(block)
-    else
-      new Device(block)
+    if (block.getFileName.toString.startsWith("nbd")) new NetworkBlockDevice(block)
+    else if (block.getFileName.toString.startsWith("loop")) new LoopbackDevice(block)
+    else new Device(block)
 
   def apply(block: File): Device =
     Device(block.toPath)

@@ -1,6 +1,6 @@
 package suiryc.scala.javafx.scene.control
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import javafx.scene.control.TextArea
 import suiryc.scala.akka.CoreSystem
 import suiryc.scala.io.LineWriter
@@ -23,7 +23,7 @@ class LogArea(
   // (directly follows the formatted message line, without leading newline).
   protected var pattern: String = "%d{HH:mm:ss.SSS} %-5level %logger{24} - %msg%n"
 
-  def setPattern(pattern: String) {
+  def setPattern(pattern: String): Unit = {
     this.pattern = pattern
     msgWriter.setPattern(pattern)
   }
@@ -35,25 +35,25 @@ class LogArea(
   // Note: JavaFX thread CPU usage may reach limit when updating on each change.
   // So limit the refresh rate to 10 times per second.
 
-  protected val system = CoreSystem.system
+  protected val system: ActorSystem = CoreSystem.system
   // Note: we need to give the creator function because the actor is tied to
   // this class instance. So the compiler automagically adds a (first) parameter
   // - which is the reference to the outer class - to any constructor, hence no
   // default constructor available for the type parameter variant of Props.
-  protected val actor = system.actorOf(Props(new LogAreaActor))
+  protected val actor: ActorRef = system.actorOf(Props(new LogAreaActor))
 
   lazy val msgWriter: ThresholdLogLinePatternWriter =
     new LogAreaWriter
 
-  override def write(line: String) {
+  override def write(line: String): Unit = {
     actor ! Write(line)
   }
 
-  def setText(text: String) {
+  def setText(text: String): Unit = {
     actor ! Set(text)
   }
 
-  def clear() {
+  def clear(): Unit = {
     setText("")
   }
 
@@ -74,7 +74,7 @@ class LogArea(
 
     override def receive: Receive = nominal
 
-    protected def setText(s: String) {
+    protected def setText(s: String): Unit = {
       JFXSystem.schedule {
         textArea.setText(s)
       }

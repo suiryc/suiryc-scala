@@ -38,7 +38,7 @@ class RichObservable(val underlying: Observable) extends AnyVal {
     // code, which allows us to create the actual listener. Then we can provide
     // the listener to the dummy subscription.
     val subscription = new CancellableListener {
-      override def cancel() {
+      override def cancel(): Unit = {
         underlying.removeListener(listener)
         super.cancel()
       }
@@ -92,7 +92,7 @@ object RichObservable {
    */
   def listen2(observables: Seq[Observable])(fn: Cancellable => Unit): Cancellable = {
     val subscription = new CancellableListener {
-      override def cancel() {
+      override def cancel(): Unit = {
         observables.foreach(_.removeListener(listener))
         super.cancel()
       }

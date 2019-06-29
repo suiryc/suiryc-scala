@@ -15,12 +15,12 @@ object EitherEx {
       override def apply(): B = right.value
     }
 
-  def apply[A, B](left: Left[A, B], default : => B): EitherEx[A, B] =
+  def apply[A, B](left: Left[A, B], default: => B): EitherEx[A, B] =
     new EitherEx(left) {
       override def apply(): B = default
     }
 
-  def apply[A, B](either: Either[A, B], default : => B): EitherEx[A, B] =
+  def apply[A, B](either: Either[A, B], default: => B): EitherEx[A, B] =
     new EitherEx(either) {
       override def apply(): B = either match {
         case Left(_) =>

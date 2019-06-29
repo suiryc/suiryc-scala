@@ -151,7 +151,7 @@ object BindingsEx {
   {
     new Builder(scheduler) {
       add(target)(f)
-    }.bind(throttle, dependencies:_*)
+    }.bind(throttle, dependencies: _*)
   }
 
   /**
@@ -193,7 +193,7 @@ object BindingsEx {
   {
     new Builder(throttler) {
       add(target)(f)
-    }.bind(throttle, dependencies:_*)
+    }.bind(throttle, dependencies: _*)
   }
 
   /**
@@ -376,24 +376,24 @@ object BindingsEx {
 
   // Simple binding linker from scala to java Boolean
   implicit val booleanLinker: Linker[Boolean, jBoolean] =
-    (f: () => Boolean, dependencies: Seq[Observable]) => Bindings.createBooleanBinding(() => f(), dependencies:_*)
+    (f: () => Boolean, dependencies: Seq[Observable]) => Bindings.createBooleanBinding(() => f(), dependencies: _*)
   // Simple binding linker from scala to java Double
   implicit val doubleLinker: Linker[Double, Number] =
-    (f: () => Double, dependencies: Seq[Observable]) => Bindings.createDoubleBinding(() => f(), dependencies:_*)
+    (f: () => Double, dependencies: Seq[Observable]) => Bindings.createDoubleBinding(() => f(), dependencies: _*)
   // Simple binding linker from scala to java Float
   implicit val floatLinker: Linker[Float, Number] =
-    (f: () => Float, dependencies: Seq[Observable]) => Bindings.createFloatBinding(() => f(), dependencies:_*)
+    (f: () => Float, dependencies: Seq[Observable]) => Bindings.createFloatBinding(() => f(), dependencies: _*)
   // Simple binding linker from scala to java Int
   implicit val integerLinker: Linker[Int, Number] =
-    (f: () => Int, dependencies: Seq[Observable]) => Bindings.createIntegerBinding(() => f(), dependencies:_*)
+    (f: () => Int, dependencies: Seq[Observable]) => Bindings.createIntegerBinding(() => f(), dependencies: _*)
   // Simple binding linker from scala to java Long
   implicit val longLinker: Linker[Long, Number] =
-    (f: () => Long, dependencies: Seq[Observable]) => Bindings.createLongBinding(() => f(), dependencies:_*)
+    (f: () => Long, dependencies: Seq[Observable]) => Bindings.createLongBinding(() => f(), dependencies: _*)
   // Simple binding linker for string values
   implicit val stringLinker: Linker[String, String] =
-    (f: () => String, dependencies: Seq[Observable]) => Bindings.createStringBinding(() => f(), dependencies:_*)
+    (f: () => String, dependencies: Seq[Observable]) => Bindings.createStringBinding(() => f(), dependencies: _*)
   // Simple binding linker for object values
   implicit def objectLinker[A <: B, B]: Linker[A, B] =
-    (f: () => A, dependencies: Seq[Observable]) => Bindings.createObjectBinding[B](() => f(), dependencies:_*)
+    (f: () => A, dependencies: Seq[Observable]) => Bindings.createObjectBinding[B](() => f(), dependencies: _*)
 
 }

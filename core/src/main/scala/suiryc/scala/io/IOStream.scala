@@ -67,7 +67,7 @@ object IOStream {
     }
 
     val size = stream(len).map { count =>
-      output.write(buffer, 0 , count)
+      output.write(buffer, 0, count)
       cb(buffer, 0, count)
       count.longValue
     }.sum

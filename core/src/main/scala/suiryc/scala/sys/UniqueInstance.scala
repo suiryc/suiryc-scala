@@ -127,9 +127,9 @@ object UniqueInstance extends LazyLogging {
   private val SERVER_BACKLOG = 10
 
   /** Whether we are stopping. */
-  @volatile private var _stopping = false
+  @volatile private var stopping = false
   /** The local socket server (if any). */
-  @volatile private var _server = Option.empty[ServerSocket]
+  @volatile private var server = Option.empty[ServerSocket]
 
   /**
    * Starts the instance.
@@ -171,12 +171,12 @@ object UniqueInstance extends LazyLogging {
       instanceLockOpt match {
         case Some(instanceLock) =>
           // We are the first instance to run, holding the lock
-          logger.debug(s"Unique instance starting")
+          logger.debug("Unique instance starting")
           startUniqueInstance(lockPath, channel, dataLock, instanceLock, f, args, ready, streams)
 
         case None =>
           // Another instance is supposedly running
-          logger.debug(s"Unique instance already running, delegating command execution")
+          logger.debug("Unique instance already running, delegating command execution")
           startOtherInstance(channel, dataLock, args, streams)
       }
     } catch {
@@ -200,8 +200,8 @@ object UniqueInstance extends LazyLogging {
 
   /** Stops this unique instance. */
   def stop(): Unit = {
-    _stopping = true
-    _server.foreach(_.close())
+    stopping = true
+    server.foreach(_.close())
   }
 
   /** Starts the (first) unique instance. */
@@ -222,13 +222,13 @@ object UniqueInstance extends LazyLogging {
     }
 
     // Start a local server, and write the port in the lock file
-    val server = new ServerSocket(0, SERVER_BACKLOG, InetAddress.getLoopbackAddress)
-    _server = Some(server)
+    val serverSocket = new ServerSocket(0, SERVER_BACKLOG, InetAddress.getLoopbackAddress)
+    server = Some(serverSocket)
     val bb = ByteBuffer.allocate(INT_SIZE)
-    bb.putInt(server.getLocalPort)
+    bb.putInt(serverSocket.getLocalPort)
     bb.rewind()
     if (channel.write(bb, 0) != bb.limit()) {
-      throw new Exception(s"Failed to write local port in lock file")
+      throw new Exception("Failed to write local port in lock file")
     }
     channel.force(false)
     dataLock.release()
@@ -244,7 +244,7 @@ object UniqueInstance extends LazyLogging {
           case Success(result) => handleResultOutput(result, streams)
           case Failure(ex) => promise.tryFailure(ex)
         }.onComplete { _ =>
-          new ServerHandler(server, f).start()
+          new ServerHandler(serverSocket, f).start()
           promise.trySuccess(())
         }
 
@@ -303,10 +303,10 @@ object UniqueInstance extends LazyLogging {
   /** Prints result output if any. */
   private def handleResultOutput(result: CommandResult, streams: SystemStreams): Unit = {
     result.output.foreach { s =>
-      // scalastyle:off regex
+      // scalastyle:off token
       if (result.code != 0) streams.err.println(s)
       else streams.out.println(s)
-      // scalastyle:on regex
+      // scalastyle:on token
     }
   }
 
@@ -348,7 +348,7 @@ object UniqueInstance extends LazyLogging {
         val socketOpt = try {
           // Note: IOException will be thrown upon 'accept' if underlying socket
           // is closed.
-          if (!_stopping) Some(server.accept())
+          if (!stopping) Some(server.accept())
           else None
         } catch {
           case _: Exception => None
@@ -360,7 +360,7 @@ object UniqueInstance extends LazyLogging {
             loop()
 
           case None =>
-            if (!_stopping) loop()
+            if (!stopping) loop()
         }
       }
 
@@ -402,7 +402,7 @@ object UniqueInstance extends LazyLogging {
 
     private def execute(args: Array[String]): CommandResult = {
       try {
-        if (!_stopping) Await.result(f(args), Duration.Inf) else CommandResult(CODE_ERROR, Some("Program is stopping"))
+        if (!stopping) Await.result(f(args), Duration.Inf) else CommandResult(CODE_ERROR, Some("Program is stopping"))
       } catch {
         case ex: Exception =>
           val message = s"Failed to process arguments: ${ex.getMessage}"

@@ -22,10 +22,9 @@ object Hash {
     require(hex != null)
     // scalastyle:on null
 
-    val actual: String = if (hex.length % 2 == 1)
-      "0" + hex
-    else
-      hex
+    val actual: String =
+      if (hex.length % 2 == 1) "0" + hex
+      else hex
 
     // scalastyle:off magic.number
     Hash(actual.grouped(2).map(Integer.parseInt(_, 16).asInstanceOf[Byte]).toArray)

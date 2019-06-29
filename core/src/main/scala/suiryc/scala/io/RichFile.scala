@@ -89,10 +89,11 @@ final class RichFile(val asFile: File) extends AnyVal
 
         case head :: tail =>
           val children =
-            if (recursive && head.isDirectory && !Files.isSymbolicLink(head.toPath))
+            if (recursive && head.isDirectory && !Files.isSymbolicLink(head.toPath)) {
               misc.Util.wrapNull(head.listFiles).toList
-            else
+            } else {
               Nil
+            }
           val (newRest, newSuccess) =
             if (onlyChildren) (rest, success)
             else if (children.isEmpty) {

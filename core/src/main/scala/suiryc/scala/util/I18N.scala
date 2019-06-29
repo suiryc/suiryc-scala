@@ -1,9 +1,9 @@
 package suiryc.scala.util
 
 import com.typesafe.scalalogging.StrictLogging
-import java.nio.file.Paths
 import java.io.File
 import java.net.JarURLConnection
+import java.nio.file.Paths
 import java.util.{Locale, ResourceBundle}
 import java.util.zip.ZipFile
 import suiryc.scala.io.NameFilter._

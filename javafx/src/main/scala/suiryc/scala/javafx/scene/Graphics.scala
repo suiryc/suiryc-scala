@@ -2,9 +2,9 @@ package suiryc.scala.javafx.scene
 
 import javafx.css.Styleable
 import javafx.geometry._
-import javafx.scene.image.{Image, WritableImage}
 import javafx.scene._
 import javafx.scene.control._
+import javafx.scene.image.{Image, WritableImage}
 import javafx.scene.layout._
 import javafx.scene.paint.{Color, Paint}
 import javafx.scene.shape.SVGPath
@@ -117,7 +117,7 @@ object Graphics {
     val group = new Group
     group.getStyleClass.add(CLASS_SVG_GROUP)
     params.groupStyle.foreach(group.setStyle)
-    group.getChildren.addAll(path:_*)
+    group.getChildren.addAll(path: _*)
     val groupBounds: Bounds = group.getBoundsInLocal
 
     private def paramOrElse(v: Double, fb: Option[Double]) = if (v > 0) Some(v) else fb
@@ -286,7 +286,7 @@ object Graphics {
 
     // Scaling applied before translation (taken into account in computations).
     private val transforms = scaleOpt.toList ::: translateOpt.toList
-    group.getTransforms.setAll(transforms:_*)
+    group.getTransforms.setAll(transforms: _*)
 
     // The target bounds.
     val bounds = new BoundingBox(0.0, 0.0, paneWidth, paneHeight)
@@ -324,7 +324,7 @@ object Graphics {
           style = Option(path.getStyle)
         )
       }
-      SVGGroup(params, c:_*)
+      SVGGroup(params, c: _*)
     }
 
   }
@@ -479,9 +479,9 @@ object Graphics {
         val element = head.element
         val level = head.level
         val tail = elements.tail
-        // scalastyle:off regex
+        // scalastyle:off token
         println(s"${"  " * level}$element")
-        // scalastyle:on regex
+        // scalastyle:on token
         val extra: List[Styleable] = element match {
           case menuBar: MenuBar         => menuBar.getMenus.asScala.toList
           case menu: Menu               => menu.getItems.asScala.toList

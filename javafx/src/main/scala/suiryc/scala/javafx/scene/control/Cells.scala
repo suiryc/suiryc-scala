@@ -18,7 +18,7 @@ trait CellEx[A] extends Cell[A] {
   // scalastyle:on null
 
   // scalastyle:off null
-  override protected def updateItem(item: A, empty: Boolean) {
+  override protected def updateItem(item: A, empty: Boolean): Unit = {
     super.updateItem(item, empty)
     // Notes:
     // Changing the text will re-set the cell children (text and graphic).

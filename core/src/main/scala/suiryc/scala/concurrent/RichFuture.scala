@@ -1,6 +1,6 @@
 package suiryc.scala.concurrent
 
-import java.util.concurrent.{ThreadFactory, Executors, TimeUnit}
+import java.util.concurrent.{Executors, ThreadFactory, TimeUnit}
 import scala.concurrent.{ExecutionContext, Future, Promise, TimeoutException}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}

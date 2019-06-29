@@ -34,7 +34,7 @@ class JFXLauncher[A <: JFXApplication : ClassTag] {
   def newApplication: A = classTag[A].runtimeClass.asInstanceOf[Class[A]].getConstructor().newInstance()
 
   def main(args: Array[String]): Unit = {
-    newApplication.launch(args:_*)
+    newApplication.launch(args: _*)
   }
 
   def shutdown(stage: Stage): Unit = {
@@ -56,7 +56,7 @@ trait JFXApplication extends Application {
 
   def launch(args: String*): Unit = {
     // 'launch' does not return until application is closed
-    Application.launch(getClass, args:_*)
+    Application.launch(getClass, args: _*)
   }
 
 }

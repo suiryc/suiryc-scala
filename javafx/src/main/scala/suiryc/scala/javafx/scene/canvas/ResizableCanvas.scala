@@ -44,28 +44,28 @@ class ResizableCanvas extends Canvas {
 
   private var _minWidth: Double = Region.USE_COMPUTED_SIZE
   def getMinWidth: Double =  _minWidth
-  def setMinWidth(value: Double) {
+  def setMinWidth(value: Double): Unit = {
     _minWidth = value
     requestParentLayout()
   }
 
   private var _minHeight: Double = Region.USE_COMPUTED_SIZE
   def getMinHeight: Double =  _minHeight
-  def setMinHeight(value: Double) {
+  def setMinHeight(value: Double): Unit = {
     _minHeight = value
     requestParentLayout()
   }
 
   private var _maxWidth: Double = Region.USE_COMPUTED_SIZE
   def getMaxWidth: Double =  _maxWidth
-  def setMaxWidth(value: Double) {
+  def setMaxWidth(value: Double): Unit = {
     _maxWidth = value
     requestParentLayout()
   }
 
   private var _maxHeight: Double = Region.USE_COMPUTED_SIZE
   def getMaxHeight: Double =  _maxHeight
-  def setMaxHeight(value: Double) {
+  def setMaxHeight(value: Double): Unit = {
     _maxHeight = value
     requestParentLayout()
   }
@@ -89,7 +89,7 @@ class ResizableCanvas extends Canvas {
     }
   }
 
-  @inline protected def requestParentLayout() {
+  @inline protected def requestParentLayout(): Unit = {
     val parent = getParent
     // scalastyle:off null
     if (parent != null) parent.requestLayout()

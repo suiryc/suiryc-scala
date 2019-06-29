@@ -98,7 +98,7 @@ object JFXSystem
   def newJFXActor(props: Props, name: String): ActorRef =
     system.actorOf(props.withDispatcher("javafx.dispatcher"), name)
 
-  @inline protected def reentrant() {
+  @inline protected def reentrant(): Unit = {
     if (warnReentrant) {
       val throwable = new Exception("Already using JavaFX thread")
       logger.warn("Caller delegating action to JavaFX thread while already using it",

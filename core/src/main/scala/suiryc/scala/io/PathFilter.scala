@@ -48,19 +48,21 @@ class ChildrenPathFilter(
   override def search(base: File): Set[File] =
     if (Files.isDirectory(base.toPath)) {
       searchDescendants(base, maxDepth.getOrElse(Int.MaxValue) - 1)
-    }
-    else if (Files.isSymbolicLink(base.toPath) || Files.isRegularFile(base.toPath))
+    } else if (Files.isSymbolicLink(base.toPath) || Files.isRegularFile(base.toPath)) {
       Set(base)
-    else Set[File]()
+    } else {
+      Set[File]()
+    }
 
   private def searchDescendants(base: File, levels: Int): Set[File] = {
     val files = misc.Util.wrapNull(base listFiles filter).toList
     (files ::: {
       if (levels > 0) {
-        val folders = if (recursiveFilter eq filter)
-            files.filter(recursiveFilterActual.accept)
-          else
-            misc.Util.wrapNull(base listFiles recursiveFilterActual).toList
+        val folders = if (recursiveFilter eq filter) {
+          files.filter(recursiveFilterActual.accept)
+        } else {
+          misc.Util.wrapNull(base listFiles recursiveFilterActual).toList
+        }
         for {
           childDirectory <- folders
           child <- searchDescendants(new File(base, childDirectory.getName), levels - 1)

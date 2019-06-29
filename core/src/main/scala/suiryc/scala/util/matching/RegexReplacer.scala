@@ -34,7 +34,7 @@ object RegexReplacer {
 
   def inplace(path: Path, rrs: RegexReplacer*)(implicit codec: Codec): Boolean = {
     val file = path.toFile
-    val replacement = replace(file.read(), rrs:_*)
+    val replacement = replace(file.read(), rrs: _*)
 
     if (replacement.replaced) {
       file.write(replacement.content)
@@ -43,7 +43,7 @@ object RegexReplacer {
   }
 
   def inplace(file: File, rrs: RegexReplacer*)(implicit codec: Codec): Boolean =
-    inplace(file.toPath, rrs:_*)
+    inplace(file.toPath, rrs: _*)
 
 }
 

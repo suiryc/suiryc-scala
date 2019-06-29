@@ -33,20 +33,20 @@ object Loggers {
         )
       }
     } else {
-      // scalastyle:off regex
+      // scalastyle:off token
       System.out.println("Not capturing IO: logger uses console")
-      // scalastyle:on regex
+      // scalastyle:on token
       None
     }
   }
 
   /** Sets root logger level. */
-  def setLevel(level: Level) {
+  def setLevel(level: Level): Unit = {
     rootLogger.setLevel(level)
   }
 
   /** Sets root logger level. */
-  def setLevel(level: String) {
+  def setLevel(level: String): Unit = {
     setLevel(Level.valueOf(level.toUpperCase))
   }
 

@@ -86,9 +86,9 @@ object Bench {
       } else {
         BigDecimal(0)
       }
-      // scalastyle:off regex
+      // scalastyle:off token
       println(s"$label: looped=<$looped> elapsed=<$elapsed> perLoop=<$perLoop> perLoopNs=<$perLoopNs> perSecond=<$rate>")
-      // scalastyle:on regex
+      // scalastyle:on token
     }
     r
   }

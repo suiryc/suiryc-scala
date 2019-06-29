@@ -10,13 +10,13 @@ object Units {
   val scaleSI = 1000L
   val scaleBinary = 1024L
 
+  private val ValueRegexp = """^([0-9]*)\s*([a-zA-Z]*)$""".r
+
   case class Unit(label: String, factor: Long)
 
   abstract class AbstractSystem(unityLabel: String) {
 
     val unity = Unit(unityLabel, 1)
-
-    private val ValueRegexp = """^([0-9]*)\s*([a-zA-Z]*)$""".r
 
     def units: List[List[Unit]] = Nil
 
@@ -41,7 +41,7 @@ object Units {
           }
 
         if ((lcunit == "") || (lcunit == unityLabel.toLowerCase)) valueAmount.toLong
-        else units.foldLeft(None:Option[Long]) { (result, units) =>
+        else units.foldLeft(None: Option[Long]) { (result, units) =>
           result.orElse(get(units))
         }.getOrElse {
           throw new IllegalArgumentException(s"Invalid value[$valueAmount]")
