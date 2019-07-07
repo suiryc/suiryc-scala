@@ -1,7 +1,7 @@
 package suiryc.scala.util
 
 /** Computed value caching. */
-class Cached[A](compute: () => A) extends (() => A) {
+class Cached[A](compute: => A) extends (() => A) {
 
   // Cached value (if already computed)
   private var cached = Option.empty[A]
@@ -9,7 +9,7 @@ class Cached[A](compute: () => A) extends (() => A) {
   /** Gets the value (and caches it). */
   def value: A = this.synchronized {
     cached.getOrElse {
-      val v = compute()
+      val v = compute
       cached = Some(v)
       v
     }
@@ -32,6 +32,6 @@ class Cached[A](compute: () => A) extends (() => A) {
 
 object Cached {
 
-  def apply[A](compute: () => A): Cached[A] = new Cached(compute)
+  def apply[A](compute: => A): Cached[A] = new Cached(compute)
 
 }
