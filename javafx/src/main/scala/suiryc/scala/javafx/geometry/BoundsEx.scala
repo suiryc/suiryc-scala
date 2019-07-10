@@ -16,17 +16,48 @@ object BoundsEx {
    * @return bounds of 'node' relatively to 'root'
    */
   def getBounds(node: Node, root: Node): Bounds = {
+    localToParent(node, root, node.getBoundsInLocal)
+  }
+
+  /**
+   * Converts bounds relatively from 'local' node to 'parent' node.
+   *
+   * @param local local node to which bounds are relative to
+   * @param parent parent node to get bounds relative to (must be a parent of 'local')
+   * @param bounds bounds to convert
+   * @return bounds relatively to 'parent' node
+   */
+  def localToParent(local: Node, parent: Node, bounds: Bounds): Bounds = {
+    getHierarchy(local, parent).foldLeft(bounds) { (bounds, node) =>
+      node.localToParent(bounds)
+    }
+  }
+
+  /**
+   * Converts bounds relatively from 'parent' node to 'local' node.
+   *
+   * @param local local node to get bounds relative to
+   * @param parent parent node to which bounds are relative to (must be a parent of 'local')
+   * @param bounds bounds to convert
+   * @return bounds relatively to 'local' node
+   */
+  def parentToLocal(local: Node, parent: Node, bounds: Bounds): Bounds = {
+    getHierarchy(local, parent).reverse.foldLeft(bounds) { (bounds, node) =>
+      node.parentToLocal(bounds)
+    }
+  }
+
+  private def getHierarchy(node: Node, root: Node): List[Node] = {
     @scala.annotation.tailrec
-    def loop(bounds: Option[Bounds], node: Node): Bounds = {
-      val boundsActual = bounds.getOrElse(node.getBoundsInLocal)
+    def loop(hierarchy: List[Node], node: Node): List[Node] = {
       val parentOpt = if (node ne root) Option(node.getParent) else None
       parentOpt match {
-        case Some(parent) => loop(Some(node.localToParent(boundsActual)), parent)
-        case None => boundsActual
+        case Some(parent) => loop(hierarchy :+ node, parent)
+        case None => hierarchy
       }
     }
 
-    loop(None, node)
+    loop(Nil, node)
   }
 
   /**
