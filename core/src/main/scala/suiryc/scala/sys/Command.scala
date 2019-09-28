@@ -1,10 +1,11 @@
 package suiryc.scala.sys
 
 import com.typesafe.scalalogging.StrictLogging
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, InputStream, IOException, OutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, IOException, InputStream, OutputStream}
 import scala.collection.mutable
 import scala.sys.process
 import scala.sys.process.{BasicIO, Process, ProcessIO}
+import suiryc.scala.io.InterruptibleInputStream
 import suiryc.scala.misc.RichOptional._
 import suiryc.scala.misc.Util
 
@@ -54,14 +55,14 @@ object Command
   /** Command input/output stream. */
   class Stream[+T](val stream: T, val close: Boolean)
 
-  /** stdin as input stream */
-  val fromStdin = Some(new Stream(process.stdin, false))
+  /** stdin as input stream (made interruptible) */
+  val fromStdin: Option[Stream[InputStream]] = input(process.stdin, close = false, makeInterruptible = true)
 
   /** stdout as output stream */
-  val toStdout = Some(new Stream(process.stdout, false))
+  val toStdout: Option[Stream[OutputStream]] = output(process.stdout, close = false)
 
   /** stderr as output stream */
-  val toStderr = Some(new Stream(process.stderr, false))
+  val toStderr: Option[Stream[OutputStream]] = output(process.stderr, close = false)
 
   /** stdout sink added for each executed command */
   private var extraStdoutSink = mutable.ListBuffer[Stream[OutputStream]]()
@@ -115,9 +116,12 @@ object Command
    *
    * @param is    stream to connect
    * @param close whether to close stream once finished
+   * @param makeInterruptible whether to make the stream interruptible
    */
-  def input(is: InputStream, close: Boolean = true): Option[Stream[InputStream]] =
-    Some(new Stream(is, close))
+  def input(is: InputStream, close: Boolean = true, makeInterruptible: Boolean = false): Option[Stream[InputStream]] = {
+    if (makeInterruptible) Some(new Stream(new InterruptibleInputStream(is), close))
+    else Some(new Stream(is, close))
+  }
 
   /**
    * Creates command input stream.
@@ -125,7 +129,7 @@ object Command
    * @param bytes bytes to send
    */
   def input(bytes: Array[Byte]): Option[Stream[ByteArrayInputStream]] =
-    Some(new Stream(new ByteArrayInputStream(Util.wrapNull(bytes)), true))
+    Some(new Stream(new ByteArrayInputStream(Util.wrapNull(bytes)), close = true))
 
   /**
    * Creates command output stream.
