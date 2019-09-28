@@ -24,14 +24,23 @@ import scala.concurrent.duration._
  */
 class InterruptibleInputStream(is: InputStream, loopDelay: FiniteDuration = 50.millis) extends FilterInputStream(is) {
 
+  @volatile
+  private var isInterrupted = false
+
   @inline
   private def interruptible(f: => Int): Int = {
     @scala.annotation.tailrec
     def loop(): Int = {
-      if (Thread.interrupted()) -1
+      isInterrupted ||= Thread.interrupted()
+      if (isInterrupted) -1
       else if (is.available() > 0) f
       else {
-        Thread.sleep(loopDelay.toMillis)
+        try {
+          Thread.sleep(loopDelay.toMillis)
+        } catch {
+          case _: InterruptedException =>
+            isInterrupted = true
+        }
         loop()
       }
     }
