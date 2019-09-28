@@ -3,8 +3,7 @@ package suiryc.scala.sys
 import com.typesafe.scalalogging.StrictLogging
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, IOException, InputStream, OutputStream}
 import scala.collection.mutable
-import scala.sys.process
-import scala.sys.process.{BasicIO, Process, ProcessIO}
+import scala.sys.process.{BasicIO, ProcessIO}
 import suiryc.scala.io.InterruptibleInputStream
 import suiryc.scala.misc.RichOptional._
 import suiryc.scala.misc.Util
@@ -56,13 +55,13 @@ object Command
   class Stream[+T](val stream: T, val close: Boolean)
 
   /** stdin as input stream (made interruptible) */
-  val fromStdin: Option[Stream[InputStream]] = input(process.stdin, close = false, makeInterruptible = true)
+  val fromStdin: Option[Stream[InputStream]] = input(scala.sys.process.stdin, close = false, makeInterruptible = true)
 
   /** stdout as output stream */
-  val toStdout: Option[Stream[OutputStream]] = output(process.stdout, close = false)
+  val toStdout: Option[Stream[OutputStream]] = output(scala.sys.process.stdout, close = false)
 
   /** stderr as output stream */
-  val toStderr: Option[Stream[OutputStream]] = output(process.stderr, close = false)
+  val toStderr: Option[Stream[OutputStream]] = output(scala.sys.process.stderr, close = false)
 
   /** stdout sink added for each executed command */
   private var extraStdoutSink = mutable.ListBuffer[Stream[OutputStream]]()
@@ -176,8 +175,8 @@ object Command
 
       Stream.continually(input.read(buffer)).takeWhile { read =>
         read != -1
-      } foreach { read =>
-        outputs foreach { _.stream.write(buffer, 0, read) }
+      }.foreach { read =>
+        outputs.foreach { _.stream.write(buffer, 0, read) }
       }
 
       input.close()
@@ -210,15 +209,13 @@ object Command
         if (read == -1) {
           if (input.close) input.stream.close()
           output.close()
-        }
-        else {
+        } else {
           output.write(buffer, 0, read)
           // flush will throw an exception once the process has terminated
           val available = try {
             output.flush()
             true
-          }
-          catch {
+          } catch {
             case _: IOException => false
           }
           if (available) loop()
@@ -234,20 +231,13 @@ object Command
     val stderrBuffer =
       if (captureStderr) Some(new StringBuffer())
       else None
-    val process = envf.map { f =>
-      // scala Process only handles adding variables, so - as Process - build
-      // the java ProcessBuilder, and let callback adapt its environment.
-      val jpb = new java.lang.ProcessBuilder(cmd.toArray: _*)
-      workingDirectory foreach (jpb directory _)
-      f(jpb.environment())
-      Process(jpb)
-    }.getOrElse(Process(cmd, workingDirectory))
+    val builder = process.SimpleProcessBuilder(cmd, workingDirectory, envf)
     val io = new ProcessIO(
       stdinSource.fold[OutputStream => Unit](BasicIO.close)(input => filterInput(input, _)),
       filterOutput(stdoutSink ++ extraStdoutSink, stdoutBuffer),
       filterOutput(stderrSink ++ extraStderrSink, stderrBuffer)
     )
-    val result = process.run(io).exitValue()
+    val result = builder.run(io).exitValue()
     val stdoutResult =
       stdoutBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
     val stderrResult =
@@ -259,8 +249,7 @@ object Command
         + stderrBuffer.fold("")(_ => s" stderr[$stderrResult]")
       )
       throw new RuntimeException("Nonzero exit value: " + result)
-    }
-    else {
+    } else {
       logger.trace(s"Command[$cmd] result: code[$result]"
         + stdoutBuffer.fold("")(_ => s" stdout[$stdoutResult]")
         + stderrBuffer.fold("")(_ => s" stderr[$stderrResult]")
