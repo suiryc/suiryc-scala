@@ -59,8 +59,7 @@ class HexDumper(settings: HexDumper.Settings) {
 
   import HexDumper._
 
-  // scala 2.13: scala.collection.IndexedSeqView[Byte]
-  protected type BytesView = scala.collection.IterableView[Byte, Array[Byte]]
+  protected type BytesView = scala.collection.IndexedSeqView[Byte]
 
   protected val decoder: CharsetDecoder = settings.charset.newDecoder().replaceWith(".")
 
@@ -407,6 +406,7 @@ object HexDumper {
     val actualSettings = guessOffsetSize(settings.copy(length = actualLength))
     val dumper = new HexDumper(actualSettings)
 
+    @scala.annotation.tailrec
     def loop(data: ByteBuffer): Unit = {
       val remaining = data.remaining
       if (remaining > 0) {

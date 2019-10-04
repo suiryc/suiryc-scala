@@ -2,7 +2,8 @@ package suiryc.scala.javafx
 
 import javafx.application.{Application, Platform}
 import javafx.stage.Stage
-import scala.reflect.{classTag, ClassTag}
+import scala.collection.immutable.ArraySeq
+import scala.reflect.{ClassTag, classTag}
 
 /**
  * JavaFX application launcher.
@@ -34,7 +35,7 @@ class JFXLauncher[A <: JFXApplication : ClassTag] {
   def newApplication: A = classTag[A].runtimeClass.asInstanceOf[Class[A]].getConstructor().newInstance()
 
   def main(args: Array[String]): Unit = {
-    newApplication.launch(args: _*)
+    newApplication.launch(ArraySeq.unsafeWrapArray(args): _*)
   }
 
   def shutdown(stage: Stage): Unit = {

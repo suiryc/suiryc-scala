@@ -3,9 +3,9 @@ package suiryc.scala.settings
 import com.typesafe.config.{Config, ConfigException, ConfigFactory, ConfigUtil}
 import java.nio.file.Path
 import org.scalatest.{Matchers, WordSpec}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
-class ConfigEntrySpec extends WordSpec with Matchers {
+object ConfigEntrySpec {
 
   private val PATH_REF_PREFIX = "ref"
 
@@ -26,6 +26,12 @@ class ConfigEntrySpec extends WordSpec with Matchers {
 
   private val PATH_UNSET = "key.unset"
   private val PATH_LIST = "key.list"
+
+}
+
+class ConfigEntrySpec extends WordSpec with Matchers {
+
+  import ConfigEntrySpec._
 
   private val reference = ConfigFactory.parseString(
     s"""
@@ -408,6 +414,6 @@ class ConfigEntrySpec extends WordSpec with Matchers {
 
   }
 
-  private def getPath(s: String): Seq[String] = ConfigUtil.splitPath(s).asScala
+  private def getPath(s: String): Seq[String] = ConfigUtil.splitPath(s).asScala.toSeq
 
 }

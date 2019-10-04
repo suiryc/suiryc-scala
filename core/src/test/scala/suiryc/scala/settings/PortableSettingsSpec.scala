@@ -3,13 +3,19 @@ package suiryc.scala.settings
 import com.typesafe.config.{ConfigException, ConfigFactory, ConfigUtil, ConfigValueFactory}
 import java.nio.file.{Files, Path}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import suiryc.scala.io.PathsEx
 
-class PortableSettingsSpec extends WordSpec with Matchers with BeforeAndAfterEach {
+object PortableSettingsSpec {
 
   private val PATH_PREFIX = "suiryc.test"
   private val PATH_UNSET = s"$PATH_PREFIX.unset"
+
+}
+
+class PortableSettingsSpec extends WordSpec with Matchers with BeforeAndAfterEach {
+
+  import PortableSettingsSpec._
 
   private val reference = ConfigFactory.parseString(
     s"""
@@ -50,10 +56,10 @@ class PortableSettingsSpec extends WordSpec with Matchers with BeforeAndAfterEac
   }
 
   def fileSettings: PortableSettings =
-    PortableSettings(applicationFile, ConfigUtil.splitPath(PATH_PREFIX).asScala)
+    PortableSettings(applicationFile, ConfigUtil.splitPath(PATH_PREFIX).asScala.toSeq)
 
   def backupSettings: PortableSettings =
-    PortableSettings(PathsEx.backupPath(applicationFile), ConfigUtil.splitPath(PATH_PREFIX).asScala)
+    PortableSettings(PathsEx.backupPath(applicationFile), ConfigUtil.splitPath(PATH_PREFIX).asScala.toSeq)
 
   "PortableSettings" should {
 
@@ -138,7 +144,7 @@ class PortableSettingsSpec extends WordSpec with Matchers with BeforeAndAfterEac
       val settings = newSettings
       val path = s"$PATH_PREFIX.key1"
       // Note: the value not being quoted, we cannot use a String here (will be quoted)
-      settings.withValue(path, ConfigValueFactory.fromAnyRef(0:Int))
+      settings.withValue(path, ConfigValueFactory.fromAnyRef(0: Int))
       settings.config.getString(path) shouldBe "0"
       intercept[ConfigException.Missing] {
         fileSettings.config.getValue(path)

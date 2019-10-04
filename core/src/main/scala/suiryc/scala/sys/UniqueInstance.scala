@@ -382,6 +382,7 @@ object UniqueInstance extends LazyLogging {
         read(is, bb1.array)
         val nargs = bb1.getInt(0)
 
+        @scala.annotation.tailrec
         def loop(n: Int, args: List[String]): Array[String] = {
           if (n > 0) {
             loop(n - 1, args :+ readString(is))

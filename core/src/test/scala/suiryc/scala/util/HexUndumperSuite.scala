@@ -3,7 +3,7 @@ package suiryc.scala.util
 import java.io.ByteArrayOutputStream
 import org.scalatest.FunSuite
 
-// scalastyle:off magic.number
+// scalastyle:off magic.number non.ascii.character.disallowed
 class HexUndumperSuite extends FunSuite {
 
   import HexUndumper._
@@ -86,4 +86,4 @@ class HexUndumperSuite extends FunSuite {
   }
 
 }
-// scalastyle:on magic.number
+// scalastyle:on magic.number non.ascii.character.disallowed

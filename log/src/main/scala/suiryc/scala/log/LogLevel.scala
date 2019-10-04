@@ -23,10 +23,10 @@ object LogLevel extends EnumerationWithAliases with CaseInsensitiveEnumeration {
 
   def levels: Set[Value] = values.asInstanceOf[Set[Value]]
 
-  val TRACE = newLevel("TRACE", "TRC", Level.TRACE)
-  val DEBUG = newLevel("DEBUG", "DBG", Level.DEBUG)
-  val INFO = newLevel("INFO", "INF", Level.INFO)
-  val WARNING = newLevel("WARNING", "WRN", Level.WARN)
-  val ERROR = newLevel("ERROR", "ERR", Level.ERROR)
+  val TRACE: Value = newLevel("TRACE", "TRC", Level.TRACE)
+  val DEBUG: Value = newLevel("DEBUG", "DBG", Level.DEBUG)
+  val INFO: Value = newLevel("INFO", "INF", Level.INFO)
+  val WARNING: Value = newLevel("WARNING", "WRN", Level.WARN)
+  val ERROR: Value = newLevel("ERROR", "ERR", Level.ERROR)
 
 }

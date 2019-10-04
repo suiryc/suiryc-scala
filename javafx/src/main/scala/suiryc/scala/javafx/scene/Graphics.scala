@@ -9,7 +9,8 @@ import javafx.scene.layout._
 import javafx.scene.paint.{Color, Paint}
 import javafx.scene.shape.SVGPath
 import javafx.scene.transform.{Scale, Translate}
-import scala.collection.JavaConverters._
+import scala.Ordering.Double.TotalOrdering
+import scala.jdk.CollectionConverters._
 
 /** Graphics helpers. */
 object Graphics {

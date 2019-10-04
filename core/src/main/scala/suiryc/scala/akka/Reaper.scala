@@ -29,7 +29,7 @@ abstract class Reaper
   import Reaper._
 
   /** Watched actors. */
-  protected val watched = ArrayBuffer.empty[ActorRef]
+  protected val watched: ArrayBuffer[ActorRef] = ArrayBuffer.empty[ActorRef]
 
   /**
    * Subclasses need to implement this method. It's the hook that's called when

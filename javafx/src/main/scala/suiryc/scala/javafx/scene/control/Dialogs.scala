@@ -7,7 +7,7 @@ import javafx.scene.effect.BoxBlur
 import javafx.scene.layout.{GridPane, Priority, StackPane}
 import javafx.scene.paint.Color
 import javafx.stage.{Modality, Stage, StageStyle, Window}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import suiryc.scala.RichOption._
 import suiryc.scala.javafx.I18NBase
 import suiryc.scala.javafx.beans.value.RichObservableValue

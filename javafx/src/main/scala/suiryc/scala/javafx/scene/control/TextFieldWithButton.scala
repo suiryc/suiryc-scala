@@ -8,8 +8,8 @@ import javafx.scene.control._
 import javafx.scene.input.{InputEvent, MouseEvent}
 import javafx.scene.layout.{Region, StackPane}
 import javafx.scene.text.Font
+import scala.annotation.unused
 import suiryc.scala.javafx.beans.value.RichObservableValue._
-import suiryc.scala.unused
 
 /**
  * TextField with button(s).

@@ -4,7 +4,7 @@ import com.typesafe.config._
 import com.typesafe.scalalogging.StrictLogging
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import suiryc.scala.io.PathsEx
 
 /**

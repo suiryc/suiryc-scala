@@ -56,12 +56,12 @@ object IOStream {
 //    }
      */
 
-    def stream(remaining: Option[Int]): Stream[Int] = {
+    def stream(remaining: Option[Int]): LazyList[Int] = {
       val request = remaining.map(scala.math.min(_, buffer.length)).getOrElse(buffer.length)
-      if (request <= 0) Stream.Empty
+      if (request <= 0) LazyList.empty
       else {
         val actual = input.read(buffer, 0, request)
-        if (actual == -1) Stream.Empty
+        if (actual == -1) LazyList.empty
         else actual #:: stream(remaining map(_ - actual))
       }
     }
@@ -82,12 +82,12 @@ object IOStream {
   {
     val buffer = new Array[Byte](16 * 1024)
 
-    def stream(remaining: Option[Int]): Stream[Int] = {
+    def stream(remaining: Option[Int]): LazyList[Int] = {
       val request = remaining.map(scala.math.min(_, buffer.length)).getOrElse(buffer.length)
-      if (request <= 0) Stream.Empty
+      if (request <= 0) LazyList.empty
       else {
         val actual = input.read(buffer, 0, request)
-        if (actual == -1) Stream.Empty
+        if (actual == -1) LazyList.empty
         else actual #:: stream(remaining map(_ - actual))
       }
     }

@@ -7,7 +7,7 @@ lazy val versions = Map[String, String](
   "javafx"        -> "12.0.1",
   "logback"       -> "1.2.3",
   "monix"         -> "3.0.0",
-  "scala"         -> "2.12.10",
+  "scala"         -> "2.13.1",
   "scala-logging" -> "3.9.2",
   "scalatest"     -> "3.0.8",
   "scopt"         -> "3.7.1",
@@ -21,11 +21,10 @@ lazy val commonSettings = Seq(
   scalaVersion := versions("scala"),
 
   scalacOptions ++= Seq(
-    "-deprecation",
     "-encoding", "UTF-8",
     "-feature",
     "-unchecked",
-    "-Xfatal-warnings",
+    "-Werror",
     "-Xlint:_",
     "-Ywarn-dead-code",
     "-Ywarn-numeric-widen",

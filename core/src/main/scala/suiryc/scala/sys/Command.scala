@@ -173,7 +173,7 @@ object Command
     ): Unit = {
       val buffer = new Array[Byte](bufferSize)
 
-      Stream.continually(input.read(buffer)).takeWhile { read =>
+      LazyList.continually(input.read(buffer)).takeWhile { read =>
         read != -1
       }.foreach { read =>
         outputs.foreach { _.stream.write(buffer, 0, read) }

@@ -6,7 +6,7 @@ import javafx.collections.transformation.SortedList
 import javafx.scene.control._
 import javafx.scene.control.skin.{TableViewSkin, TreeTableViewSkin, VirtualFlow}
 import javafx.scene.layout.Region
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.reflect._
 import scala.reflect.internal.util.WeakHashSet
 import spray.json._

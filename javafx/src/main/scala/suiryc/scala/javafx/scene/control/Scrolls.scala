@@ -74,7 +74,5 @@ object Scrolls {
 }
 
 object ScrollOffsetPosition extends Enumeration {
-  val Begin = Value
-  val Middle = Value
-  val End = Value
+  val Begin, Middle, End = Value
 }

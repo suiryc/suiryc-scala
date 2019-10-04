@@ -4,7 +4,7 @@ import java.io.PrintStream
 import java.nio.charset.StandardCharsets
 import org.scalatest.{Matchers, WordSpec}
 
-// scalastyle:off regex
+// scalastyle:off regex token
 class LineSplitterOutputStreamSpec extends WordSpec with Matchers {
 
   import LineSplitterOutputStreamSpec._
@@ -135,4 +135,4 @@ object LineSplitterOutputStreamSpec {
   }
 
 }
-// scalastyle:on regex
+// scalastyle:on regex token

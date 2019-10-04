@@ -2,8 +2,8 @@ package suiryc.scala.settings
 
 import com.typesafe.config.{Config, ConfigValue, ConfigValueFactory}
 import java.nio.file.{Path, Paths}
-import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters._
 import suiryc.scala.RichEnumeration
 import suiryc.scala.misc.Units
 

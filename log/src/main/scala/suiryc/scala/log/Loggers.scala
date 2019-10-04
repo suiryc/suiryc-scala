@@ -15,6 +15,7 @@ object Loggers {
   /** Whether (root) logger uses console as output. */
   lazy private val useConsole: Boolean = {
     val it = rootLogger.iteratorForAppenders()
+    @scala.annotation.tailrec
     def loop(): Boolean = {
       if (!it.hasNext) false
       else if (it.next.isInstanceOf[ConsoleAppender[_]]) true

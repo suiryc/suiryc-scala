@@ -2,7 +2,7 @@ package suiryc.scala.util
 
 import org.scalatest.FunSuite
 
-// scalastyle:off magic.number
+// scalastyle:off magic.number non.ascii.character.disallowed
 class HexDumperSuite extends FunSuite {
 
   import HexDumper._
@@ -181,4 +181,4 @@ class HexDumperSuite extends FunSuite {
   }
 
 }
-// scalastyle:on magic.number
+// scalastyle:on magic.number non.ascii.character.disallowed

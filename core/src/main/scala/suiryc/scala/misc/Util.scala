@@ -29,6 +29,7 @@ object Util {
   def indexOf[A](arr: Array[A], a: A, offset: Int, length: Int): Int = {
     val idxStart = math.max(0, offset)
     val idxLimit = math.min(arr.length, offset + length)
+    @scala.annotation.tailrec
     def loop(idx: Int): Int = {
       if (idx >= idxLimit) -1
       else if (arr(idx) == a) idx

@@ -82,7 +82,7 @@ class I18N(baseName: String, defaultLanguage: String = "en") extends I18NBase(ba
         val file = new File(url.openConnection().asInstanceOf[JarURLConnection].getJarFileURL.toURI)
         val zipFile = new ZipFile(file)
         try {
-          import scala.collection.JavaConverters._
+          import scala.jdk.CollectionConverters._
           // Search for entries
           zipFile.entries.asScala.flatMap { entry =>
             val entryName = entry.getName

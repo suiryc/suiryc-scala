@@ -1,8 +1,8 @@
 package suiryc.scala.settings
 
 import com.typesafe.config.{Config, ConfigUtil}
-import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.jdk.CollectionConverters._
 import suiryc.scala.misc.Util
 
 /**

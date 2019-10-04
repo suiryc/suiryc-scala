@@ -4,9 +4,9 @@ import javafx.beans.property.{BooleanProperty, SimpleBooleanProperty}
 import javafx.scene.Node
 import javafx.scene.control.{Cell, ListCell, Separator, TableCell}
 import javafx.scene.control.cell.CheckBoxListCell
+import scala.annotation.unused
 import suiryc.scala.concurrent.Cancellable
 import suiryc.scala.javafx.beans.value.RichObservableValue._
-import suiryc.scala.unused
 import suiryc.scala.util.I18NLocale
 
 /** Cell extension that knows how to update cell text/graphic. */
