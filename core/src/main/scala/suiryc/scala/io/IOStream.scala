@@ -1,9 +1,20 @@
 package suiryc.scala.io
 
-import java.io.{EOFException, InputStream, OutputStream}
+import java.io.{Closeable, EOFException, InputStream, OutputStream}
 
 
 object IOStream {
+
+  def closeQuietly(closeable: Closeable): Option[Exception] = {
+    Option(closeable).flatMap { _ =>
+      try {
+        closeable.close()
+        None
+      } catch {
+        case ex: Exception => Some(ex)
+      }
+    }
+  }
 
   // TODO - move to 'RichInputStream' with implicit conversion ?
   def readFully(input: InputStream, b: Array[Byte], off: Int, len: Int): Int = {
