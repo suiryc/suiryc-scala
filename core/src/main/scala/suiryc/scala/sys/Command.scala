@@ -55,7 +55,9 @@ object Command
   class Stream[+T](val stream: T, val close: Boolean)
 
   /** stdin as input stream (made interruptible) */
-  val fromStdin: Option[Stream[InputStream]] = input(scala.sys.process.stdin, close = false, makeInterruptible = true)
+  // Note: since we remember whether we were interrupted, we need to create a
+  // new Stream for each command to execute, hence 'def' instead of 'val'.
+  def fromStdin: Option[Stream[InputStream]] = input(scala.sys.process.stdin, close = false, makeInterruptible = true)
 
   /** stdout as output stream */
   val toStdout: Option[Stream[OutputStream]] = output(scala.sys.process.stdout, close = false)
