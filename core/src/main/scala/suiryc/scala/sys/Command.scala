@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.StrictLogging
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, IOException, InputStream, OutputStream}
 import scala.collection.mutable
 import scala.sys.process.{BasicIO, ProcessIO}
-import suiryc.scala.io.InterruptibleInputStream
+import suiryc.scala.io.{IOStream, InterruptibleInputStream}
 import suiryc.scala.misc.RichOptional._
 import suiryc.scala.misc.Util
 
@@ -181,10 +181,10 @@ object Command
         outputs.foreach { _.stream.write(buffer, 0, read) }
       }
 
-      input.close()
+      IOStream.closeQuietly(input)
       outputs.foreach { output =>
         output.stream.flush()
-        if (output.close) output.stream.close()
+        if (output.close) IOStream.closeQuietly(output.stream)
       }
     }
 
@@ -209,8 +209,9 @@ object Command
       def loop(): Unit = {
         val read = input.stream.read(buffer)
         if (read == -1) {
-          if (input.close) input.stream.close()
-          output.close()
+          if (input.close) IOStream.closeQuietly(input.stream)
+          IOStream.closeQuietly(output)
+          ()
         } else {
           output.write(buffer, 0, read)
           // flush will throw an exception once the process has terminated
@@ -260,7 +261,7 @@ object Command
 
     // Process may have ended before consuming the whole input
     stdinSource.foreach { input =>
-      if (input.close) input.stream.close()
+      if (input.close) IOStream.closeQuietly(input.stream)
     }
 
     CommandResult(result, stdoutResult, stderrResult)
