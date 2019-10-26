@@ -22,7 +22,7 @@ class BaseConfig(val config: Config) extends BaseConfigImplicits {
 
 }
 
-object BaseConfig {
+object BaseConfig extends BaseConfigImplicits {
 
   import scala.language.implicitConversions
 
