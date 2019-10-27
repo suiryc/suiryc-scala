@@ -35,7 +35,7 @@ object Durations {
   def shortUnit(unit: TimeUnit): String = {
     unit match {
       case TimeUnit.NANOSECONDS  => "ns"
-      case TimeUnit.MICROSECONDS => "us"
+      case TimeUnit.MICROSECONDS => "μs"
       case TimeUnit.MILLISECONDS => "ms"
       case TimeUnit.SECONDS      => "s"
       case TimeUnit.MINUTES      => "min"
