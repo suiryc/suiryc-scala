@@ -6,11 +6,18 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.{Date, UUID}
 import org.scalatest.{Matchers, WordSpec}
+import scala.concurrent.duration._
 import spray.json._
 
 class JsonFormatsSpec extends WordSpec with Matchers with JsonFormats {
 
   "JsonFormats" should {
+
+    "handle FiniteDuration format" in {
+      List(1.millis, 1.second, 15.seconds).foreach { duration =>
+        duration.toJson.compactPrint.parseJson.convertTo[FiniteDuration] shouldBe duration
+      }
+    }
 
     "handle UUID format" in {
       val uuid = UUID.randomUUID()

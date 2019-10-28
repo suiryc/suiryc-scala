@@ -5,12 +5,15 @@ import java.nio.file.{Path, Paths}
 import java.time.{Instant, LocalDate}
 import java.time.format.DateTimeFormatter
 import java.util.{Date, UUID}
+import scala.concurrent.duration._
 import spray.json._
+import suiryc.scala.concurrent.duration.Durations
 
 /**
  * spray-json formats.
  *
  * Some standard classes are not present in spray-json.
+ * FiniteDuration
  * UUID: https://github.com/spray/spray-json/issues/24
  * URI: https://groups.google.com/forum/#!topic/spray-user/dcWSeR7iuu4
  * Path
@@ -19,6 +22,29 @@ import spray.json._
  * ...
  */
 trait JsonFormats {
+
+  // There are several ways to handle FiniteDuration:
+  //  - textual format (1s, etc.)
+  //  - object containing 'length' and 'unit'
+  //  - Long value in nanos
+  // Textual format is visually nicer, but consumes a bit more; however that's
+  // not an issue unless dealing with massive amount of data to convert.
+  implicit object FiniteDurationFormat extends JsonFormat[FiniteDuration] {
+
+    override def write(d: FiniteDuration): JsValue = JsString(s"${d.length}${Durations.shortUnit(d.unit)}")
+
+    override def read(value: JsValue): FiniteDuration = value match {
+      case JsString(d) =>
+        try {
+          Duration(d).asInstanceOf[FiniteDuration]
+        } catch {
+          case ex: Exception => deserializationError(s"Invalid FiniteDuration format: $d", ex)
+        }
+
+      case _ => deserializationError(s"Expected FiniteDuration as JsString. Got $value")
+    }
+
+  }
 
   implicit object UUIDFormat extends JsonFormat[UUID] {
 
