@@ -63,6 +63,16 @@ object Stages {
   // On Windows 10 build 1803: nothing happens unless current size is smaller.
   // On Gnome 3.28: the stage dimension changes to the minimum dimension
   // even if smaller than the current one.
+  //
+  //
+  // When user closes a window, the only visible things we can track shows that
+  // a close request is triggered which actually hides the stage.
+  // Some code may intercept the close request and consume the event to prevent
+  // the actual closing of the window, in which case the code is responsible for
+  // explicitly closing the stage when applicable, which does not trigger a
+  // close request (only a UI interaction does) but still hides the stage too.
+  // Some code could also explicitly hide the stage, after which it can either
+  // re-show it, or close it.
 
   /**
    * Executes code once stage is "ready".
@@ -109,6 +119,28 @@ object Stages {
           cancellable.cancel()
           call()
         }
+      }
+    }
+    ()
+  }
+
+  /**
+   * Executes code once stage is "closed".
+   *
+   * Stage is considered closed when hidden, either implicitly by a close
+   * request, or explicitly by code requesting stage closing.
+   *
+   * In case the stage may be hidden but re-shown later, caller is responsible
+   * for requesting again to execute code once it is "closed" again.
+   *
+   * @param stage stage to check
+   * @param f code to execute
+   */
+  def onStageClosed(stage: Stage)(f: => Unit): Unit = {
+    stage.showingProperty.listen2 { (cancellable, showing) =>
+      if (!showing) {
+        cancellable.cancel()
+        f
       }
     }
     ()
