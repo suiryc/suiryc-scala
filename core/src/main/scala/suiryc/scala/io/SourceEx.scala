@@ -18,6 +18,9 @@ object SourceEx {
     }
   }
 
+  def autoCloseFile[T](file: File, codec: Codec)(todo: Source => T): T =
+    autoCloseFile(file)(todo)(codec)
+
   def autoCloseFile[T](file: File, enc: String)(todo: Source => T): T =
     autoCloseFile(file)(todo)(Codec(enc))
 
