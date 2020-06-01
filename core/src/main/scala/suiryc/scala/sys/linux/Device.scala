@@ -215,4 +215,13 @@ object Device
   def apply(path: File): Device =
     Device(path.toPath)
 
+  /**
+   * Creates a Device for the given block path.
+   *
+   * Handles both '/dev' and '/sys/block' path.
+   * The actual existence of this device is not enforced.
+   */
+  def apply(path: String): Device =
+    Device(Paths.get(path))
+
 }
