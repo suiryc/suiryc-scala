@@ -9,7 +9,7 @@ import suiryc.scala.sys.{Command, CommandResult}
 import suiryc.scala.util.EitherEx
 
 
-class Device(val block: Path) {
+class Device(val block: Path) extends StrictLogging {
   import Device._
   import PathFinder._
   import NameFilter._
@@ -43,8 +43,7 @@ class Device(val block: Path) {
           }
         }
       }
-    }
-    else props
+    } else props
   }
 
   val size: EitherEx[Exception, Long] = Device.size(block)
@@ -71,6 +70,35 @@ class Device(val block: Path) {
       DevicePartition(this, path.getName.substring(devName.length() + partitionInfix.length()).toInt)
     }
   }
+
+  /* Notes:
+   * We can get some device information such as its id through various means:
+   * blkid, fdisk, etc.
+   * All of them require privileges.
+   */
+  protected def blkid(tag: String): Either[Exception, String] =
+    try {
+      val CommandResult(result, stdout, stderr) = Command.execute(Seq("blkid", "-o", "value", "-s", tag.toUpperCase, dev.toString))
+      if (result == 0) {
+        Right(stdout.trim)
+      } else {
+        val msg =
+          if (stderr != "") s"Cannot get device[$dev] ${tag.toLowerCase}: $stderr"
+          else s"Cannot get device[$dev] ${tag.toLowerCase}"
+        logger.error(msg)
+        Left(new Exception(msg))
+      }
+    } catch {
+      case e: Exception =>
+        Left(e)
+    }
+
+  /* Note: PTUUID may be set or changed upon (re)creating partition table */
+  def uuid: Either[Exception, String] =
+    blkid("PTUUID").map(uuid => if (uuid == "") "<unknown-uuid>" else uuid)
+
+  def ptType: Either[Exception, String] =
+    blkid("PTTYPE")
 
   def partprobe(): CommandResult =
     Command.execute(Seq("partprobe", dev.toString))
@@ -115,8 +143,7 @@ object Device
           line == ""
         }.mkString(" / ")
       }
-    }
-    else None
+    } else None
   }
 
   def size(block: Path): EitherEx[Exception, Long] = {
@@ -134,8 +161,7 @@ object Device
           logger.error(msg)
           EitherEx(Left(new Exception(msg)), -1L)
         }
-      }
-      catch {
+      } catch {
         case e: Exception =>
           EitherEx(Left(e), -1L)
       }

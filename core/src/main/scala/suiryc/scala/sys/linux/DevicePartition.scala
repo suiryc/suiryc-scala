@@ -25,14 +25,17 @@ class DevicePartition(val device: Device, val partNumber: Int)
       val CommandResult(result, stdout, stderr) = Command.execute(Seq("blkid", "-o", "value", "-s", tag.toUpperCase, dev.toString))
       if (result == 0) {
         Right(stdout.trim)
-      }
-      else {
-        /* Fallback to indirect approach through '/dev/disk/by-tag' */
+      } else {
+        /* Fallback to indirect approach through '/dev/disk/by-tag'.
+         * Find the link under this path that points to the partition. The
+         * matching filename is the requested tag value.
+         * This fallback works for 'uuid' and 'label'.
+         */
         val byTAG = Paths.get("/", "dev", "disk", s"by-${tag.toLowerCase}")
         val files =
           if (!Files.isDirectory(byTAG)) Nil
           else misc.Util.wrapNull(byTAG.toFile.listFiles()).toList
-        files find { file =>
+        files.find { file =>
           file.getCanonicalPath == dev.toString
         } match {
           case Some(file) =>
@@ -46,8 +49,7 @@ class DevicePartition(val device: Device, val partNumber: Int)
             Left(new Exception(msg))
         }
       }
-    }
-    catch {
+    } catch {
       case e: Exception =>
         Left(e)
     }
@@ -65,7 +67,7 @@ class DevicePartition(val device: Device, val partNumber: Int)
   def mounted: Boolean = {
     val partitionUUID = uuid.fold(_ => "<unknown-uuid>", uuid => uuid)
     SourceEx.autoCloseFile(Paths.get("/", "proc", "mounts").toFile) { source =>
-      source.getLines() map { line =>
+      source.getLines().map { line =>
         line.trim().split("""\s""").head
       } exists { line =>
         (line == dev.toString) || (line == s"/dev/disk/by-uuid/$partitionUUID")
@@ -86,7 +88,7 @@ object DevicePartition {
     new DevicePartition(device, partNumber)
 
   def option(path: Path): Option[DevicePartition] =
-    Device.fromPartition(path) flatMap {device =>
+    Device.fromPartition(path).flatMap {device =>
       device.partitions find { partition =>
         partition.block.getFileName.toString == path.getFileName.toString
       }
