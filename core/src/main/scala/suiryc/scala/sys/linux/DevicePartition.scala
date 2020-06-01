@@ -77,6 +77,16 @@ class DevicePartition(val device: Device, val partNumber: Int)
 
   def umount: CommandResult = Command.execute(Seq("umount", dev.toString))
 
+  override def equals(other: Any): Boolean = other match {
+    case that: DevicePartition => (device == that.device) && (partNumber == that.partNumber)
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq[Any](device, partNumber)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
+
   override def toString: String =
     s"Partition(device=$device, partNumber=$partNumber, uuid=$uuid, size=$size)"
 

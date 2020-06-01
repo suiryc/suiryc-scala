@@ -103,6 +103,16 @@ class Device(val block: Path) extends StrictLogging {
   def partprobe(): CommandResult =
     Command.execute(Seq("partprobe", dev.toString))
 
+  override def equals(other: Any): Boolean = other match {
+    case that: Device => block == that.block
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq[Any](block)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
+
   override def toString: String =
     s"Device(block=$block, vendor=$vendor, model=$model, ueventProps=$ueventProps)"
 
@@ -175,7 +185,7 @@ object Device
       Some(Device(path.getParent))
     } else {
       val finder = PathFinder(sysBlock) * AllPassFileFilter * path.getFileName.toString
-      finder.get().headOption map(file => Device(file.toPath.getParent))
+      finder.get().headOption.map(file => Device(file.toPath.getParent))
     }
   }
 
