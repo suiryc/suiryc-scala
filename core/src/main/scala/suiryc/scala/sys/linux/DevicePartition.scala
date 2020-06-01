@@ -110,6 +110,8 @@ object DevicePartition {
 
   /**
    * Creates DevicePartition for given path it it exists.
+   *
+   * Handles both '/dev' and '/sys/block' path.
    */
   def option(path: Path): Option[DevicePartition] =
     Device.fromPartition(path).flatMap { device =>
@@ -120,6 +122,8 @@ object DevicePartition {
 
   /**
    * Creates DevicePartition for given path it it exists.
+   *
+   * Handles both '/dev' and '/sys/block' path.
    */
   def option(path: File): Option[DevicePartition] =
     option(path.toPath)

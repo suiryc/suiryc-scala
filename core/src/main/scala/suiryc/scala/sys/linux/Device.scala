@@ -189,12 +189,30 @@ object Device
     }
   }
 
-  def apply(block: Path): Device =
+  /**
+   * Creates a Device for the given path.
+   *
+   * Handles both '/dev' and '/sys/block' path.
+   * The actual existence of this device is not enforced.
+   */
+  def apply(path: Path): Device = {
+    lazy val sysblockPath = Paths.get("/sys", "block", path.getFileName.toString)
+    val block = if (Option(path.getParent).contains(Paths.get("/dev")) && sysblockPath.toFile.exists()) {
+      sysblockPath
+    } else path
+
     if (block.getFileName.toString.startsWith("nbd")) new NetworkBlockDevice(block)
     else if (block.getFileName.toString.startsWith("loop")) new LoopbackDevice(block)
     else new Device(block)
+  }
 
-  def apply(block: File): Device =
-    Device(block.toPath)
+  /**
+   * Creates a Device for the given block path.
+   *
+   * Handles both '/dev' and '/sys/block' path.
+   * The actual existence of this device is not enforced.
+   */
+  def apply(path: File): Device =
+    Device(path.toPath)
 
 }
