@@ -94,16 +94,33 @@ class DevicePartition(val device: Device, val partNumber: Int)
 
 object DevicePartition {
 
+  /**
+   * Creates DevicePartition for given device anc partition number.
+   *
+   * The actual existence of this partition is not enforced.
+   */
   def apply(device: Device, partNumber: Int): DevicePartition =
     new DevicePartition(device, partNumber)
 
+  /**
+   * Creates DevicePartition for given device and partition number it it exists.
+   */
+  def option(device: Device, partNumber: Int): Option[DevicePartition] =
+    option(DevicePartition(device, partNumber).block)
+
+  /**
+   * Creates DevicePartition for given path it it exists.
+   */
   def option(path: Path): Option[DevicePartition] =
-    Device.fromPartition(path).flatMap {device =>
-      device.partitions find { partition =>
+    Device.fromPartition(path).flatMap { device =>
+      device.partitions.find { partition =>
         partition.block.getFileName.toString == path.getFileName.toString
       }
     }
 
+  /**
+   * Creates DevicePartition for given path it it exists.
+   */
   def option(path: File): Option[DevicePartition] =
     option(path.toPath)
 
