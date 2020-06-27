@@ -1,11 +1,15 @@
 package suiryc.scala.io
 
+import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import suiryc.scala.io.RichFile._
+import suiryc.scala.sys.OS
 
 /** Path (and filename) helpers. */
 // scalastyle:off non.ascii.character.disallowed
 object PathsEx {
+
+  private val WINDOWS_PATH_ROOT_REGEXP = "^[a-zA-Z]:".r
 
   /** Gets path (resolves leading '~' as user home). */
   def get(path: String): Path = {
@@ -141,6 +145,15 @@ object PathsEx {
 
   /** Sanitizes filename: replaces reserved characters. */
   def sanitizeFilename(str: String): String = sanitizeFilename(str, Set.empty)
+
+  /** Sanitizes path. */
+  def sanitizePath(str: String): String = {
+    // Path sanitization excludes the hierarchy separator.
+    // On Windows, don't sanitize the path root.
+    if (OS.isWindows && (str.length > 1) && WINDOWS_PATH_ROOT_REGEXP.pattern.matcher(str).find) {
+      s"${str.substring(0, 2)}${sanitizeFilename(str.substring(2), Set(File.separatorChar))}"
+    } else sanitizeFilename(str, Set(File.separatorChar))
+  }
 
   /** Gets backup path (".bak" suffix) for a given file. */
   def backupPath(filepath: Path): Path = {
