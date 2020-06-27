@@ -131,12 +131,16 @@ object PathsEx {
     '*' -> '∗'
   )
 
-  /** Sanitizes filename (replaces reserved characters). */
-  def sanitizeFilename(str: String): String = {
+  /** Sanitizes filename: replaces non-excluded reserved characters. */
+  def sanitizeFilename(str: String, excluded: Set[Char]): String = {
     sanitizedChars.foldLeft(str) { (str, entry) =>
-      str.replace(entry._1, entry._2)
+      if (excluded.contains(entry._1)) str
+      else str.replace(entry._1, entry._2)
     }
   }
+
+  /** Sanitizes filename: replaces reserved characters. */
+  def sanitizeFilename(str: String): String = sanitizeFilename(str, Set.empty)
 
   /** Gets backup path (".bak" suffix) for a given file. */
   def backupPath(filepath: Path): Path = {
