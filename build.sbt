@@ -63,9 +63,10 @@ lazy val log = project.in(file("log")).
   settings(
     name := "suiryc-scala-log",
     libraryDependencies ++= Seq(
-      "ch.qos.logback"    %  "logback-classic" % versions("logback") % "provided",
-      "ch.qos.logback"    %  "logback-core"    % versions("logback") % "provided",
-      "com.typesafe.akka" %% "akka-actor"      % versions("akka")    % "provided"
+      "ch.qos.logback"             %  "logback-classic" % versions("logback")       % "provided",
+      "ch.qos.logback"             %  "logback-core"    % versions("logback")       % "provided",
+      "com.typesafe.akka"          %% "akka-actor"      % versions("akka")          % "provided",
+      "com.typesafe.scala-logging" %% "scala-logging"   % versions("scala-logging") % "provided"
     )
   )
 

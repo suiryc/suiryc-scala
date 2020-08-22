@@ -1,6 +1,6 @@
 package suiryc.scala.log
 
-import ch.qos.logback.classic.{Level, LoggerContext}
+import ch.qos.logback.classic.{Level, Logger, LoggerContext}
 import ch.qos.logback.core.ConsoleAppender
 import org.slf4j.LoggerFactory
 import suiryc.scala.io.SystemStreams
@@ -8,7 +8,7 @@ import suiryc.scala.io.SystemStreams
 
 object Loggers {
 
-  lazy private val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[ch.qos.logback.classic.Logger]
+  lazy private val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
 
   val loggerContext: LoggerContext = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
 
