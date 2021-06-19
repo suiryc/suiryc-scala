@@ -1,11 +1,13 @@
 package suiryc.scala.util
 
 // scalastyle:off non.ascii.character.disallowed
+import suiryc.scala.RichEnumeration
+import suiryc.scala.io.FilesEx
+
 import java.io._
 import java.nio.ByteBuffer
 import java.nio.charset.{Charset, CharsetDecoder}
-import suiryc.scala.RichEnumeration
-import suiryc.scala.io.FilesEx
+import scala.annotation.nowarn
 
 /**
  * Hexadecimal data dumper.
@@ -74,8 +76,9 @@ class HexDumper(settings: HexDumper.Settings) {
   protected val hexSectionCount: Int =
     (settings.viewBytes + hexSectionBytes - 1) / hexSectionBytes
 
-  protected def computeHexSectionSize(bytes: Int): Int =
-    settings.hexViewMode match {
+  protected def computeHexSectionSize(bytes: Int): Int = {
+    // @nowarn workarounds scala 2.13.x false-positive
+    (settings.hexViewMode: @nowarn) match {
       case HexadecimalViewMode.Large =>
         // Each byte is represented as 2 hexadecimal characters.
         // There is one space between each represented byte, so the total number
@@ -86,6 +89,7 @@ class HexDumper(settings: HexDumper.Settings) {
         // There is one space between each pair of represented bytes.
         bytes * 2 + (bytes + 1) / 2 - 1
     }
+  }
 
   /** Size of each hexadecimal section. */
   protected val hexSectionSize: Int = computeHexSectionSize(hexSectionBytes)
@@ -112,7 +116,8 @@ class HexDumper(settings: HexDumper.Settings) {
   /** Produces the hexadecimal representation. */
   protected def processHexSection(section: BytesView): String = {
     val bytes = section.map("%02X".format(_))
-    settings.hexViewMode match {
+    // @nowarn workarounds scala 2.13.x false-positive
+    (settings.hexViewMode: @nowarn) match {
       case HexadecimalViewMode.Large   => bytes.mkString(" ")
       case HexadecimalViewMode.Compact => bytes.grouped(2).map(_.mkString("")).mkString(" ")
     }
@@ -155,7 +160,8 @@ class HexDumper(settings: HexDumper.Settings) {
       else c
     }.toArray
     // Decode to ASCII
-    val asciiSectionsWithSize = settings.asciiViewMode match {
+    // @nowarn workarounds scala 2.13.x false-positive
+    val asciiSectionsWithSize = (settings.asciiViewMode: @nowarn) match {
       case AsciiViewMode.Undivided => List((filtered, settings.viewBytes))
       case AsciiViewMode.Divided   =>
         // How many chars in each ASCII section

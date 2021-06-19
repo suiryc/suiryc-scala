@@ -54,7 +54,7 @@ class TextFieldWithButton() extends Control {
   /**
    * @param styleClass style class used for graphic customization
    */
-  def this(styleClass: String) {
+  def this(styleClass: String) = {
     this()
     setCustomStyleClass(styleClass)
   }

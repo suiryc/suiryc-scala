@@ -73,7 +73,7 @@ object JFXSystem
   /** Akka system. */
   private val system = CoreSystem.system
   /** JavaFX actor to which actions are delegated. */
-  private val jfxActor = newJFXActor(Props[JFXActor], "JavaFX-dispatcher")
+  private val jfxActor = newJFXActor(Props[JFXActor](), "JavaFX-dispatcher")
 
   // Note:
   // Even though a MessageDispatcher is also an ExecutionContext, we usually

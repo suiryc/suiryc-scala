@@ -143,7 +143,7 @@ trait CheckBoxListCellWithInfo[A] extends CheckBoxListCell[A] {
   })
 
   // scalastyle:off null
-  override protected def updateItem(item: A, empty: Boolean): Unit = {
+  override def updateItem(item: A, empty: Boolean): Unit = {
     // Cancel previous listener if any
     propertyListener.foreach(_.cancel())
     propertyListener = None
@@ -181,7 +181,7 @@ trait CheckBoxListCellWithSeparator[A] extends CheckBoxListCellWithInfo[Option[A
 
   override protected def hasActualItem(item: Option[A]): Boolean = item.isDefined
 
-  override protected def updateItem(item: Option[A], empty: Boolean): Unit = {
+  override def updateItem(item: Option[A], empty: Boolean): Unit = {
     super.updateItem(item, empty)
     if (!empty && !hasActualItem(item)) setGraphic(new Separator())
   }

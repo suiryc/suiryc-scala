@@ -1,11 +1,13 @@
 package suiryc.scala.io
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import java.io.PrintStream
 import java.nio.charset.StandardCharsets
-import org.scalatest.{Matchers, WordSpec}
 
 // scalastyle:off regex token
-class LineSplitterOutputStreamSpec extends WordSpec with Matchers {
+class LineSplitterOutputStreamSpec extends AnyWordSpec with Matchers {
 
   import LineSplitterOutputStreamSpec._
 

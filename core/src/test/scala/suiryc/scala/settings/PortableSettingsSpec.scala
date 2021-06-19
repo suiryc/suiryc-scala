@@ -1,10 +1,13 @@
 package suiryc.scala.settings
 
 import com.typesafe.config.{ConfigException, ConfigFactory, ConfigUtil, ConfigValueFactory}
-import java.nio.file.{Files, Path}
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import scala.jdk.CollectionConverters._
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import suiryc.scala.io.PathsEx
+
+import java.nio.file.{Files, Path}
+import scala.jdk.CollectionConverters._
 
 object PortableSettingsSpec {
 
@@ -13,7 +16,7 @@ object PortableSettingsSpec {
 
 }
 
-class PortableSettingsSpec extends WordSpec with Matchers with BeforeAndAfterEach {
+class PortableSettingsSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach {
 
   import PortableSettingsSpec._
 

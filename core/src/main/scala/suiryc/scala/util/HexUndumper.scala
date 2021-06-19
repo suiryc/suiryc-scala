@@ -150,7 +150,7 @@ object HexUndumper {
    */
   def undump(source: Source, settings: Settings): Unit = {
     val undumper = new HexUndumper(settings)
-    for (line <- source.getLines) {
+    for (line <- source.getLines()) {
       undumper.process(line)
     }
   }

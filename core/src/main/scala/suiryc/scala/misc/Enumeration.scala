@@ -1,5 +1,7 @@
 package suiryc.scala.misc
 
+import scala.annotation.nowarn
+
 
 /**
  * Mark an enumeration as case-insensitive.
@@ -35,10 +37,11 @@ trait EnumerationWithAliases extends scala.Enumeration {
    * Handles case-insensitive values when applicable.
    */
   def byName(s: String): Value = {
-    values.find {
+    // @nowarn workarounds scala 2.13.x false-positive
+    (values.find {
       case withAliases: ValWithAliases => withAliases.normalized.contains(normalize(s))
       case v: Val => normalize(s) == normalize(v.toString)
-    }.getOrElse {
+    }: @nowarn).getOrElse {
       throw new NoSuchElementException(s"No value found for '$s'")
     }
   }

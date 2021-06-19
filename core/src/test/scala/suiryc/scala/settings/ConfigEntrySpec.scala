@@ -1,8 +1,10 @@
 package suiryc.scala.settings
 
 import com.typesafe.config.{Config, ConfigException, ConfigFactory, ConfigUtil}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import java.nio.file.Path
-import org.scalatest.{Matchers, WordSpec}
 import scala.jdk.CollectionConverters._
 
 object ConfigEntrySpec {
@@ -29,7 +31,7 @@ object ConfigEntrySpec {
 
 }
 
-class ConfigEntrySpec extends WordSpec with Matchers {
+class ConfigEntrySpec extends AnyWordSpec with Matchers {
 
   import ConfigEntrySpec._
 

@@ -1,12 +1,14 @@
 package suiryc.scala.sys
 
 import com.typesafe.scalalogging.StrictLogging
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, IOException, InputStream, OutputStream}
-import scala.collection.mutable
-import scala.sys.process.{BasicIO, ProcessIO}
 import suiryc.scala.io.{IOStream, InterruptibleInputStream}
 import suiryc.scala.misc.RichOptional._
 import suiryc.scala.misc.Util
+
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, IOException, InputStream, OutputStream}
+import scala.annotation.nowarn
+import scala.collection.mutable
+import scala.sys.process.{BasicIO, ProcessIO}
 
 /**
  * Command execution result.
@@ -77,7 +79,8 @@ object Command
    * @param os where the sink sends the output
    */
   def addExtraOutputSink(os: OutputStream, kind: OutputType.Value = OutputType.both): Unit = {
-    val sinks = kind match {
+    // @nowarn workarounds scala 2.13.x false-positive
+    val sinks = (kind: @nowarn) match {
       case OutputType.stdout => List(extraStdoutSink)
       case OutputType.stderr => List(extraStderrSink)
       case OutputType.both => List(extraStdoutSink, extraStderrSink)
@@ -99,7 +102,8 @@ object Command
         stream.stream eq os
       }
 
-    kind match {
+    // @nowarn workarounds scala 2.13.x false-positive
+    (kind: @nowarn) match {
       case OutputType.stdout =>
         extraStdoutSink = filter(extraStdoutSink)
 

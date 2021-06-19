@@ -2,16 +2,16 @@ import sbt._
 import Keys._
 
 lazy val versions = Map[String, String](
-  "akka"          -> "2.5.25",
-  "config"        -> "1.3.4",
+  "akka"          -> "2.6.15",
+  "config"        -> "1.4.1",
   "javafx"        -> "12.0.1",
   "logback"       -> "1.2.3",
-  "monix"         -> "3.0.0",
-  "scala"         -> "2.13.1",
-  "scala-logging" -> "3.9.2",
-  "scalatest"     -> "3.0.8",
-  "scopt"         -> "3.7.1",
-  "spray-json"    -> "1.3.5",
+  "monix"         -> "3.4.0",
+  "scala"         -> "2.13.6",
+  "scala-logging" -> "3.9.3",
+  "scalatest"     -> "3.2.9",
+  "scopt"         -> "4.0.1",
+  "spray-json"    -> "1.3.6",
   "suiryc-scala"  -> "0.0.4-SNAPSHOT"
 )
 
@@ -20,21 +20,36 @@ lazy val commonSettings = Seq(
   version := versions("suiryc-scala"),
   scalaVersion := versions("scala"),
 
+  // For scalac options: https://docs.scala-lang.org/overviews/compiler-options/index.html
+  // Notes:
+  // 'UTF-8' encoding is the default.
   scalacOptions ++= Seq(
-    "-encoding", "UTF-8",
+    // Explain type errors in more detail.
+    "-explaintypes",
+    // Emit warning and location for usages of features that should be imported explicitly.
     "-feature",
+    // Enable additional warnings where generated code depends on assumptions.
     "-unchecked",
+    // Fail the compilation if there are any warnings.
     "-Werror",
-    "-Xlint:_",
-    "-Ywarn-dead-code",
-    "-Ywarn-numeric-widen",
-    "-Ywarn-unused:_",
-    "-Ywarn-value-discard"
+    // Warn when dead code is identified.
+    "-Wdead-code",
+    // Warn when more than one implicit parameter section is defined.
+    "-Wextra-implicit",
+    // Warn when numerics are widened.
+    "-Wnumeric-widen",
+    // Enable all unused warnings.
+    "-Wunused",
+    // Warn when non-Unit expression results are unused.
+    "-Wvalue-discard",
+    // Wrap field accessors to throw an exception on uninitialized access.
+    "-Xcheckinit",
+    // Enable all recommended warnings.
+    "-Xlint"
   ),
   resolvers += Resolver.mavenLocal,
   publishMavenStyle := true,
-  publishTo := Some(Resolver.mavenLocal),
-  publishArtifact in packageDoc := false
+  publishTo := Some(Resolver.mavenLocal)
 )
 
 
@@ -98,7 +113,7 @@ lazy val root = project.in(file(".")).
   settings(
     name := "suiryc-scala",
     libraryDependencies := Seq.empty,
-    publishArtifact in Compile := false
+    Compile / publishArtifact := false
   )
 
 lazy val jfxPlatform = {

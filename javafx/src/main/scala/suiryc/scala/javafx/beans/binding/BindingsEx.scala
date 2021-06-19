@@ -230,15 +230,15 @@ object BindingsEx {
     // Extra side effect codes
     private var sideEffects = Set.empty[() => Any]
 
-    def this() {
+    def this() = {
       this(None, None)
     }
 
-    def this(scheduler: Scheduler) {
+    def this(scheduler: Scheduler) = {
       this(Some(scheduler), None)
     }
 
-    def this(throttler: CallsThrottler) {
+    def this(throttler: CallsThrottler) = {
       this(None, Some(throttler))
     }
 

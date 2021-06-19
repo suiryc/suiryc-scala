@@ -1,9 +1,10 @@
 package suiryc.scala.misc
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 // scalastyle:off magic.number
-class UtilSpec extends WordSpec with Matchers {
+class UtilSpec extends AnyWordSpec with Matchers {
 
   "indexOf" should {
 

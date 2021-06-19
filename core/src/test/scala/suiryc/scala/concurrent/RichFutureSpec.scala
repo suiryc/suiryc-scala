@@ -1,18 +1,20 @@
 package suiryc.scala.concurrent
 
 import akka.actor.ActorSystem
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import java.util.UUID
-import org.scalatest.{Matchers, WordSpec}
 import scala.concurrent.{Await, Promise, TimeoutException}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 // scalastyle:off magic.number
-class RichFutureSpec extends WordSpec with Matchers {
+class RichFutureSpec extends AnyWordSpec with Matchers {
 
   import RichFuture._
 
-  val system = ActorSystem("RichFutureSpec")
+  private val system = ActorSystem("RichFutureSpec")
   import system.dispatcher
 
   "withTimeout" should {
@@ -236,7 +238,7 @@ class RichFutureSpec extends WordSpec with Matchers {
     // End execution time
     var end: Long = 0L
 
-    val action = Action(id, {
+    val action: Action[UUID, UUID] = Action(id, {
       executed += 1
       start = System.currentTimeMillis
       if (delay.length > 0) {

@@ -6,13 +6,15 @@ import javafx.collections.transformation.SortedList
 import javafx.scene.control._
 import javafx.scene.control.skin.{TableViewSkin, TreeTableViewSkin, VirtualFlow}
 import javafx.scene.layout.Region
-import scala.jdk.CollectionConverters._
-import scala.reflect._
-import scala.reflect.internal.util.WeakHashSet
 import spray.json._
 import suiryc.scala.javafx.beans.value.RichObservableValue
 import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.javafx.scene.Nodes
+
+import scala.annotation.nowarn
+import scala.jdk.CollectionConverters._
+import scala.reflect._
+import scala.reflect.internal.util.WeakHashSet
 
 /** TableView (and TreeTableView) helpers. */
 object TableViews {
@@ -64,10 +66,10 @@ object TableViews {
   def scrollTo(table: TableView[_], index: Int, top: Boolean, padding: Int): Unit = {
     // To control scrolling, we need to access the VirtualFlow which is in the
     // table skin (should be the first child, accessible once table is shown).
+    // @nowarn workarounds scala 2.13.x false-positive
     table.getSkin.asInstanceOf[TableViewSkin[_]].getChildren.asScala.find(_.isInstanceOf[VirtualFlow[_]]).foreach {
-      case flow: VirtualFlow[_] =>
-        scrollTo(flow.asInstanceOf[VirtualFlow[_ <: IndexedCell[_]]], table.getItems.size, index, top, padding)
-    }
+      case flow: VirtualFlow[_] => scrollTo(flow, table.getItems.size, index, top, padding)
+    }: @nowarn
   }
 
   /**
@@ -83,10 +85,10 @@ object TableViews {
    * @param padding number of extra rows that should also be visible
    */
   def scrollTo(table: TreeTableView[_], index: Int, top: Boolean, padding: Int): Unit = {
+    // @nowarn workarounds scala 2.13.x false-positive
     table.getSkin.asInstanceOf[TreeTableViewSkin[_]].getChildren.asScala.find(_.isInstanceOf[VirtualFlow[_]]).foreach {
-      case flow: VirtualFlow[_] =>
-        scrollTo(flow.asInstanceOf[VirtualFlow[_ <: IndexedCell[_]]], table.getRoot.getChildren.size, index, top, padding)
-    }
+      case flow: VirtualFlow[_] => scrollTo(flow, table.getRoot.getChildren.size, index, top, padding)
+    }: @nowarn
   }
 
   private def scrollTo(flow: VirtualFlow[_ <: IndexedCell[_]], itemsCount: Int, index: Int, top: Boolean, padding: Int): Unit = {

@@ -1,15 +1,17 @@
 package suiryc.scala.spray.json
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import spray.json._
+
 import java.net.URI
 import java.nio.file.{Path, Paths}
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.{Date, UUID}
-import org.scalatest.{Matchers, WordSpec}
 import scala.concurrent.duration._
-import spray.json._
 
-class JsonFormatsSpec extends WordSpec with Matchers with JsonFormats {
+class JsonFormatsSpec extends AnyWordSpec with Matchers with JsonFormats {
 
   "JsonFormats" should {
 

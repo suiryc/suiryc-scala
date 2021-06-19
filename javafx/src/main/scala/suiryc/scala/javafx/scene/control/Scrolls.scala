@@ -2,6 +2,8 @@ package suiryc.scala.javafx.scene.control
 
 import javafx.scene.control.{ScrollBar, ScrollPane}
 
+import scala.annotation.nowarn
+
 /** Scroll helpers. */
 object Scrolls {
 
@@ -19,7 +21,8 @@ object Scrolls {
   @inline private def computeValue(min: Double, max: Double, contentSize: Double, viewportSize: Double,
     offset: Double, pos: ScrollOffsetPosition.Value): Double =
   {
-    val offsetDelta = pos match {
+    // @nowarn workarounds scala 2.13.x false-positive
+    val offsetDelta = (pos: @nowarn) match {
       case ScrollOffsetPosition.Begin  => 0.0
       case ScrollOffsetPosition.Middle => viewportSize / 2
       case ScrollOffsetPosition.End    => viewportSize

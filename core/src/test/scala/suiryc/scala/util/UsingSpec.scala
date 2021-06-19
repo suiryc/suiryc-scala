@@ -1,9 +1,12 @@
 package suiryc.scala.util
 
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import scala.util.{Failure, Success}
 
-class UsingSpec extends WordSpec with Matchers with BeforeAndAfterEach {
+class UsingSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach {
 
   "Using" when {
 

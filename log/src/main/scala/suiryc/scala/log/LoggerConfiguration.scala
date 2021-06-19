@@ -84,7 +84,7 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
           // though reloading should not take that long.
           import suiryc.scala.akka.CoreSystem.system
           addInfo(s"Will scan for changes in [$url] period [$period]")
-          system.scheduler.schedule(period, period) {
+          system.scheduler.scheduleWithFixedDelay(period, period) { () =>
             fireEnteredRunMethod()
             if (changeDetected()) {
               val threshold = System.currentTimeMillis

@@ -2,6 +2,7 @@ package suiryc.scala.io
 
 import java.io.{File, FileFilter}
 import java.nio.file.Path
+import scala.annotation.nowarn
 import scala.language.implicitConversions
 
 // scalastyle:off method.name
@@ -56,11 +57,15 @@ class PathFinder protected(
   // path.
   def /(path: String): PathFinder = this / PathFinder(path)
 
+  // @nowarn workarounds scala 2.13.x false-positive
+  @nowarn
   def **(filter: FileFilter, recursiveFilter: FileFilter = DirectoryFileFilter,
       followLinks: Boolean = false, maxDepth: Option[Int] = None): PathFinder =
     addFilters(new SimplePathFilter(DirectoryFileFilter),
       new ChildrenPathFilter(filter, recursiveFilter, followLinks, maxDepth))
 
+  // @nowarn workarounds scala 2.13.x false-positive
+  @nowarn
   def ***(followLinks: Boolean, maxDepth: Option[Int]): PathFinder = {
     import suiryc.scala.io.RichFileFilter._
 

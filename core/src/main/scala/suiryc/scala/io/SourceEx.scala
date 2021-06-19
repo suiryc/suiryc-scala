@@ -12,8 +12,7 @@ object SourceEx {
     val source = Source.fromFile(file)
     try {
       todo(source)
-    }
-    finally {
+    } finally {
       source.close()
     }
   }
@@ -38,7 +37,7 @@ object SourceEx {
         if (!r) source.close()
         r
       }
-      override def next(): String = it.next
+      override def next(): String = it.next()
     }
   }
 
