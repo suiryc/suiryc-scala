@@ -37,6 +37,10 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
       None
   }
 
+  def stop(): Unit = {
+    withContext("stop logback")(_.stop())
+  }
+
   def watch(period: FiniteDuration): Unit = {
     withContext("watch for logback configuration changes")(watch(period, _))
   }
