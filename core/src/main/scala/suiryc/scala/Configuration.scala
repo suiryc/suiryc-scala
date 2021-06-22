@@ -75,7 +75,7 @@ object Configuration {
     ).reduceLeft(_.withFallback(_)).resolve()
   }
 
-  /** Default application configuration, with overridings. */
+  /** Default application configuration, with overrides. */
   val loaded: Config = load()
 
 }

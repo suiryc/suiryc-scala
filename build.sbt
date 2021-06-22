@@ -7,6 +7,7 @@ lazy val versions = Map[String, String](
   "javafx"        -> "12.0.1",
   "logback"       -> "1.2.3",
   "monix"         -> "3.4.0",
+  "sbt-assembly"  -> "1.0.0",
   "scala"         -> "2.13.6",
   "scala-logging" -> "3.9.3",
   "scalatest"     -> "3.2.9",
@@ -53,64 +54,92 @@ lazy val commonSettings = Seq(
 )
 
 
-lazy val core = project.in(file("core")).
-  settings(commonSettings:_*).
-  settings(
+lazy val core = project.in(file("core"))
+  .settings(commonSettings: _*)
+  .settings(
     name := "suiryc-scala-core",
     libraryDependencies ++= Seq(
-      "com.github.scopt"           %% "scopt"          % versions("scopt")         % "provided",
-      "com.typesafe"               %  "config"         % versions("config")        % "provided",
-      "com.typesafe.akka"          %% "akka-actor"     % versions("akka")          % "provided",
-      "com.typesafe.akka"          %% "akka-slf4j"     % versions("akka")          % "provided",
-      "com.typesafe.akka"          %% "akka-testkit"   % versions("akka")          % "test",
-      "com.typesafe.scala-logging" %% "scala-logging"  % versions("scala-logging") % "provided",
-      "io.monix"                   %% "monix"          % versions("monix")         % "provided",
-      "io.spray"                   %% "spray-json"     % versions("spray-json")    % "provided",
-      "org.openjfx"                %  "javafx-base"    % versions("javafx")        % "provided" classifier jfxPlatform,
-      "org.scalatest"              %% "scalatest"      % versions("scalatest")     % "test"
+      "com.github.scopt"           %% "scopt"          % versions("scopt")         % Provided,
+      "com.typesafe"               %  "config"         % versions("config")        % Provided,
+      "com.typesafe.akka"          %% "akka-actor"     % versions("akka")          % Provided,
+      "com.typesafe.akka"          %% "akka-slf4j"     % versions("akka")          % Provided,
+      "com.typesafe.akka"          %% "akka-testkit"   % versions("akka")          % Test,
+      "com.typesafe.scala-logging" %% "scala-logging"  % versions("scala-logging") % Provided,
+      "io.monix"                   %% "monix"          % versions("monix")         % Provided,
+      "io.spray"                   %% "spray-json"     % versions("spray-json")    % Provided,
+      "org.openjfx"                %  "javafx-base"    % versions("javafx")        % Provided classifier jfxPlatform,
+      "org.scalatest"              %% "scalatest"      % versions("scalatest")     % Test
     )
   )
 
 
-lazy val log = project.in(file("log")).
-  dependsOn(core).
-  settings(commonSettings:_*).
-  settings(
+lazy val log = project.in(file("log"))
+  .dependsOn(core)
+  .settings(commonSettings: _*)
+  .settings(
     name := "suiryc-scala-log",
     libraryDependencies ++= Seq(
-      "ch.qos.logback"             %  "logback-classic" % versions("logback")       % "provided",
-      "ch.qos.logback"             %  "logback-core"    % versions("logback")       % "provided",
-      "com.typesafe.akka"          %% "akka-actor"      % versions("akka")          % "provided",
-      "com.typesafe.scala-logging" %% "scala-logging"   % versions("scala-logging") % "provided"
+      "ch.qos.logback"             %  "logback-classic" % versions("logback")       % Provided,
+      "ch.qos.logback"             %  "logback-core"    % versions("logback")       % Provided,
+      "com.typesafe.akka"          %% "akka-actor"      % versions("akka")          % Provided,
+      "com.typesafe.scala-logging" %% "scala-logging"   % versions("scala-logging") % Provided
     )
   )
 
 
-lazy val javaFX = project.in(file("javafx")).
-  dependsOn(core, log).
-  settings(commonSettings:_*).
-  settings(
+lazy val javaFX = project.in(file("javafx"))
+  .dependsOn(core, log)
+  .settings(commonSettings: _*)
+  .settings(
     name := "suiryc-scala-javafx",
     libraryDependencies ++= Seq(
-      "ch.qos.logback"             %  "logback-classic" % versions("logback")       % "provided",
-      "ch.qos.logback"             %  "logback-core"    % versions("logback")       % "provided",
-      "com.typesafe.akka"          %% "akka-actor"      % versions("akka")          % "provided",
-      "com.typesafe.scala-logging" %% "scala-logging"   % versions("scala-logging") % "provided",
-      "io.monix"                   %% "monix"           % versions("monix")         % "provided",
-      "io.spray"                   %% "spray-json"      % versions("spray-json")    % "provided",
-      "org.openjfx"                %  "javafx-base"     % versions("javafx")        % "provided" classifier jfxPlatform,
-      "org.openjfx"                %  "javafx-controls" % versions("javafx")        % "provided" classifier jfxPlatform,
-      "org.openjfx"                %  "javafx-graphics" % versions("javafx")        % "provided" classifier jfxPlatform
+      "ch.qos.logback"             %  "logback-classic" % versions("logback")       % Provided,
+      "ch.qos.logback"             %  "logback-core"    % versions("logback")       % Provided,
+      "com.typesafe.akka"          %% "akka-actor"      % versions("akka")          % Provided,
+      "com.typesafe.scala-logging" %% "scala-logging"   % versions("scala-logging") % Provided,
+      "io.monix"                   %% "monix"           % versions("monix")         % Provided,
+      "io.spray"                   %% "spray-json"      % versions("spray-json")    % Provided,
+      "org.openjfx"                %  "javafx-base"     % versions("javafx")        % Provided classifier jfxPlatform,
+      "org.openjfx"                %  "javafx-controls" % versions("javafx")        % Provided classifier jfxPlatform,
+      "org.openjfx"                %  "javafx-graphics" % versions("javafx")        % Provided classifier jfxPlatform
     )
+  )
+
+
+lazy val sbtPlugins = project.in(file("sbt"))
+  .enablePlugins(SbtPlugin)
+  .settings(commonSettings.filterNot(_.key.key.label == "scalaVersion"): _*)
+  .settings(
+    name := "sbt-suiryc-scala",
+    // Scala 2.12 compiler options.
+    // Options that have been renamed or replaced between 2.12 and 2.13:
+    //  '-deprecation' -> '-Xlint:deprecated'
+    //  (most) '-Ywarn-...' -> '-W...'
+    //  '-Xfatal-warnings' -> '-Werror'
+    scalacOptions := Seq(
+      "-deprecation",
+      "-explaintypes",
+      "-feature",
+      "-unchecked",
+      "-Xcheckinit",
+      "-Xfatal-warnings",
+      "-Xlint",
+      "-Ywarn-dead-code",
+      "-Ywarn-extra-implicit",
+      "-Ywarn-numeric-widen",
+      "-Ywarn-unused",
+      "-Ywarn-value-discard"
+    ),
+    addSbtPlugin("com.eed3si9n" % "sbt-assembly" % versions("sbt-assembly") % Provided)
   )
 
 
 // Notes: 'aggregate' can be used so that commands used on 'root' project can be executed in each subproject
 // 'dependsOn' can be used so that an assembly jar can be built with all subprojects resources (and dependencies)
-lazy val root = project.in(file(".")).
-  aggregate(core, log, javaFX).
-  settings(commonSettings:_*).
-  settings(
+lazy val root = project.in(file("."))
+  .aggregate(core, log, javaFX, sbtPlugins)
+  .settings(commonSettings: _*)
+  .settings(
     name := "suiryc-scala",
     libraryDependencies := Seq.empty,
     Compile / publishArtifact := false
