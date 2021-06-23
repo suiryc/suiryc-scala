@@ -1,5 +1,7 @@
 package suiryc.scala.concurrent
 
+import com.typesafe.config.Config
+
 import java.util.concurrent.{Executors, ThreadFactory, TimeUnit}
 import scala.concurrent.{ExecutionContext, Future, Promise, TimeoutException}
 import scala.concurrent.duration.FiniteDuration
@@ -220,12 +222,32 @@ object RichFuture {
   def blockingAsync[A](f: => A): Future[A] = {
     // Use the global context, but signal the code as blocking.
     // See: https://docs.scala-lang.org/overviews/core/futures.html
+    // Note: maxExtraThreads is 256 (not 32767) in scala 2.12/2.13.
     import scala.concurrent.blocking
     import scala.concurrent.ExecutionContext.Implicits.global
 
     Future {
       blocking {
         f
+      }
+    }
+  }
+
+  val KEY_SCALA_CONCURRENT_CONTEXT = "scala.concurrent.context"
+
+  def setScalaConcurrentContext(config: Config): Unit = {
+    import suiryc.scala.ConfigTools._
+    import scala.jdk.CollectionConverters._
+
+    // Get all configured keys if any.
+    config.getOptionalConfig(KEY_SCALA_CONCURRENT_CONTEXT).foreach { conf =>
+      conf.root.asScala.foreach {
+        case (name, value) =>
+          val key = s"$KEY_SCALA_CONCURRENT_CONTEXT.$name"
+          // Set corresponding system property unless already set.
+          if (Option(System.getProperty(key)).forall(_.isEmpty)) {
+            System.setProperty(key, value.unwrapped.toString)
+          }
       }
     }
   }
