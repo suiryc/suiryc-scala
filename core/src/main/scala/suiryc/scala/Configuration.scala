@@ -1,7 +1,9 @@
 package suiryc.scala
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigValue}
+
 import java.nio.file.Path
+import scala.concurrent.duration._
 
 
 object Configuration {
@@ -40,5 +42,60 @@ object Configuration {
 
   /** Default application configuration, with overrides. */
   val loaded: Config = load()
+
+}
+
+/** Config helpers. */
+object ConfigTools {
+
+  implicit class RichConfig(private val config: Config) extends AnyVal {
+
+    // Note: the 'optional' helpers should not be used if default value can
+    // be configured in the reference configuration.
+
+    @inline private final def getOptional[A](path: String)(f: String => A): Option[A] = {
+      if (config.hasPath(path)) {
+        Some(f(path))
+      } else {
+        None
+      }
+    }
+
+    /** Gets value if path exists. */
+    def getOptionalValue(path: String): Option[ConfigValue] = getOptional(path)(config.getValue)
+
+    /** Gets boolean if path exists. */
+    def getOptionalBoolean(path: String): Option[Boolean] = getOptional(path)(config.getBoolean)
+
+    /** Gets int if path exists. */
+    def getOptionalInt(path: String): Option[Int] = getOptional(path)(config.getInt)
+
+    /** Gets int if path exists. */
+    def getOptionalDouble(path: String): Option[Double] = getOptional(path)(config.getDouble)
+
+    /** Gets string if path exists. */
+    def getOptionalString(path: String): Option[String] = getOptional(path)(config.getString)
+
+    /** Gets config if path exists. */
+    def getOptionalConfig(path: String): Option[Config] = getOptional(path)(config.getConfig)
+
+    /** Gets string and ensures it is non-empty. */
+    def getNonEmptyString(path: String): String = {
+      val v = config.getString(path)
+      if (v.isEmpty) throw new Exception(s"'$path' must not be empty")
+      v
+    }
+
+    /**
+     * Gets duration as scala value.
+     *
+     * Note that original unit may be lost (60s gives 1 minute), which usually
+     * is not an issue.
+     */
+    def getScalaDuration(path: String): FiniteDuration = {
+      Duration.fromNanos(config.getDuration(path).toNanos)
+    }
+
+  }
 
 }
