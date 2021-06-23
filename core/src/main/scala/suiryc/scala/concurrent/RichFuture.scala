@@ -1,6 +1,7 @@
 package suiryc.scala.concurrent
 
 import com.typesafe.config.Config
+import suiryc.scala.akka.CoreSystem
 
 import java.util.concurrent.{Executors, ThreadFactory, TimeUnit}
 import scala.concurrent.{ExecutionContext, Future, Promise, TimeoutException}
@@ -220,17 +221,20 @@ object RichFuture {
 
   /** Executes blocking code and make it async. */
   def blockingAsync[A](f: => A): Future[A] = {
-    // Use the global context, but signal the code as blocking.
-    // See: https://docs.scala-lang.org/overviews/core/futures.html
-    // Note: maxExtraThreads is 256 (not 32767) in scala 2.12/2.13.
-    import scala.concurrent.blocking
-    import scala.concurrent.ExecutionContext.Implicits.global
-
+    // For simple usage we could rely on the global context and signal code as
+    // blocking. See: https://docs.scala-lang.org/overviews/core/futures.html
+    // The maxExtraThreads limit is 256 (not 32767) in scala 2.12/2.13, and can
+    // be changed programmatically (setScalaConcurrentContext).
+    // However using a dedicated ExecutionContext, as recommended for heavy
+    // usage, may consume less resources.
+    // Moreover some implementations (e.g. JVM 1.8.0u282) are buggy and consume
+    // too much CPU when 'blocking' inside a fork join executor (which is used
+    // in the global context).
+    // Thus use the dedicated dispatcher we already use for other (e.g. akka)
+    // blocking stuff.
     Future {
-      blocking {
-        f
-      }
-    }
+      f
+    }(CoreSystem.Blocking.dispatcher)
   }
 
   val KEY_SCALA_CONCURRENT_CONTEXT = "scala.concurrent.context"

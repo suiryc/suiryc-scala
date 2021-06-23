@@ -235,7 +235,7 @@ object UniqueInstance extends LazyLogging {
 
     // Wait for caller to be ready.
     // Upon failure, application is responsible for exiting when applicable.
-    import suiryc.scala.akka.CoreSystem.system.dispatcher
+    import suiryc.scala.akka.CoreSystem.NonBlocking._
     val promise = Promise[Unit]()
     ready.onComplete {
       case Success(_) =>

@@ -1,6 +1,6 @@
 package suiryc.scala.log
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.AppenderBase
 import suiryc.scala.akka.CoreSystem
@@ -10,12 +10,13 @@ class ProxyAppender(_writers: Seq[LogWriter] = Seq.empty, async: Boolean = false
   extends AppenderBase[ILoggingEvent]
 {
 
+  import CoreSystem.NonBlocking._
+
   protected var writers: Set[LogWriter] = _writers.toSet
 
-  protected val system: ActorSystem = CoreSystem.system
   protected val actor: Option[ActorRef] =
     if (!async) None
-    else Some(system.actorOf(Props(new ProxyActor).withDispatcher("log.dispatcher")))
+    else Some(actorOf(Props(new ProxyActor)))
 
 
   override def start(): Unit = {

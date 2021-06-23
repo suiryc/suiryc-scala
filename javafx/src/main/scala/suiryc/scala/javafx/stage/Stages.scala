@@ -266,7 +266,7 @@ object Stages {
           }
           RichFuture.timeout(500.millis).onComplete { _ =>
             cancellable.cancel()
-          }(CoreSystem.system.dispatcher)
+          }(CoreSystem.NonBlocking.dispatcher)
         }
         reset(math.max(loc.width, stage.getMinWidth), stage.widthProperty, stage.setWidth)
         reset(math.max(loc.height, stage.getMinHeight), stage.heightProperty, stage.setHeight)

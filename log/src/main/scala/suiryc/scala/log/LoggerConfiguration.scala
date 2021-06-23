@@ -86,8 +86,10 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
         case Some(url) =>
           // Since we access the filesystem, use the 'blocking' system even
           // though reloading should not take that long.
-          import suiryc.scala.akka.CoreSystem.system
+          import suiryc.scala.akka.CoreSystem.Blocking._
           addInfo(s"Will scan for changes in [$url] period [$period]")
+          // Use the system scheduler (not monix) as it takes less time to start
+          // and is good enough for what we need here.
           system.scheduler.scheduleWithFixedDelay(period, period) { () =>
             fireEnteredRunMethod()
             if (changeDetected()) {
@@ -96,7 +98,7 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
               addInfo(s"${CoreConstants.RESET_MSG_PREFIX}named [${context.getName}]")
               reload(context, threshold)
             }
-          }(system.dispatcher)
+          }
           ()
 
         case None =>

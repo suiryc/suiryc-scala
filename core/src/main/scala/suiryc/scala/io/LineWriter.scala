@@ -1,6 +1,6 @@
 package suiryc.scala.io
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import suiryc.scala.akka.CoreSystem
 
 /** Writer expecting full lines. */
@@ -22,10 +22,10 @@ class ProxyLineWriter(_writers: Seq[LineWriter] = Seq.empty, async: Boolean = fa
 
   protected var writers: Set[LineWriter] = _writers.toSet
 
-  protected val system: ActorSystem = CoreSystem.system
+  import CoreSystem.NonBlocking._
   protected val actor: Option[ActorRef] =
     if (!async) None
-    else Some(system.actorOf(Props(new ProxyActor).withDispatcher("dispatcher")))
+    else Some(actorOf(Props(new ProxyActor)))
 
 
   override def write(line: String): Unit = {

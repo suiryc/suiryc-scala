@@ -38,6 +38,16 @@ class JFXLauncher[A <: JFXApplication : ClassTag] {
     newApplication.launch(ArraySeq.unsafeWrapArray(args): _*)
   }
 
+  /**
+   * Closes given main stage, then exists JavaFX.
+   *
+   * Notes:
+   * Closing the main stage will automatically stop the JavaFX thread once fully
+   * done. As explained in JFXSystem, once the JavaFX thread is stopped, the
+   * existing actors that were running with it will remain alive, preventing the
+   * system to properly stop.
+   * Thus caller has to ensure these actors, if any, are stopped before calling.
+   */
   def shutdown(stage: Stage): Unit = {
     // Make sure to close the stage through the JavaFX thread.
     Platform.runLater(() => stage.close())

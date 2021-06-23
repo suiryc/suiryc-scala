@@ -8,6 +8,8 @@ import scala.concurrent.duration._
 
 object Configuration {
 
+  val KEY_LIB = "suiryc-scala"
+
   /** Loads a specific application configuration, with our overridings. */
   def load(confPath: Option[Path] = None, resourceName: Option[String] = None): Config = {
     // Use requested configuration file and fallback to usual application and
@@ -42,6 +44,9 @@ object Configuration {
 
   /** Default application configuration, with overrides. */
   val loaded: Config = load()
+
+  /** Library configuration ('suiryc-scala' path). */
+  val libConfig: Config = loaded.getConfig(Configuration.KEY_LIB)
 
 }
 

@@ -1,6 +1,6 @@
 package suiryc.scala.javafx.scene.control
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import javafx.scene.control.TextArea
 import suiryc.scala.akka.CoreSystem
 import suiryc.scala.io.LineWriter
@@ -18,6 +18,7 @@ class LogArea(
 { logArea =>
 
   import LogArea._
+  import CoreSystem.NonBlocking._
 
   // Note: final newline is important in case an exception is to be included
   // (directly follows the formatted message line, without leading newline).
@@ -35,12 +36,11 @@ class LogArea(
   // Note: JavaFX thread CPU usage may reach limit when updating on each change.
   // So limit the refresh rate to 10 times per second.
 
-  protected val system: ActorSystem = CoreSystem.system
   // Note: we need to give the creator function because the actor is tied to
   // this class instance. So the compiler automagically adds a (first) parameter
   // - which is the reference to the outer class - to any constructor, hence no
   // default constructor available for the type parameter variant of Props.
-  protected val actor: ActorRef = system.actorOf(Props(new LogAreaActor))
+  protected val actor: ActorRef = actorOf(Props(new LogAreaActor))
 
   lazy val msgWriter: ThresholdLogLinePatternWriter =
     new LogAreaWriter
@@ -83,7 +83,6 @@ class LogArea(
     def nominal: Receive = {
       case Write(s) =>
         import scala.concurrent.duration._
-        import system.dispatcher
         context.become(bufferize(s))
         system.scheduler.scheduleOnce(100.millis, self, Flush)
         ()

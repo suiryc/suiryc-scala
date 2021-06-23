@@ -350,7 +350,7 @@ object BindingsEx {
 
         case None =>
           // Single code execution throttling.
-          List(CallThrottler(schedulerOpt.getOrElse(CoreSystem.scheduler), throttle) { inEC =>
+          List(CallThrottler(schedulerOpt.getOrElse(CoreSystem.NonBlocking.scheduler), throttle) { inEC =>
             update(inEC || schedulerOpt.isEmpty, withSideEffects = true)
           })
       }

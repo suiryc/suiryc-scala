@@ -3,13 +3,15 @@ package suiryc.scala.javafx.concurrent
 import akka.actor.{Actor, ActorRef, Props, Terminated}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
-import java.util.concurrent.TimeUnit
 import javafx.application.Platform
 import monix.execution.{Cancelable, Scheduler}
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
+import suiryc.scala.Configuration
+import suiryc.scala.akka.CoreSystem
+
+import java.util.concurrent.TimeUnit
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success}
-import suiryc.scala.akka.CoreSystem
 
 /**
  * JavaFX concurrent helpers.
@@ -21,6 +23,9 @@ object JFXSystem
   extends StrictLogging
 {
 
+  // Akka system.
+  import CoreSystem.NonBlocking._
+
   // Notes:
   // We don't want the (core) system to prevent the JVM from exiting. Thus its
   // threads are (configuration) made daemonic so that the application don't
@@ -30,7 +35,7 @@ object JFXSystem
   // anymore; in particular they cannot be properly stopped anymore.
   // By default, akka systems are automatically terminated upon JVM exit through
   // a shutdown hook (with a 10s timeout).
-  // See: https://doc.akka.io/docs/akka/current/actors.html#coordinated-shutdown
+  // See: https://doc.akka.io/docs/akka/current/coordinated-shutdown.html#coordinated-shutdown
   // So in this case the actual JVM exit is delayed until timeout.
   // There are two ways to prevent this:
   // 1. Explicitly stop those actors (or more generally terminate the system)
@@ -67,11 +72,9 @@ object JFXSystem
   protected case class Action(action: () => Unit)
 
   /** JavaJX configuration ('javafx' path relative to core config). */
-  val config: Config = CoreSystem.config.getConfig("javafx")
+  val config: Config = Configuration.libConfig.getConfig("javafx")
   /** Whether to warn if requesting to schedule action while already in JavaFX thread. */
   private val warnReentrant = config.getBoolean("system.warn-reentrant")
-  /** Akka system. */
-  private val system = CoreSystem.system
   /** JavaFX actor to which actions are delegated. */
   private val jfxActor = newJFXActor(Props[JFXActor](), "JavaFX-dispatcher")
 
@@ -92,11 +95,11 @@ object JFXSystem
 
   /** Creates an actor using the JavaFX thread backed dispatcher. */
   def newJFXActor(props: Props): ActorRef =
-    system.actorOf(props.withDispatcher("javafx.dispatcher"))
+    actorOf(props.withDispatcher("suiryc-scala.javafx.dispatcher"))
 
   /** Creates an actor using the JavaFX thread backed dispatcher. */
   def newJFXActor(props: Props, name: String): ActorRef =
-    system.actorOf(props.withDispatcher("javafx.dispatcher"), name)
+    actorOf(props.withDispatcher("suiryc-scala.javafx.dispatcher"), name)
 
   @inline protected def reentrant(): Unit = {
     if (warnReentrant) {
@@ -187,7 +190,7 @@ object JFXSystem
   }
 
   /** Terminates the (core) system with JavaFX actors, then JavaFX. */
-  def terminate(implicit ec: ExecutionContext = executor): Future[Terminated] = {
+  def terminate(): Future[Terminated] = {
     system.terminate().map { v =>
       Platform.exit()
       v
