@@ -11,10 +11,11 @@ import ch.qos.logback.core.status.{Status, StatusUtil}
 import ch.qos.logback.core.util.StatusPrinter
 import com.typesafe.scalalogging.StrictLogging
 import org.slf4j.LoggerFactory
+import suiryc.scala.log.status.NoticeStatusListener
 
 import java.net.URL
 import scala.annotation.unused
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
 object LoggerConfiguration extends ContextAwareBase with StrictLogging {
@@ -44,6 +45,10 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
       None
   }
 
+  def listenStatus(retrospective: FiniteDuration = NoticeStatusListener.DEFAULT_RETROSPECTIVE.millis, prefix: Option[String] = None): Unit = {
+    NoticeStatusListener.start(retrospective, prefix)
+  }
+
   def stop(): Unit = {
     withContext("stop logback")(_.stop())
   }
@@ -66,7 +71,7 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
 
   private def changeDetected(): Boolean = getWatchList.exists(_.changeDetected())
 
-  private def withContext(label: String)(f: LoggerContext => Unit): Unit = {
+  def withContext(label: String)(f: LoggerContext => Unit): Unit = {
     contextOpt match {
       case Some(context) =>
         try {
@@ -149,8 +154,9 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
           logger.warn("There were issues reloading logback configuration: see stdout/stderr for details")
         }
         // Explicitly print status after handling fallback, so that its issues
-        // will also be printed if any.
-        StatusPrinter.printInCaseOfErrorsOrWarnings(context, threshold)
+        // will also be printed if any. Unless we have a status listener (which
+        // will print when applicable).
+        if (!NoticeStatusListener.listening) StatusPrinter.printInCaseOfErrorsOrWarnings(context, threshold)
         !fallback
 
       case None =>
