@@ -7,7 +7,7 @@ import ch.qos.logback.core.joran.event.SaxEvent
 import ch.qos.logback.core.joran.spi.ConfigurationWatchList
 import ch.qos.logback.core.joran.util.ConfigurationWatchListUtil
 import ch.qos.logback.core.spi.ContextAwareBase
-import ch.qos.logback.core.status.StatusUtil
+import ch.qos.logback.core.status.{Status, StatusUtil}
 import ch.qos.logback.core.util.StatusPrinter
 import com.typesafe.scalalogging.StrictLogging
 import org.slf4j.LoggerFactory
@@ -138,8 +138,7 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
         if (fallback) restoreSafeLogger(context, eventList)
         // We need to wait for safe logger to be restored (if needed) to be
         // sure the logger will log.
-        // ErrorStatus.WARN (not accessible) = 1
-        if (fallback || (statusUtil.getHighestLevel(threshold) >= 1)) {
+        if (fallback || (statusUtil.getHighestLevel(threshold) >= Status.WARN)) {
           logger.warn("There were issues reloading logback configuration: see stdout/stderr for details")
         }
         // Explicitly print status after handling fallback, so that its issues
