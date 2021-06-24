@@ -1,7 +1,5 @@
 package suiryc.scala.log
 
-import java.net.URL
-
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.core.CoreConstants
@@ -14,6 +12,8 @@ import ch.qos.logback.core.util.StatusPrinter
 import com.typesafe.scalalogging.StrictLogging
 import org.slf4j.LoggerFactory
 
+import java.net.URL
+import scala.annotation.unused
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
@@ -114,9 +114,10 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
     // Manual JoranConfiguration invoking also do some of this.
     // See: http://logback.qos.ch/manual/configuration.html#joranDirectly
     fireChangeDetected()
-    getMainURL match {
+    val success = getMainURL match {
       case Some(url) if !url.toString.endsWith("xml") =>
         logger.warn("Cannot reload logback configuration: only XML configuration is handled")
+        false
 
       case Some(url) =>
         val jc = new JoranConfigurator()
@@ -144,11 +145,13 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
         // Explicitly print status after handling fallback, so that its issues
         // will also be printed if any.
         StatusPrinter.printInCaseOfErrorsOrWarnings(context, threshold)
+        !fallback
 
       case None =>
         logger.warn("Cannot reload logback configuration: no main URL")
+        false
     }
-    fireDoneReconfiguring()
+    fireDoneReconfiguring(success)
   }
 
   private def restoreSafeLogger(context: LoggerContext, eventList: java.util.List[SaxEvent]): Unit = {
@@ -191,14 +194,14 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
     reconfigureListeners.foreach(_.changeDetected())
   }
 
-  private def fireDoneReconfiguring(): Unit = this.synchronized {
-    reconfigureListeners.foreach(_.doneReconfiguring())
+  private def fireDoneReconfiguring(success: Boolean): Unit = this.synchronized {
+    reconfigureListeners.foreach(_.doneReconfiguring(success))
   }
 
   trait ReconfigureListener {
     def enteredRunMethod(): Unit = {}
     def changeDetected(): Unit = {}
-    def doneReconfiguring(): Unit = {}
+    def doneReconfiguring(@unused success: Boolean): Unit = {}
   }
 
 }
