@@ -21,7 +21,14 @@ object LoggerConfiguration extends ContextAwareBase with StrictLogging {
 
   private var reconfigureListeners = List.empty[ReconfigureListener]
 
-  private val contextOpt = Option(LoggerFactory.getILoggerFactory) match {
+  // Notes:
+  // While the logger implementation is starting, slf4j logger factory is a
+  // dummy org.slf4j.helpers.SubstituteLoggerFactory. So we must not try to get
+  // the factory at this stage, which includes when instantiating classes that
+  // could be loaded from the logger implementation configuration.
+  // Hence have the 'contextOpt' field lazy, so that helper functions, not
+  // relying on it, can still be called in early stages.
+  lazy private val contextOpt = Option(LoggerFactory.getILoggerFactory) match {
     case Some(context: LoggerContext) =>
       setContext(context)
       Some(context)
