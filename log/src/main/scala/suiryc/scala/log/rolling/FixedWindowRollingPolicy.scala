@@ -94,7 +94,7 @@ object FixedWindowRollingPolicy {
       // If the temporary compressing file exists, assume the JVM was previously
       // stopped before finishing compressing: do it now, in the background.
       if (new File(nameCompressing).exists()) {
-        addWarn("Re-compressing first archived log file")
+        addWarn(s"Re-compressing first archived $nameCompressing log file")
         val target = new File(firstCompressedFile)
         if (target.exists()) target.delete()
         compressing = Some(blockingAsyncCompress(nameCompressing, firstCompressedFile))
@@ -106,12 +106,31 @@ object FixedWindowRollingPolicy {
       waitCompressed(Duration.Inf)
       compressing = Some {
         val nameCompressing = getCompressingName(nameOfFile2Compress)
+        // There is no guarantee that:
+        //  - we could properly delete temporary file after previous compression
+        //  - something would inadvertently create a file with the same name
+        //  - util.rename will remove the target file if existing
+        // So as extra safety, first try to remove the target if it exists.
+        if (new File(nameCompressing).exists()) {
+          addWarn(s"Pre-existing $nameCompressing temporary archived log file will be deleted")
+          tryDelete(nameCompressing, "pre-existing temporary archived")
+        }
         util.rename(nameOfFile2Compress, nameCompressing)
         blockingAsyncCompress(nameCompressing, nameOfCompressedFile)
       }
     }
 
     private def getCompressingName(name: String): String = s"$name.compressing"
+
+    private def tryDelete(file: String, kind: String): Unit = {
+      try {
+        new File(file).delete()
+      } catch {
+        case ex: Exception =>
+          addError(s"Failed to delete $kind $file log file:", ex)
+      }
+      ()
+    }
 
     private def blockingAsyncCompress(src: String, dst: String): Future[Unit] = {
       // Note: don't use asyncCompress, but create our own Future because we
@@ -121,8 +140,7 @@ object FixedWindowRollingPolicy {
         // scalastyle:off null
         super.compress(src, dst, null)
         // scalastyle:on null
-        new File(src).delete()
-        ()
+        tryDelete(src, "temporary archived")
       }.andThen {
         case Failure(ex) =>
           addError("Failed to properly finish log compression", ex)
@@ -186,7 +204,7 @@ class FixedWindowRollingPolicy extends lFixedWindowRollingPolicy {
         c.waitCompressed(CoreConstants.SECONDS_TO_WAIT_FOR_COMPRESSION_JOBS.seconds)
       } catch {
         case ex: Exception =>
-          addError(ex.getMessage, ex)
+          addError("Failed to finish archived log compression:", ex)
       }
     }
     super.stop()
