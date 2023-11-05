@@ -61,7 +61,7 @@ class LogArea(
     extends ThresholdLogLinePatternWriter
   {
 
-    setPattern(pattern)
+    this.setPattern(pattern)
 
     override def write(line: String): Unit =
       logArea.write(line)

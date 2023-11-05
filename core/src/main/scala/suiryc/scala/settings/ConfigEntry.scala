@@ -261,12 +261,12 @@ object ConfigEntry extends BaseConfigImplicits {
     from(settings, path.toSeq)
 
   /** Builds a config entry for a given Enumeration. */
-  def from[A <: Enumeration](settings: PortableSettings, enum: A, path: Seq[String]): ConfigEntry[A#Value] =
-    new Basic(settings, BaseConfig.joinPath(path), enumerationHandler(enum))
+  def from[A <: Enumeration](settings: PortableSettings, en: A, path: Seq[String]): ConfigEntry[A#Value] =
+    new Basic(settings, BaseConfig.joinPath(path), enumerationHandler(en))
 
   /** Builds a config entry for a given Enumeration. */
-  def from[A <: Enumeration](settings: PortableSettings, enum: A, path: String*)(implicit d: DummyImplicit): ConfigEntry[A#Value] =
-    from(settings, enum, path.toSeq)
+  def from[A <: Enumeration](settings: PortableSettings, en: A, path: String*)(implicit d: DummyImplicit): ConfigEntry[A#Value] =
+    from(settings, en, path.toSeq)
 
   /** Boolean entry handler. */
   implicit val booleanHandler: Handler[Boolean] = baseHandler[Boolean]
@@ -308,11 +308,11 @@ object ConfigEntry extends BaseConfigImplicits {
     new BaseHandler[A]
 
   /** Enumeration entry handler. */
-  implicit def enumerationHandler[A <: Enumeration](implicit enum: A): Handler[A#Value] = new Handler[A#Value] {
+  implicit def enumerationHandler[A <: Enumeration](implicit en: A): Handler[A#Value] = new Handler[A#Value] {
     override def get(config: Config, path: String): A#Value = toOuter(configGetString(config, path))
     override def getList(config: Config, path: String): List[A#Value] = configGetStringList(config, path).map(toOuter)
     override def toInner(v: A#Value): String = v.toString
-    private def toOuter(v: String): A#Value = enum.byName(v)
+    private def toOuter(v: String): A#Value = en.byName(v)
   }
 
   /** Path entry handler. */

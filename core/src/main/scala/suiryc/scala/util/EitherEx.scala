@@ -22,7 +22,7 @@ object EitherEx {
 
   def apply[A, B](either: Either[A, B], default: => B): EitherEx[A, B] =
     new EitherEx(either) {
-      override def apply(): B = either match {
+      override def apply(): B = this.either match {
         case Left(_) =>
           default
 

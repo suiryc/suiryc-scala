@@ -11,7 +11,7 @@ import javafx.beans.property.SimpleObjectProperty
  * configured or changed is used as-is, instead of interpreting the values
  * (and altering the original visual representation).
  */
-abstract class ConfigEntrySnapshot[Inner, Outer](setting: ConfigEntry[Inner]) extends SettingSnapshot[Outer] {
+abstract class ConfigEntrySnapshot[Inner <: Any, Outer <: Any](setting: ConfigEntry[Inner]) extends SettingSnapshot[Outer] {
 
   /** Draft raw value (prepared to apply value change). */
   val rawDraft = new SimpleObjectProperty[ConfigValue]()
@@ -44,7 +44,7 @@ abstract class ConfigEntrySnapshot[Inner, Outer](setting: ConfigEntry[Inner]) ex
       //    entry did 'reset' itself
       //  - nothing changed compared to original raw value: should mean caller
       //    only cared about (and changed) the real value
-      if (!setting.refOpt.contains(v) && !rawOriginal.contains(raw)) {
+      if (!setting.refOpt.contains(v: Any) && !rawOriginal.contains(raw)) {
         setting.settings.withValue(setting.path, raw)
       }
     }

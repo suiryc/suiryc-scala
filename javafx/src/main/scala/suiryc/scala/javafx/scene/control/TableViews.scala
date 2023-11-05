@@ -484,15 +484,15 @@ object TableViews {
     override def setSortOrder(order: List[Column]): Boolean = table.getSortOrder.setAll(order.asJava)
     override def getParentColumn(column: Column): Column = column.getParentColumn.asInstanceOf[Column]
     override def getColumns(column: Column): ObservableList[Column] = column.getColumns
-    override def getColumnView(column: Column, id: String): ColumnView =
+    override def getColumnView(column: Column, id: String): this.ColumnView =
       ColumnView(id, column.isVisible, column.getWidth, column.getSortType)
-    override def setColumnView(column: Column, view: ColumnView): Unit = {
+    override def setColumnView(column: Column, view: this.ColumnView): Unit = {
       column.setVisible(view.visible)
       if (view.width > 0) column.setPrefWidth(view.width)
       column.setSortType(view.sortType)
     }
     import JsonProtocol._
-    val columnsViewFormat: RootJsonFormat[ColumnsView] = JsonProtocol.columnsViewFormat[SortType]
+    val columnsViewFormat: RootJsonFormat[this.ColumnsView] = JsonProtocol.columnsViewFormat[SortType]
   }
 
   /** TreeTableView handler. */
@@ -504,15 +504,15 @@ object TableViews {
     override def setSortOrder(order: List[Column]): Boolean = table.getSortOrder.setAll(order.asJava)
     override def getParentColumn(column: Column): Column = column.getParentColumn.asInstanceOf[Column]
     override def getColumns(column: Column): ObservableList[Column] = column.getColumns
-    override def getColumnView(column: Column, id: String): ColumnView =
+    override def getColumnView(column: Column, id: String): this.ColumnView =
       ColumnView(id, column.isVisible, column.getWidth, column.getSortType)
-    override def setColumnView(column: Column, view: ColumnView): Unit = {
+    override def setColumnView(column: Column, view: this.ColumnView): Unit = {
       column.setVisible(view.visible)
       if (view.width > 0) column.setPrefWidth(view.width)
       column.setSortType(view.sortType)
     }
     import JsonProtocol._
-    val columnsViewFormat: RootJsonFormat[ColumnsView] = JsonProtocol.columnsViewFormat[SortType]
+    val columnsViewFormat: RootJsonFormat[this.ColumnsView] = JsonProtocol.columnsViewFormat[SortType]
   }
 
 }

@@ -50,6 +50,14 @@ object Configuration {
 
 }
 
+object ConfigurationConstants {
+
+  val LOGGER = "logger"
+  val LOGGER_RELOAD = s"$LOGGER.reload"
+  val LOGGER_RELOAD_CHANGES = s"$LOGGER_RELOAD.changes"
+
+}
+
 /** Config helpers. */
 object ConfigTools {
 

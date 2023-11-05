@@ -51,7 +51,7 @@ object NoticeStatusListener {
   }
 
   LoggerConfiguration.addReconfigureListener(new ReconfigureListener {
-    override def changeDetected(): Unit = reconfigureTimeMark = System.currentTimeMillis()
+    override def changeDetected(): Unit                    = reconfigureTimeMark = System.currentTimeMillis()
     override def doneReconfiguring(success: Boolean): Unit = setupListener()
   })
 
@@ -60,7 +60,10 @@ object NoticeStatusListener {
     // configuration, it also matters.
     if (!listening && listener.isEmpty) {
       LoggerConfiguration.withContext("start status listener") { ctx =>
+        // Note: when attaching the listener this way, it won't be explicitly
+        // started/stopped, which is not a problem because we don't rely on it.
         val listener = new NoticeStatusListener
+        listener.setLateInit()
         listener.setContext(ctx)
         listener.setRetrospective(retrospective.toMillis)
         prefix.foreach(listener.setPrefix)
@@ -80,6 +83,9 @@ class NoticeStatusListener extends ContextAwareBase with StatusListener with Lif
   private var retrospectiveThreshold: Long = NoticeStatusListener.DEFAULT_RETROSPECTIVE
 
   private var prefix: Option[String] = None
+
+  // Whether we just attached this listener programmatically.
+  private var lateInit: Boolean = false
 
   private var started: Boolean = false
 
@@ -105,7 +111,13 @@ class NoticeStatusListener extends ContextAwareBase with StatusListener with Lif
         statusList.add(status)
         if (status.getLevel > Status.INFO) notice = true
       }
-      if (notice) printStatusList()
+      // See: https://logback.qos.ch/manual/configuration.html#automaticStatusPrinting
+      // If we just attached this listener, logback did already print status
+      // if there were issues. We only need to do it either because we were
+      // set through configuration (in which case logback do not print status)
+      // or were being reloaded.
+      if (notice && !lateInit) printStatusList()
+      lateInit = false
     }
   }
 
@@ -119,12 +131,12 @@ class NoticeStatusListener extends ContextAwareBase with StatusListener with Lif
   private def add(status: Status): Unit = {
     val limit =
       if (retrospectiveThreshold <= 0) Long.MaxValue
-      else status.getDate - retrospectiveThreshold
+      else status.getTimestamp - retrospectiveThreshold
 
     @scala.annotation.tailrec
     def clean(): Unit = {
       val first = statusList.peekFirst()
-      if ((first != null) && ((first.getDate < limit) || (statusList.size() == STATUS_LIST_SIZE))) {
+      if ((first != null) && ((first.getTimestamp < limit) || (statusList.size() == STATUS_LIST_SIZE))) {
         statusList.remove()
         clean()
       }
@@ -161,5 +173,7 @@ class NoticeStatusListener extends ContextAwareBase with StatusListener with Lif
   def setPrefix(prefix: String): Unit = {
     this.prefix = Option(prefix)
   }
+
+  def setLateInit(): Unit = lateInit = true
 
 }
