@@ -10,18 +10,73 @@ object Configuration {
 
   val KEY_LIB = "suiryc-scala"
 
-  /** Loads a specific application configuration, with our overridings. */
+  private val knownExtensions = Set(".conf", ".json", ".properties")
+
+  private def withoutKnownExtension(name: String): String = {
+    val nameLC = name.toLowerCase()
+    if (knownExtensions.exists(nameLC.endsWith)) {
+      // Strip known extension.
+      name.replaceFirst("""\.[^.]*$""", "")
+    } else name
+  }
+
+  private def withExtension(name: String): String = {
+    val nameLC = name.toLowerCase()
+    if (knownExtensions.exists(nameLC.endsWith)) {
+      name
+    } else {
+      s"$name.conf"
+    }
+  }
+
+  /**
+   * Sets default application configuration.
+   *
+   * Does nothing if already done, which is the case when either 'config.file',
+   * 'config.resource' or 'config.url' environment variable has been set.
+   *
+   * @param confPath explicit path, when applicable
+   * @param resourceName resource name or base name, when applicable
+   */
+  def setDefaultApplication(confPath: Option[Path] = None, resourceName: Option[String] = None): Unit = {
+    // Change the default application configuration unless already done.
+    // This is needed when a specific path or resource name is used, instead of
+    // the standard 'application.conf'.
+    // This only applies to new configuration objects being loaded, and thus
+    // *must* be done ASAP so that external libraries will use the wanted
+    // configuration.
+    if (
+      (System.getProperty("config.file") == null) &&
+        (System.getProperty("config.resource") == null) &&
+        (System.getProperty("config.url") == null)
+    ) {
+      // Reminder: 'config.resource' must be a filename with extension.
+      confPath match {
+        case Some(p) => System.setProperty("config.file", p.toString)
+        case None    => resourceName.foreach(name => System.setProperty("config.resource", withExtension(name)))
+      }
+      ConfigFactory.invalidateCaches()
+    }
+  }
+
+  /** Loads a specific application configuration, with our overriding. */
   def load(confPath: Option[Path] = None, resourceName: Option[String] = None): Config = {
-    // Use requested configuration file and fallback to usual application and
-    // reference.conf.
-    // Either we load the file from an explicit path, or from the classpath.
+    // If given resource name is "application" (with optional known extension),
+    // ignore it since this is the default already.
+    val actualResourceName = resourceName.filterNot { name =>
+      withoutKnownExtension(name) == "application"
+    }
+    // Use given configuration file/resource, and fallback to usual application
+    // and reference.conf.
+    setDefaultApplication(confPath, actualResourceName)
     val appConf = confPath.map { path =>
       ConfigFactory.parseFile(path.toFile)
-    }.orElse {
-      resourceName.map(ConfigFactory.parseResources)
     }
-    // Build the configuration layers ourselves mainly because we wish for our
-    // configuration file (and application.conf) to truly override values in
+    .orElse {
+      actualResourceName.map(ConfigFactory.parseResourcesAnySyntax)
+    }
+    // Build the configuration layers ourselves mainly because we wish for
+    // given configuration (and application.conf) to truly override values in
     // reference.conf, including variables substitutions.
     // By default (e.g. ConfigFactory.load()), reference.conf is resolved first
     // then overridden with application.conf (which is then resolved too). For
@@ -32,12 +87,15 @@ object Configuration {
     // Here we layer configuration files and only resolve the final result.
     // See https://github.com/lightbend/config/issues/342
     // In Play: https://github.com/playframework/playframework/blob/master/core/play/src/main/scala/play/api/Configuration.scala
+    //
+    // Note: since dependencies load the configuration the usual way, we must
+    // limit using these kind of substitutions for our applicative parameters.
     val confs =
       ConfigFactory.defaultOverrides() ::
       appConf.toList :::
       List(
-        ConfigFactory.defaultApplication(),
-        ConfigFactory.parseResources("reference.conf")
+        ConfigFactory.parseResourcesAnySyntax("application"),
+        ConfigFactory.parseResourcesAnySyntax("reference")
       )
     confs.reduceLeft(_.withFallback(_)).resolve()
   }
