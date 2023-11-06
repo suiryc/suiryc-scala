@@ -70,8 +70,8 @@ object AssemblyEx {
     // then project.
     // This is useful when libraries use application.conf, either to override
     // other libraries settings, or mistakenly instead of reference.conf.
-    // The actual application needs to have its application.conf read first, which
-    // is 'easy' when listing jar dependencies in classpath (order them by
+    // The actual application needs to have its application.conf override others'
+    // which is 'easy' when listing jar dependencies in classpath (order them by
     // importance), but more complicated or unpredictable when using default
     // assembly behaviour.
     val concatLibsThenProject: MergeStrategy = CustomMergeStrategy("concatLibsThenProject") { conflicts =>
@@ -79,8 +79,8 @@ object AssemblyEx {
       if (conflicts.length == 1) Right(Vector(JarEntry(conflicts.head.target, conflicts.head.stream)))
       else {
         // Otherwise concat libraries files then project files.
-        val (inProject, inExternal) = conflicts.partition(_.isProjectDependency)
-        MergeStrategy.concat.apply(inExternal ++ inProject)
+        val (inProject, inLibs) = conflicts.partition(_.isProjectDependency)
+        MergeStrategy.concat.apply(inLibs ++ inProject)
       }
     }
 

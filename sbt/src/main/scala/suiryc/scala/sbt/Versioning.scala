@@ -27,10 +27,10 @@ object Versioning {
   //  - 'A.B.C': tag exact match
   //  - 'A.B.C+N-xxxxxxxx': commit 'xxxxxxxx', N after tag version 'A.B.C'
   //  - 'xxxxxxxx': commit 'xxxxxxxx', without matching tag
-  // '+YYYYmmdd-HHMM' timestamp suffix is appended when there are pending (not
-  // yet committed) modifications in tracked files.
-  // 'YYYYmmdd-HHMM' format is used as fallback if we cannot get the expected
-  // information from git.
+  // '+YYYYmmdd_HHMM' timestamp suffix, or '-SNAPSHOT', is appended when there
+  // are pending (not yet committed) modifications in tracked files.
+  // 'YYYYmmdd_HHMM', or 'SNAPSHOT, format is used as fallback if we cannot get
+  // the expected information from git.
 
   private case class TagVersion(tag: String, versioning: List[Int]) extends Ordered[TagVersion] {
     override def compare(other: TagVersion): Int = {
@@ -68,7 +68,7 @@ object Versioning {
   /** Minimal size for commit ids. */
   private val ABBREV_LENGTH = 8
 
-  /** Formats timestamp: YYYYmmdd-HHMM */
+  /** Formats timestamp: YYYYmmdd_HHMM */
   private def timestamp(d: Date): String = f"$d%tY$d%tm$d%td_$d%tH$d%tM"
 
   private def modifiedSuffix(sep: Boolean, ts: Boolean, d: Date): String = {
@@ -108,8 +108,8 @@ object Versioning {
    *  "vA.B.C+N-xxxxxxxx": on commit "xxxxxxxx", N commits after tag "vA.B.C".
    * Example when not matching tag (without modifications):
    *  "xxxxxxxx": on commit "xxxxxxxx"
-   * When there are modifications on tracked files, "-YYYYmmdd-HHMM" timestamp
-   * suffix is added.
+   * When there are modifications on tracked files, "+YYYYmmdd_HHMM" timestamp
+   * suffix is added, or "-SNAPSHOT" if requested.
    */
   private def gitDescription(v: Option[TagVersion], ts: Boolean, date: Date): Option[String] = {
     // We either want to build description relatively to a specific tag, or an
@@ -118,7 +118,7 @@ object Versioning {
       case Some(v) => List("--tags", "--match", v.tag)
       case None => Nil
     }
-    // Add timestamp suffix if repository is dirty (at least one tracked file
+    // Add requested suffix if repository is dirty (at least one tracked file
     // is modified and not yet committed).
     silent(Process(List("git", "describe", "--always", s"--abbrev=$ABBREV_LENGTH", s"--dirty=${modifiedSuffix(sep = true, ts, date)}") ::: args))
       .map { stdout =>
