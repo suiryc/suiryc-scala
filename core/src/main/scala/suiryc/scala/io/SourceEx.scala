@@ -54,7 +54,7 @@ object SourceEx {
   }
 
   def getLines(path: Seq[Path])(implicit codec: Codec): Iterator[String] = {
-    path.foldLeft(Iterator.empty[String])(_ ++ getLines(_))
+    path.foldLeft(Iterator.empty: Iterator[String])(_ ++ getLines(_))
   }
 
 }

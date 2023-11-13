@@ -1,6 +1,7 @@
 package suiryc.scala.io
 
 import java.io.{Closeable, EOFException, InputStream, OutputStream}
+import scala.collection.compat.immutable.LazyList
 
 
 object IOStream {

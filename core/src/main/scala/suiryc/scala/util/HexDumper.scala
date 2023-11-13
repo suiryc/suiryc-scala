@@ -61,8 +61,6 @@ class HexDumper(settings: HexDumper.Settings) {
 
   import HexDumper._
 
-  protected type BytesView = scala.collection.IndexedSeqView[Byte]
-
   protected val decoder: CharsetDecoder = settings.charset.newDecoder().replaceWith(".")
 
   /** How many bytes per section in hexadecimal view. */
