@@ -87,9 +87,10 @@ object PathsEx {
   // > (U+003E greater than sign)
   // ＞ (U+FF1E fullwidth variant)
   //
-  // a:b a꞉b a᎓b a：b
+  // a:b a꞉b a∶b a᎓b a：b
   // : (U+003A colon)
-  // ꞉ (U+A789 modifier letter colon)
+  // ꞉ (U+A789 modifier letter colon; appears a bit better than U+2236 in explorer)
+  // ∶ (U+2236 ratio; does not appear better than U+A789 in explorer)
   // ᎓ (U+1393 ethopic tonal mark short rikrik; may not appear good on Linux)
   // ： (U+FF1A fullwidth variant)
   //
@@ -124,6 +125,13 @@ object PathsEx {
   // ∗ (U+2217 asterisk operator)
   // ⁎ (U+204E low asterisk)
   // ＊ (U+FF0A fullwidth variant)
+  //
+  // While the dot ('.') character is not reserved, it may be an issue when in
+  // first or last position.
+  // If needed, an alternative:
+  // a.b a․b
+  // . (U+002E full stop)
+  // ․ (U+2024 one dot leader)
   private val sanitizedChars = Map[Char, Char](
     '<' -> '＜', '>' -> '＞',
     ':' -> '꞉',
