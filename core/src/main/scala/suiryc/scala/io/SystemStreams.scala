@@ -50,13 +50,17 @@ object SystemStreams {
     previous
   }
 
+  /** Replace stdin. */
+  def replace(input: InputStream): SystemStreams =
+    replace(in = Some(input))
+
   /** Replace stdout. */
   def replace(output: PrintStream): SystemStreams =
-    replace(in = None, out = Some(output), err = Some(output))
+    replace(out = Some(output), err = Some(output))
 
   /** Replace stdout and stderr. */
   def replace(out: PrintStream, err: PrintStream): SystemStreams =
-    replace(in = None, out = Some(out), err = Some(err))
+    replace(out = Some(out), err = Some(err))
 
   /** Replace stdin, stdout and stderr. */
   def replace(in: InputStream, out: PrintStream, err: PrintStream): SystemStreams =
