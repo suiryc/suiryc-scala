@@ -123,6 +123,11 @@ lazy val core = project.in(file("core"))
   .settings(crossCompileSettings: _*)
   .settings(
     name := "suiryc-scala-core",
+
+    // Explicitly use the test application configuration, otherwise the standard
+    // configuration (visible in path) will also be loaded.
+    Test / javaOptions += "-Dconfig.resource=suiryc-scala-unit-tests.conf",
+
     libraryDependencies ++= Seq(
       "com.github.scopt"           %% "scopt"          % versions("scopt")         % Provided,
       "com.typesafe"               %  "config"         % versions("config")        % Provided,
