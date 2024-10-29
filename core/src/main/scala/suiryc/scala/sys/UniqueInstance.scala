@@ -1,23 +1,26 @@
 package suiryc.scala.sys
 
 import com.typesafe.scalalogging.LazyLogging
+import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
+
 import java.io.InputStream
 import java.net.{InetAddress, ServerSocket, Socket}
 import java.nio.ByteBuffer
 import java.nio.channels.{FileChannel, FileLock}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, StandardOpenOption}
+import java.util.concurrent.{Semaphore, TimeUnit}
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success}
-import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Unique instance application handling.
  *
  * Either ensures that this instance is the first to run, or establishes a
  * communication channel between the first instance and next ones to pass
- * command arguments for execution in the first instance.
+ * command arguments and stream stdin for execution in the first instance.
  *
  * Relies on file locking and local socket listener. See JUnique for another
  * example implementation: http://www.sauronsoftware.it/projects/junique/
@@ -25,8 +28,8 @@ import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
  *
  * Overview: a file is used as lock to check whether another instance is running
  * and its content indicates the local port to use as communication channel.
- * Next instance connects to said port, pass command arguments to the first
- * instance and waits for the return code.
+ * Next instance connects to said port, passes command arguments to the first
+ * instance, streams stdin until EOF, and waits for the return code.
  *
  * Implementation details
  * ----------------------
@@ -35,7 +38,7 @@ import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
  * prevent disallowed characters in filename.
  * Since we cannot properly prevent other programs from deleting it, it must
  * be placed in a folder where it has little chances to be deleted by mistake.
- * By default the user home folder should be good.
+ * By default, the user home folder should be good.
  *
  * We require a lock on the first 4 bytes, in which are written the local port
  * number, then we try to lock the 5th byte. The first lock is used to ensure
@@ -54,7 +57,8 @@ import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
  * If we are another instance (second lock not acquired), we read the local port
  * number in the lock file (since the first lock was acquired, we are sure the
  * first instance did write it), connect to it, pass the command arguments (to
- * the first instance) and waits for the execution return code to exit with.
+ * the first instance), stream stdin, and wait for the execution return code to
+ * exit with.
  *
  * Notes
  * -----
@@ -64,6 +68,8 @@ import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
  * The protocol is TLV-like where the type is pre-determined: the second
  * instance passes the arguments array (length of array, then each string as
  * length and UTF-8 bytes) and the first instance returns the result code.
+ * After arguments, stdin is streamed through the established socket from the
+ * second instance to the first running unique instance, until EOF.
  *
  * Since there was no implementation of UNIX sockets in Windows (at least
  * before Windows 10 build 17063), such kind of sockets are not generically
@@ -76,7 +82,7 @@ import suiryc.scala.io.{PathsEx, RichFile, SystemStreams}
  *
  * In order to have a client more easily decide whether to re-try upon error, it
  * may be tempting to define a dedicated error code to use when unique instance
- * is stopping. However in practice it would be often (if not mostly) useless
+ * is stopping. However, in practice it would be often (if not mostly) useless
  * because:
  *  - the stopping instance may not have the time to properly return it before
  *    the program is really stopped: it would require to wait for the server and
@@ -105,7 +111,7 @@ object UniqueInstance extends LazyLogging {
   // Notes:
   // Depending on the OS and how the program is launched (directly or from a
   // console), the exit code may be restricted to a range of values.
-  // e.g. on POSIX it usually is limited to 0-255 (modulo applied).
+  // e.g. on POSIX it is usually limited to 0-255 (modulo applied).
   // In bash values 1, 2, 126, 127, 128-255 have a meaning.
   // See:
   //  https://en.wikipedia.org/wiki/Exit_status
@@ -135,7 +141,7 @@ object UniqueInstance extends LazyLogging {
    * Starts the instance.
    *
    * If this is the first (unique) instance to start, the command arguments are
-   * processed once the given Future is ready (and successful). Thus the
+   * processed once the given Future is ready (and successful). Thus, the
    * function usually returns before those arguments are processed. Any command
    * arguments received from other instances are guaranteed to be processed
    * after those of this first instance, and in dedicated threads.
@@ -145,7 +151,7 @@ object UniqueInstance extends LazyLogging {
    * function thus never returns for these instances.
    *
    * @param appId the application (unique) id
-   * @param f the function used to handle command arguments
+   * @param f the function used to handle command arguments and streamed stdin
    * @param args the command arguments
    * @param ready for the first instance, a Future completed (success) when the
    *              caller is ready to have the command arguments processed; this
@@ -153,7 +159,7 @@ object UniqueInstance extends LazyLogging {
    * @param streams system streams (in case they were replaced)
    * @return a Future completed when the arguments have been handled
    */
-  def start(appId: String, f: Array[String] => Future[CommandResult], args: Array[String],
+  def start(appId: String, f: (Array[String], InputStream) => Future[CommandResult], args: Array[String],
     ready: Future[Unit], streams: SystemStreams = SystemStreams()): Future[Unit] =
   {
     try {
@@ -187,14 +193,20 @@ object UniqueInstance extends LazyLogging {
   }
 
   // Also starts instance, but with a blocking function.
-  def start(appId: String, f: Array[String] => CommandResult, args: Array[String],
+  def start(appId: String, f: (Array[String], InputStream) => CommandResult, args: Array[String],
     ready: Future[Unit], streams: SystemStreams)(implicit d: DummyImplicit): Future[Unit] =
   {
-    val f2: Array[String] => Future[CommandResult] = args => Future.successful(f(args))
+    val f2: (Array[String], InputStream) => Future[CommandResult] =
+      (args, input) => Future.successful(f(args, input))
     start(appId, f2, args, ready, streams)
   }
 
-  def start(appId: String, f: Array[String] => CommandResult, args: Array[String], ready: Future[Unit]): Future[Unit] = {
+  def start(
+    appId: String,
+    f: (Array[String], InputStream) => CommandResult,
+    args: Array[String],
+    ready: Future[Unit]
+  ): Future[Unit] = {
     start(appId, f, args, ready, SystemStreams())
   }
 
@@ -205,11 +217,16 @@ object UniqueInstance extends LazyLogging {
   }
 
   /** Starts the (first) unique instance. */
-  private def startUniqueInstance(lockPath: Path, channel: FileChannel,
-    dataLock: FileLock, instanceLock: FileLock,
-    f: Array[String] => Future[CommandResult], args: Array[String],
-    ready: Future[Unit], streams: SystemStreams): Future[Unit] =
-  {
+  private def startUniqueInstance(
+    lockPath: Path,
+    channel: FileChannel,
+    dataLock: FileLock,
+    instanceLock: FileLock,
+    f: (Array[String], InputStream) => Future[CommandResult],
+    args: Array[String],
+    ready: Future[Unit],
+    streams: SystemStreams
+  ): Future[Unit] = {
     // Add shutdown hook to clean resources before exiting
     sys.addShutdownHook {
       // First delete the file
@@ -240,7 +257,7 @@ object UniqueInstance extends LazyLogging {
     ready.onComplete {
       case Success(_) =>
         // Then run our command before starting serving other instances
-        f(args).andThen {
+        f(args, streams.in).andThen {
           case Success(result) => handleResultOutput(result, streams)
           case Failure(ex) => promise.tryFailure(ex)
         }.onComplete { _ =>
@@ -255,7 +272,12 @@ object UniqueInstance extends LazyLogging {
   }
 
   /** Starts a second instance. */
-  private def startOtherInstance(channel: FileChannel, dataLock: FileLock, args: Array[String], streams: SystemStreams): Nothing = {
+  private def startOtherInstance(
+    channel: FileChannel,
+    dataLock: FileLock,
+    args: Array[String],
+    streams: SystemStreams
+  ): Nothing = {
     // Release the lock (we don't need it anymore) and read the local prt
     dataLock.release()
     val bb1 = ByteBuffer.wrap(new Array[Byte](INT_SIZE))
@@ -288,10 +310,21 @@ object UniqueInstance extends LazyLogging {
       }
       loop(args.toList)
 
+      // Stream stdin
+      val streamActive = new AtomicBoolean(true)
+      val streamDone = new Semaphore(0)
+      new StdinStreamer(socket, streams.in, streamActive, streamDone).start()
+
       // Wait for the return code to exit with
       read(is, bb1.array)
+      // We are here when processing is done, so we can stop streaming stdin.
+      streamActive.set(false)
       val r = bb1.getInt(0)
       handleResultOutput(CommandResult(r, readOptString(is)), streams)
+      // Wait for stdin stream to be done before exiting.
+      // If we don't, we may trigger unwanted exceptions because the socket is
+      // being closed while the thread is still writing.
+      Try(streamDone.tryAcquire(5, TimeUnit.SECONDS))
       sys.exit(r)
     } catch {
       case ex: Exception =>
@@ -338,7 +371,10 @@ object UniqueInstance extends LazyLogging {
   }
 
   /** Local server socket handler. */
-  private class ServerHandler(server: ServerSocket, f: Array[String] => Future[CommandResult]) extends Thread {
+  private class ServerHandler(
+    server: ServerSocket,
+    f: (Array[String], InputStream) => Future[CommandResult]
+  ) extends Thread {
 
     setDaemon(true)
 
@@ -370,7 +406,10 @@ object UniqueInstance extends LazyLogging {
   }
 
   /** Local server socket connection handler. */
-  private class SocketHandler(socket: Socket, f: Array[String] => Future[CommandResult]) extends Thread {
+  private class SocketHandler(
+    socket: Socket,
+    f: (Array[String], InputStream) => Future[CommandResult]
+  ) extends Thread {
 
     setDaemon(true)
 
@@ -392,7 +431,8 @@ object UniqueInstance extends LazyLogging {
         }
 
         val args = loop(nargs, Nil)
-        done(execute(args))
+        // After arguments, remote stdin is streamed through socket until EOF.
+        done(execute(args, is))
       } catch {
         case ex: Exception =>
           val message = s"Failed to read arguments from socket: ${ex.getMessage}"
@@ -401,9 +441,10 @@ object UniqueInstance extends LazyLogging {
       }
     }
 
-    private def execute(args: Array[String]): CommandResult = {
+    private def execute(args: Array[String], input: InputStream): CommandResult = {
       try {
-        if (!stopping) Await.result(f(args), Duration.Inf) else CommandResult(CODE_ERROR, Some("Program is stopping"))
+        if (!stopping) Await.result(f(args, input), Duration.Inf)
+        else CommandResult(CODE_ERROR, Some("Program is stopping"))
       } catch {
         case ex: Exception =>
           val message = s"Failed to process arguments: ${ex.getMessage}"
@@ -433,6 +474,58 @@ object UniqueInstance extends LazyLogging {
         case ex: Exception =>
           logger.warn(s"Failed to close socket: ${ex.getMessage}")
       }
+    }
+
+  }
+
+  /** Simple thread to stream stdin to remote instance. */
+  private class StdinStreamer(
+    remote: Socket,
+    local: InputStream,
+    active: AtomicBoolean,
+    done: Semaphore
+  ) extends Thread {
+
+    setDaemon(true)
+
+    override def run(): Unit = {
+      // Notes:
+      // InputStream reading/transferring usually relies on internal buffering
+      // (8KiB). There is not much to gain using these, while we can use a
+      // larger buffer and reuse it.
+      val buffer = new Array[Byte](64 * 1024)
+      val os = remote.getOutputStream
+      @scala.annotation.tailrec
+      def loop(): Unit = {
+        // Rely on 'available' hint to transfer more than one byte at a time
+        // when applicable.
+        val read = Math.min(
+          Math.max(local.available(), 1),
+          buffer.length
+        )
+        val actual = local.read(buffer, 0, read)
+        if ((actual != -1) && active.get()) {
+          os.write(buffer, 0, actual)
+          loop()
+        }
+      }
+
+      Try(loop())
+      // Notes:
+      // We are done streaming local stdin to remote instance.
+      // We can close the local input (reached EOF, unless error).
+      // Since we don't wrap the streamed stdin in a protocol of our own, to
+      // transmit stdin EOF we need to close our socket output (leaving it
+      // half-opened) which is linked to the remote instance input.
+      // The socket needs to remain half-opened, so that we can receive the
+      // command result and output.
+      // We cannot close the 'OutputStream' exposed by the socket, because it
+      // will close the associated socket. Instead, we need to shut down the
+      // socket output.
+      local.close()
+      remote.shutdownOutput()
+      // Indicate to caller that we are done.
+      done.release()
     }
 
   }
