@@ -47,7 +47,7 @@ object Configuration {
     // configuration.
     if (
       (System.getProperty("config.file") == null) &&
-        (System.getProperty("config.resource") == null) &&
+        getConfigResource.isEmpty &&
         (System.getProperty("config.url") == null)
     ) {
       // Reminder: 'config.resource' must be a filename with extension.
@@ -57,6 +57,10 @@ object Configuration {
       }
       ConfigFactory.invalidateCaches()
     }
+  }
+
+  private def getConfigResource: Option[String] = {
+    Option(System.getProperty("config.resource"))
   }
 
   /** Loads a specific application configuration, with our overriding. */
@@ -69,35 +73,18 @@ object Configuration {
     // Use given configuration file/resource, and fallback to usual application
     // and reference.conf.
     setDefaultApplication(confPath, actualResourceName)
-    val appConf = confPath.map { path =>
-      ConfigFactory.parseFile(path.toFile)
-    }
-    .orElse {
-      actualResourceName.map(ConfigFactory.parseResourcesAnySyntax)
-    }
-    // Build the configuration layers ourselves mainly because we wish for
-    // given configuration (and application.conf) to truly override values in
-    // reference.conf, including variables substitutions.
-    // By default (e.g. ConfigFactory.load()), reference.conf is resolved first
-    // then overridden with application.conf (which is then resolved too). For
-    // both, environment variables can override values.
-    // So if reference.conf contains 'key-b = ${key-a}', overriding 'key-a'
-    // value only affects 'key-b' when done through environment variables, not
-    // through application.conf.
-    // Here we layer configuration files and only resolve the final result.
-    // See https://github.com/lightbend/config/issues/342
-    // In Play: https://github.com/playframework/playframework/blob/master/core/play/src/main/scala/play/api/Configuration.scala
-    //
-    // Note: since dependencies load the configuration the usual way, we must
-    // limit using these kind of substitutions for our applicative parameters.
-    val confs =
-      ConfigFactory.defaultOverrides() ::
-      appConf.toList :::
-      List(
-        ConfigFactory.parseResourcesAnySyntax("application"),
-        ConfigFactory.parseResourcesAnySyntax("reference")
-      )
-    confs.reduceLeft(_.withFallback(_)).resolve()
+
+    // Notes:
+    // Unlike in previous versions, Config now properly handle overriding
+    // 'reference.conf' values from 'application.conf' (or any other explicit
+    // file used) before resolving.
+    // See: https://github.com/lightbend/config/commit/ab890103dd86542c26440371ea26cae4a00a7a22
+    // Thus we don't have to build the configuration layers ourselves: we can
+    // use configuration overriding, and it will work in libraries also relying
+    // on Config.
+
+    // Then build real (resolved) configuration, the usual way.
+    ConfigFactory.load()
   }
 
   /** Default application configuration, with overrides. */

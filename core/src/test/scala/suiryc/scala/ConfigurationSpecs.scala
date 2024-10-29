@@ -81,6 +81,7 @@ class ConfigurationSpecs extends AnyWordSpec with TestToolsBase {
     val nameByPath    = "suiryc-scala-by-path"
     val pathByPath    = buildPath(nameByPath)
     val nameByName    = "suiryc-scala-by-name"
+    val pathByName    = buildPath(nameByName)
 
     // We need to clear config library properties during these tests, since the
     // nominal code won't change them if already set (which may be the case due
@@ -117,6 +118,19 @@ class ConfigurationSpecs extends AnyWordSpec with TestToolsBase {
         conf.getBoolean(s"$KEY_PREFIX.by-name") shouldBe false
         conf.getBoolean(s"$KEY_PREFIX.by-path") shouldBe true
       }
+
+      // Also test pre-setting the library properties.
+      // Voluntarily use the other configuration (by-name) to ensure we load
+      // the wanted configuration.
+      withoutConfigProperties {
+        Configuration.setDefaultApplication(
+          confPath = Some(pathByName),
+          resourceName = None
+        )
+        val conf = Configuration.load(confPath = None, resourceName = None)
+        conf.getBoolean(s"$KEY_PREFIX.by-name") shouldBe true
+        conf.getBoolean(s"$KEY_PREFIX.by-path") shouldBe false
+      }
     }
 
     "handle loading by name" in {
@@ -124,6 +138,16 @@ class ConfigurationSpecs extends AnyWordSpec with TestToolsBase {
         val conf = Configuration.load(confPath = None, resourceName = Some(nameByName))
         conf.getBoolean(s"$KEY_PREFIX.by-name") shouldBe true
         conf.getBoolean(s"$KEY_PREFIX.by-path") shouldBe false
+      }
+
+      withoutConfigProperties {
+        Configuration.setDefaultApplication(
+          confPath = None,
+          resourceName = Some(nameByPath)
+        )
+        val conf = Configuration.load(confPath = None, resourceName = None)
+        conf.getBoolean(s"$KEY_PREFIX.by-name") shouldBe false
+        conf.getBoolean(s"$KEY_PREFIX.by-path") shouldBe true
       }
     }
 
