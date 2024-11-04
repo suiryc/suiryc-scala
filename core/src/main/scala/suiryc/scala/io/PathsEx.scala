@@ -171,26 +171,32 @@ object PathsEx {
   /**
    * Finds available path.
    *
-   * Starting from given given path, find the first name that is available,
-   * adding " (n)" suffix (before extension if any for files) with 'n' starting
-   * from 1.
+   * Starting from given path, find the first name that is available, adding
+   * " (n)" (or given alternative builder) suffix (before extension if any for
+   * files) with 'n' starting from 1.
    *
    * @param path path to test
    * @param isFile whether this is supposed to be a file path
+   * @param alternative how alternative names are built; " (n)" by default
    * @return
    */
-  def getAvailable(path: Path, isFile: Boolean = true): Path = {
+  def getAvailable(
+    path: Path,
+    isFile: Boolean = true,
+    alternative: Option[Int => String] = None
+  ): Path = {
     @scala.annotation.tailrec
     def loop(n: Int): Path = {
+      lazy val alternate = alternative.getOrElse((n: Int) => s" ($n)")(n)
       val probe = if (n == 0) {
         path
       } else if (isFile) {
         val (base, ext) = path.toFile.baseAndExt
         val extOpt = Some(ext).filterNot(_.isEmpty)
-        path.resolveSibling(s"$base ($n)${extOpt.map(v => s".$v").getOrElse("")}")
+        path.resolveSibling(s"$base$alternate${extOpt.map(v => s".$v").getOrElse("")}")
       } else {
         val name = path.name
-        path.resolveSibling(s"$name ($n)")
+        path.resolveSibling(s"$name$alternate")
       }
       if (Files.exists(probe)) loop(n + 1)
       else probe
