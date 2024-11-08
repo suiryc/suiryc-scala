@@ -76,6 +76,8 @@ abstract class StageLocationPersistentView(
   protected def stage: Stage
 
   override protected def restoreView(): Unit = {
+    // Fix HiDPI is needed.
+    Stages.fixHiDPI(stage)
     Stages.onStageReady(stage, first = first && StageLocationPersistentView.checkFirstStage) {
       restoreViewOnStageReady()
     }
