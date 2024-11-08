@@ -5,16 +5,18 @@ import javafx.beans.property.ReadOnlyDoubleProperty
 import javafx.geometry.BoundingBox
 import javafx.scene.control.Dialog
 import javafx.stage.{Stage, Window}
-import scala.concurrent.{ExecutionContext, Promise}
-import scala.concurrent.duration._
 import suiryc.scala.akka.CoreSystem
 import suiryc.scala.concurrent.RichFuture
 import suiryc.scala.concurrent.RichFuture._
 import suiryc.scala.javafx.beans.value.RichObservableValue
 import suiryc.scala.javafx.beans.value.RichObservableValue._
 import suiryc.scala.javafx.concurrent.JFXExecutor
+import suiryc.scala.javafx.scene.Nodes
 import suiryc.scala.settings.{BaseConfigImplicits, ConfigEntry}
 import suiryc.scala.sys.OS
+
+import scala.concurrent.{ExecutionContext, Promise}
+import scala.concurrent.duration._
 
 /** JavaFX Stage helpers. */
 object Stages {
@@ -328,6 +330,15 @@ object Stages {
     val maximized = getBooleanParam("m")
 
     StageLocation(x, y, width, height, maximized)
+  }
+
+  /**
+   * Fixes HiDPI glitches.
+   *
+   * See [[suiryc.scala.javafx.scene.Nodes]].
+   */
+  def fixHiDPI(stage: Stage): Unit = {
+    Nodes.fixHiDPI(stage.getScene.getRoot)
   }
 
 }
