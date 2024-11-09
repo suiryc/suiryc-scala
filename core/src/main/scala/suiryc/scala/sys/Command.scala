@@ -8,6 +8,7 @@ import suiryc.scala.misc.Util
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, IOException, InputStream, OutputStream}
 import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
+import scala.collection.compat._
 import scala.collection.compat.immutable.LazyList
 import scala.collection.mutable
 import scala.sys.process.{BasicIO, ProcessIO}
