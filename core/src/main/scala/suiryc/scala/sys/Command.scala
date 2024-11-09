@@ -6,6 +6,7 @@ import suiryc.scala.misc.RichOptional._
 import suiryc.scala.misc.Util
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, IOException, InputStream, OutputStream}
+import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
 import scala.collection.compat.immutable.LazyList
 import scala.collection.mutable
@@ -272,5 +273,42 @@ object Command
     CommandResult(result, stdoutResult, stderrResult)
   }
   // scalastyle:on method.length parameter.number
+
+  /**
+   * Locates command.
+   *
+   * If given command is an absolute path, it is returned as-is if it exists.
+   * For non-absolute path, the appropriate OS tool is used to locate the
+   * command, which is returned if found.
+   *
+   * @param cmd command to locate
+   * @return absolute command path; None if it does not exist
+   */
+  def locate(cmd: String): Option[Path] = {
+    val path = Paths.get(cmd)
+    if (path.isAbsolute) {
+      Option.when(path.toFile.exists())(path)
+    } else {
+      val args = if (OS.isWindows) {
+        List("where", cmd)
+      } else {
+        // Inside bash, "command -v" is also available. But since this is an
+        // internal command, we cannot use it from our side: we need to call
+        // an existing external command, thus "which" is the way to go here.
+        List("which", cmd)
+      }
+      val r = Command.execute(
+        cmd = args,
+        stdinSource = None,
+        stdoutSink = None,
+        stderrSink = None
+      )
+      if (r.exitCode == 0) {
+        Some(Paths.get(r.stdout))
+      } else {
+        None
+      }
+    }
+  }
 
 }
