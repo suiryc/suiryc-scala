@@ -49,7 +49,11 @@ lazy val commonSettings = Seq(
     // Wrap field accessors to throw an exception on uninitialized access.
     "-Xcheckinit",
     // Enable all recommended warnings.
-    "-Xlint"
+    "-Xlint",
+    // Silence warnings due to scala.collection.compat._ import.
+    // Needed because this compat package mostly matters for 2.12 cross-building
+    // while nothing would be imported (hence an 'unused' warning) for 2.13.
+    "-Wconf:origin=scala.collection.compat._:s"
   ),
   resolvers += Resolver.mavenLocal,
   publishMavenStyle := true,
@@ -61,7 +65,7 @@ lazy val commonSettings = Seq(
 //  '-deprecation' -> '-Xlint:deprecated'
 //  (most) '-Ywarn-...' -> '-W...'
 //  '-Xfatal-warnings' -> '-Werror'
-def scalac212Options(crossCompile: Boolean) = Seq(
+def scalac212Options(crossCompile: Boolean): Seq[String] = Seq(
   // Report every deprecation warning individually.
   "-deprecation",
   // Explain type errors in more detail.
