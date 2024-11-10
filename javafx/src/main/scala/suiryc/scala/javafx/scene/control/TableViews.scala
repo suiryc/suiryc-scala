@@ -1,6 +1,6 @@
 package suiryc.scala.javafx.scene.control
 
-import com.sun.javafx.scene.control.VirtualScrollBar
+import com.sun.javafx.scene.control.{Properties, TableColumnBaseHelper, VirtualScrollBar}
 import javafx.collections.ObservableList
 import javafx.collections.transformation.SortedList
 import javafx.scene.control._
@@ -140,6 +140,81 @@ object TableViews {
       }
     }
     adjust(top = top, movedUp = false, movedDown = false)
+  }
+
+  /**
+   * Automatically adjusts columns width to fit cells content.
+   *
+   * @param table the table for which to adjust columns
+   * @param rows the range of rows for which to check content
+   * @param defaultPadding default padding to use on cells, if none could be determined
+   */
+  def autofitColumns[S](table: TableView[S], rows: Range, defaultPadding: Double = 10.0): Unit = {
+    table.getColumns.forEach { column =>
+      autofitColumn(column, rows, defaultPadding)
+    }
+  }
+
+  /**
+   * Automatically adjusts column width to fit cells content.
+   *
+   * @param column the column to adjust
+   * @param rows the range of rows for which to check content
+   * @param defaultPadding default padding to use on cells, if none could be determined
+   */
+  def autofitColumn[S, T](column: TableColumn[S, T], rows: Range, defaultPadding: Double = 10.0): Unit = {
+    // See javafx.scene.control.skin.TableSkinUtils.resizeColumnToFitContent
+    val table = column.getTableView
+
+    for {
+      // Skin may not be present yet.
+      skin <- Option(table.getSkin).map(_.asInstanceOf[TableViewSkin[_]])
+      // Only keep rows for which there are items.
+      itemsCount = Option(table.getItems).map(_.size()).getOrElse(0)
+      actualRows = rows.filter { idx =>
+        (idx >= 0) && (idx < itemsCount)
+      }
+      // We need at least one row to compute the column width.
+      if actualRows.nonEmpty
+    } {
+      // Build a dummy cell to work with.
+      val cell = column.getCellFactory.call(column)
+      // set this property to tell the TableCell we want to know its actual
+      // preferred width, not the width of the associated TableColumnBase
+      cell.getProperties.put(Properties.DEFER_TO_PARENT_PREF_WIDTH, java.lang.Boolean.TRUE)
+      // determine cell padding
+      val padding = Option(cell.getSkin).flatMap { skin =>
+        skin.getNode match {
+          case r: Region => Some(r.snappedLeftInset() + r.snappedRightInset())
+          case _         => None
+        }
+      }.getOrElse(defaultPadding)
+
+      // Setup cell for this table column.
+      cell.updateTableColumn(column)
+      cell.updateTableView(table)
+      // For each selected row, compute cell width.
+      val width = actualRows.foldLeft(0.0) { (acc, idx) =>
+        cell.updateIndex(idx)
+        val width = Option.when(Option(cell.getText).exists(_.nonEmpty) || Option(cell.getGraphic).isDefined) {
+          skin.getChildren.add(cell)
+          cell.applyCss()
+          val width = cell.prefWidth(Region.USE_COMPUTED_SIZE)
+          skin.getChildren.remove(cell)
+          width
+        }.getOrElse(0.0)
+        math.max(acc, width)
+      } + /* RT-23486 */ padding
+
+      // dispose of the cell to prevent it retaining listeners (see RT-31015)
+      cell.updateIndex(-1)
+
+      // Note: we voluntarily ignore the column header width:
+      //  - original code uses protected/package-private helpers
+      //  - for now we mostly care for cells content, not column header
+      // We also only care for unconstrained resize policy.
+      TableColumnBaseHelper.setWidth(column, width)
+    }
   }
 
   /**
