@@ -3,7 +3,7 @@ package suiryc.scala.sys.process
 import suiryc.scala.akka.CoreSystem
 import suiryc.scala.sys.OS
 
-import java.io.{File, FilterInputStream, InputStream}
+import java.io.{File, FilterInputStream, InputStream, OutputStream}
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.sys.process.ProcessIO
@@ -198,12 +198,12 @@ class SimpleProcessBuilder(builder: ProcessBuilder) {
       if (builder.redirectErrorStream) Nil
       else List(Spawn(io.processError(errorStream), io.daemonizeThreads))
 
-    new SimpleProcess(process, inThread, outThread :: errorThread, List(outStream, errorStream))
+    new SimpleProcess(process, Some(inThread), outThread :: errorThread, List(outStream, errorStream))
   }
 
 }
 
-class SimpleProcess(val process: Process, inputThread: Thread, outputThreads: List[Thread], streams: List[InputStream]) {
+class SimpleProcess(val process: Process, inputThread: Option[Thread], outputThreads: List[Thread], streams: List[InputStream]) {
 
   import SimpleProcessBuilder.NonBlockingInputStream
 
@@ -225,7 +225,7 @@ class SimpleProcess(val process: Process, inputThread: Thread, outputThreads: Li
     import CoreSystem.Blocking._
     process.onExit().asScala.transform { t =>
       // Notify input thread it can terminate
-      inputThread.interrupt()
+      inputThread.foreach(_.interrupt())
       // Notify stdout/stderr handler when Process has ended.
       streams.foreach {
         case s: NonBlockingInputStream => s.setDone()
@@ -240,3 +240,21 @@ class SimpleProcess(val process: Process, inputThread: Thread, outputThreads: Li
   }
 
 }
+
+// Notes:
+// Proper class, not static object, because at least null I/O streams are meant
+// to be per-process and not shared.
+// This also allows caller to decide whether the process is failed or not.
+/** Dummy process. */
+class DummyJProcess(failed: Boolean = false) extends Process {
+  override def getOutputStream: OutputStream = OutputStream.nullOutputStream()
+  override def getInputStream: InputStream = InputStream.nullInputStream()
+  override def getErrorStream: InputStream = InputStream.nullInputStream()
+  override def waitFor(): Int = if (failed) 1 else 0
+  override def exitValue(): Int = if (failed) 1 else 0
+  override def destroy(): Unit = {}
+}
+
+/** Dummy process. */
+class DummyProcess(failed: Boolean = false)
+  extends SimpleProcess(new DummyJProcess(failed), None, Nil, Nil)
