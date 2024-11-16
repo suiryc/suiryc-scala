@@ -214,7 +214,15 @@ object Command
 
       @scala.annotation.tailrec
       def loop(): Unit = {
-        val read = input.stream.read(buffer)
+        // If input stream has been closed, we get an IOException with
+        // "Stream closed" message.
+        // Transform this into EOF.
+        val read = try {
+          input.stream.read(buffer)
+        } catch {
+          case ex: IOException if ex.getMessage == "Stream closed" =>
+            -1
+        }
         if (read == -1) {
           if (input.close) IOStream.closeQuietly(input.stream)
           IOStream.closeQuietly(output)
