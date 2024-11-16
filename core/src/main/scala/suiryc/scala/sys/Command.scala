@@ -1,9 +1,11 @@
 package suiryc.scala.sys
 
 import com.typesafe.scalalogging.StrictLogging
+import suiryc.scala.akka.CoreSystem
 import suiryc.scala.io.{IOStream, InterruptibleInputStream}
 import suiryc.scala.misc.RichOptional._
 import suiryc.scala.misc.Util
+import suiryc.scala.sys.process.SimpleProcess
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, IOException, InputStream, OutputStream}
 import java.nio.file.{Path, Paths}
@@ -11,6 +13,8 @@ import scala.annotation.nowarn
 import scala.collection.compat._
 import scala.collection.compat.immutable.LazyList
 import scala.collection.mutable
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.sys.process.{BasicIO, ProcessIO}
 
 /**
@@ -163,7 +167,7 @@ object Command
    * @param skipResult       whether to not check return code
    * @return command result
    */
-  // scalastyle:off method.length parameter.number
+  // scalastyle:off parameter.number
   def execute(
     cmd: Seq[String],
     workingDirectory: Option[File] = None,
@@ -176,6 +180,52 @@ object Command
     trim: Boolean = true,
     skipResult: Boolean = true
   ): CommandResult = {
+    Await.result(
+      executeAsync(
+        cmd = cmd,
+        workingDirectory = workingDirectory,
+        envf = envf,
+        stdinSource = stdinSource,
+        stdoutSink = stdoutSink,
+        captureStdout = captureStdout,
+        stderrSink = stderrSink,
+        captureStderr = captureStderr,
+        trim = trim,
+        skipResult = skipResult
+      )._2,
+      Duration.Inf
+    )
+  }
+  // scalastyle:on parameter.number
+
+  /**
+   * Executes system command.
+   *
+   * @param cmd              command to execute
+   * @param workingDirectory working directory
+   * @param envf             environment callback
+   * @param stdinSource      command input
+   * @param stdoutSink       command stdout(s)
+   * @param captureStdout    whether to capture stdout
+   * @param stderrSink       command stderr(s)
+   * @param captureStderr    whether to capture stderr
+   * @param trim             whether to trim captured streams
+   * @param skipResult       whether to not check return code
+   * @return command result
+   */
+  // scalastyle:off method.length parameter.number
+  def executeAsync(
+    cmd: Seq[String],
+    workingDirectory: Option[File] = None,
+    envf: Option[java.util.Map[String, String] => Unit] = None,
+    stdinSource: Option[Stream[InputStream]] = fromStdin,
+    stdoutSink: Iterable[Stream[OutputStream]] = None,
+    captureStdout: Boolean = true,
+    stderrSink: Iterable[Stream[OutputStream]] = None,
+    captureStderr: Boolean = true,
+    trim: Boolean = true,
+    skipResult: Boolean = true
+  ): (SimpleProcess, Future[CommandResult]) = {
     def _filterOutput(
       input: InputStream,
       outputs: Iterable[Stream[OutputStream]]
@@ -255,31 +305,36 @@ object Command
       filterOutput(stdoutSink ++ extraStdoutSink, stdoutBuffer),
       filterOutput(stderrSink ++ extraStderrSink, stderrBuffer)
     )
-    val result = builder.run(io).exitValue()
-    val stdoutResult =
-      stdoutBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
-    val stderrResult =
-      stderrBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
+    val simpleProcess = builder.run(io)
 
-    if (!skipResult && (result != 0)) {
-      logger.error(s"Command[$cmd] failed: code[$result]"
-        + stdoutBuffer.fold("")(_ => s" stdout[$stdoutResult]")
-        + stderrBuffer.fold("")(_ => s" stderr[$stderrResult]")
-      )
-      throw new RuntimeException("Nonzero exit value: " + result)
-    } else {
-      logger.trace(s"Command[$cmd] result: code[$result]"
-        + stdoutBuffer.fold("")(_ => s" stdout[$stdoutResult]")
-        + stderrBuffer.fold("")(_ => s" stderr[$stderrResult]")
-      )
-    }
+    val fr = simpleProcess.exitValueAsync().map { result =>
+      val stdoutResult =
+        stdoutBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
+      val stderrResult =
+        stderrBuffer.fold("")(buffer => buffer.toString.optional(trim, _.trim))
 
-    // Process may have ended before consuming the whole input
-    stdinSource.foreach { input =>
-      if (input.close) IOStream.closeQuietly(input.stream)
-    }
+      if (!skipResult && (result != 0)) {
+        logger.error(s"Command[$cmd] failed: code[$result]"
+          + stdoutBuffer.fold("")(_ => s" stdout[$stdoutResult]")
+          + stderrBuffer.fold("")(_ => s" stderr[$stderrResult]")
+        )
+        throw new RuntimeException("Nonzero exit value: " + result)
+      } else {
+        logger.trace(s"Command[$cmd] result: code[$result]"
+          + stdoutBuffer.fold("")(_ => s" stdout[$stdoutResult]")
+          + stderrBuffer.fold("")(_ => s" stderr[$stderrResult]")
+        )
+      }
 
-    CommandResult(result, stdoutResult, stderrResult)
+      // Process may have ended before consuming the whole input
+      stdinSource.foreach { input =>
+        if (input.close) IOStream.closeQuietly(input.stream)
+      }
+
+      CommandResult(result, stdoutResult, stderrResult)
+    }(CoreSystem.Blocking.dispatcher)
+
+    (simpleProcess, fr)
   }
   // scalastyle:on method.length parameter.number
 
