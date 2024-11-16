@@ -1,9 +1,12 @@
 package suiryc.scala.sys.process
 
+import suiryc.scala.akka.CoreSystem
+import suiryc.scala.sys.OS
+
 import java.io.{File, FilterInputStream, InputStream}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.sys.process.ProcessIO
-import suiryc.scala.sys.OS
 
 // Notes:
 // To handle Process execution scala offers scala.sys.process.Process, which
@@ -32,14 +35,14 @@ import suiryc.scala.sys.OS
 //    singleton instance java.lang.ProcessBuilder.NullInputStream
 //  - otherwise it is replaced by a ByteArrayInputBuffer wrapping drained data
 // But the ProcessPipeInputStream lock is required to do this.
-// Thus if the ProcessIO code is blocked on reading (no data and the stream was
+// Thus, if the ProcessIO code is blocked on reading (no data and the stream was
 // not closed), ProcessImpl is also blocked handling the process ending.
 //
 // In order to get the exit value the scala ProcessImpl does wait for the java
 // ProcessImpl to end then for ProcessIO threads to end too. It is thus also
 // blocked in the above situation.
 //
-// To workaround this, we can re-implement the scala ProcessBuilder/Process,
+// To work around this, we can re-implement the scala ProcessBuilder/Process,
 // and insert a (non-efficient) intermediate InputStream between the underlying
 // ProcessPipeInputStream and the caller handling (ProcessIO) stdout/stderr.
 // This intermediate stream would not directly read (blocking) while process is
@@ -197,28 +200,43 @@ class SimpleProcessBuilder(builder: ProcessBuilder) {
 
     new SimpleProcess(process, inThread, outThread :: errorThread, List(outStream, errorStream))
   }
+
 }
 
-class SimpleProcess(process: Process, inputThread: Thread, outputThreads: List[Thread], streams: List[InputStream]) {
+class SimpleProcess(val process: Process, inputThread: Thread, outputThreads: List[Thread], streams: List[InputStream]) {
 
   import SimpleProcessBuilder.NonBlockingInputStream
 
+  def destroy(forcibly: Boolean = false): Unit = {
+    if (forcibly) {
+      process.destroyForcibly()
+      ()
+    } else {
+      process.destroy()
+    }
+  }
+
   def exitValue(): Int = {
-    // Wait for process to terminate.
-    try {
-      process.waitFor()
-    } finally {
+    Await.result(exitValueAsync(), Duration.Inf)
+  }
+
+  def exitValueAsync(): Future[Int] = {
+    import scala.jdk.FutureConverters._
+    import CoreSystem.Blocking._
+    process.onExit().asScala.transform { t =>
       // Notify input thread it can terminate
       inputThread.interrupt()
+      // Notify stdout/stderr handler when Process has ended.
+      streams.foreach {
+        case s: NonBlockingInputStream => s.setDone()
+        case _ =>
+      }
+      // Wait for output completion before returning the process exit code.
+      outputThreads.foreach(_.join())
+      t
+    }.map { _ =>
+      process.exitValue()
     }
-    // Notify stdout/stderr handler when Process has ended.
-    streams.foreach {
-      case s: NonBlockingInputStream => s.setDone()
-      case _ =>
-    }
-    // Wait for output completion before returning the process exit code.
-    outputThreads.foreach(_.join())
-    process.exitValue()
   }
 
 }
