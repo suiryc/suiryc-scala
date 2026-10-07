@@ -5,6 +5,7 @@ lazy val versions = Map[String, String](
   "akka"          -> "2.6.21",
   "config"        -> "1.4.3",
   "javafx"        -> "12.0.1",
+  "jna"           -> "5.19.1",
   "logback"       -> "1.4.11",
   "monix"         -> "3.4.0",
   "sbt-assembly"  -> "2.1.4",
@@ -141,6 +142,7 @@ lazy val core = project.in(file("core"))
       "com.typesafe.scala-logging" %% "scala-logging"  % versions("scala-logging") % Provided,
       "io.monix"                   %% "monix"          % versions("monix")         % Provided,
       "io.spray"                   %% "spray-json"     % versions("spray-json")    % Provided,
+      "net.java.dev.jna"           % "jna"             % versions("jna")           % Provided,
       "org.openjfx"                %  "javafx-base"    % versions("javafx")        % Provided classifier jfxPlatform,
       "org.scalatest"              %% "scalatest"      % versions("scalatest")     % Test
     )
