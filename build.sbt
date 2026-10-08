@@ -142,7 +142,7 @@ lazy val core = project.in(file("core"))
       "com.typesafe.scala-logging" %% "scala-logging"  % versions("scala-logging") % Provided,
       "io.monix"                   %% "monix"          % versions("monix")         % Provided,
       "io.spray"                   %% "spray-json"     % versions("spray-json")    % Provided,
-      "net.java.dev.jna"           % "jna"             % versions("jna")           % Provided,
+      "net.java.dev.jna"           % "jna"             % versions("jna"),
       "org.openjfx"                %  "javafx-base"    % versions("javafx")        % Provided classifier jfxPlatform,
       "org.scalatest"              %% "scalatest"      % versions("scalatest")     % Test
     )
