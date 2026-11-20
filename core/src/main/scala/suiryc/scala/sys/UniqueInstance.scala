@@ -278,7 +278,7 @@ object UniqueInstance extends LazyLogging {
     args: Array[String],
     streams: SystemStreams
   ): Nothing = {
-    // Release the lock (we don't need it anymore) and read the local prt
+    // Release the lock (we don't need it anymore) and read the local port
     dataLock.release()
     val bb1 = ByteBuffer.wrap(new Array[Byte](INT_SIZE))
     val port = {
